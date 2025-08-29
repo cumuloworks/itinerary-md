@@ -1,0 +1,36 @@
+{
+    "name": "@itinerary-md/core",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "license": "UNLICENSED",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "typecheck": "tsc -p tsconfig.build.json --noEmit",
+        "prepack": "npm run build"
+    },
+    "dependencies": {
+        "mdast-util-to-string": "4.0.0",
+        "remark-extract-frontmatter": "^3.2.0",
+        "remark-frontmatter": "^5.0.0",
+        "remark-parse": "^11.0.0",
+        "unified": "^11.0.4",
+        "yaml": "^2.8.1",
+        "luxon": "^3.4.4"
+    },
+    "devDependencies": {
+        "typescript": "^5.2.2"
+    }
+}

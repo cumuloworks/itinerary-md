@@ -1,0 +1,38 @@
+{
+    "name": "itinerary-md",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "license": "UNLICENSED",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "npm -w apps/studio run dev",
+        "dev:studio": "npm -w apps/studio run dev",
+        "typecheck": "npm -ws run typecheck --if-present",
+        "lint": "biome check apps/studio/src packages/core/src packages/statistics/src apps/studio/test",
+        "format": "biome format --write apps/studio/src packages/core/src packages/statistics/src apps/studio/test",
+        "prepare": "husky",
+        "test": "npm -w apps/studio run test",
+        "test:watch": "npm -w apps/studio run test:watch",
+        "coverage": "npm -w apps/studio run coverage",
+        "build": "npm -ws run build",
+        "clean": "git clean -xfd -e node_modules",
+        "test:all": "npm -ws run test --if-present",
+        "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.2.2",
+        "@cumuloworks/configs": "github:cumuloworks/configs",
+        "husky": "^9.1.7",
+        "license-checker": "^25.0.1",
+        "lint-staged": "^16.1.5"
+    },
+    "lint-staged": {
+        "*.{ts,tsx,js,jsx}": [
+            "biome check --write"
+        ]
+    }
+}

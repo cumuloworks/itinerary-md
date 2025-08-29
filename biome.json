@@ -1,0 +1,16 @@
+{
+    "root": true,
+    "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
+    "extends": ["@cumuloworks/configs/biome.json"],
+    "files": {
+        "includes": ["apps/**/src/**", "apps/**/test/**", "packages/**/src/**"],
+        "experimentalScannerIgnores": ["**/dist/**", "**/coverage/**", "**/.vite/**", "**/node_modules/**", "**/*.css"]
+    },
+    "linter": {
+        "rules": {
+            "suspicious": {
+                "noUnknownAtRules": "off"
+            }
+        }
+    }
+}
