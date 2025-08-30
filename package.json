@@ -25,6 +25,8 @@
     },
     "devDependencies": {
         "@biomejs/biome": "^2.2.2",
+        "@commitlint/cli": "^19.8.1",
+        "@commitlint/config-conventional": "^19.8.1",
         "@cumuloworks/configs": "github:cumuloworks/configs",
         "husky": "^9.1.7",
         "license-checker": "^25.0.1",
