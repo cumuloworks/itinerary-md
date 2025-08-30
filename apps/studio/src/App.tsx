@@ -1,13 +1,17 @@
 import { parseItineraryFrontmatter } from '@itinerary-md/core';
-import { analyzeCosts, analyzeDates } from '@itinerary-md/statistics';
-import { deflate, inflate } from 'pako';
+import { analyzeDates } from '@itinerary-md/statistics';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { MonacoEditor } from './components/MonacoEditor';
 import { TopBar } from './components/TopBar';
 import { notifyError, notifySuccess, safeLocalStorage } from './core/errors';
-import { COMMON_CURRENCIES, getRatesUSD } from './utils/currency';
+import { useCostAnalysis } from './hooks/useCostAnalysis';
+import { useSyncTopbarSearch } from './hooks/useSyncTopbarSearch';
+import { writeTextToClipboard } from './utils/clipboard';
+import { COMMON_CURRENCIES } from './utils/currency';
+import { buildShareUrlFromContent, clearHash, decodeFromHashBase64, readHashPayload } from './utils/hash';
+import { getTimezoneOptions } from './utils/timezone';
 
 const STORAGE_KEY = 'itinerary-md-content';
 const AUTOSAVE_DELAY = 1000;
@@ -46,13 +50,7 @@ function App() {
     const autosaveTimeoutRef = useRef<number | null>(null);
     const tzSelectId = useId();
 
-    const [loading, setLoading] = useState<boolean>(false);
-    const [totalFormatted, setTotalFormatted] = useState<string>('—');
-    const [breakdownFormatted, setBreakdownFormatted] = useState<{
-        transport: string;
-        activity: string;
-        meal: string;
-    }>({ transport: '—', activity: '—', meal: '—' });
+    const { loading, totalFormatted, breakdownFormatted } = useCostAnalysis(content, topbar.currency);
     const summary = useMemo(() => analyzeDates(content), [content]);
 
     useEffect(() => {
@@ -73,15 +71,10 @@ function App() {
                 if (Object.keys(patch).length) setTopbar((s) => ({ ...s, ...patch }));
             } catch {}
 
-            const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
-            if (hash) {
-                try {
-                    const binaryString = atob(hash);
-                    const bytes = new Uint8Array([...binaryString].map((c) => c.charCodeAt(0)));
-                    const decompressed = inflate(bytes);
-                    const decoded = new TextDecoder().decode(decompressed);
-                    setPendingHashContent(decoded);
-                } catch {}
+            const raw = readHashPayload();
+            if (raw) {
+                const decoded = decodeFromHashBase64(raw);
+                if (decoded !== null) setPendingHashContent(decoded);
             }
 
             const savedContent = safeLocalStorage.get(STORAGE_KEY);
@@ -115,67 +108,10 @@ function App() {
         };
     }, [content]);
 
-    useEffect(() => {
-        let mounted = true;
-        const calc = async () => {
-            setLoading(true);
-            try {
-                const { rates } = await getRatesUSD();
-                const totals = analyzeCosts(content, topbar.currency, rates);
-                if (!mounted) return;
-                setTotalFormatted(
-                    new Intl.NumberFormat(undefined, {
-                        style: 'currency',
-                        currency: topbar.currency,
-                        currencyDisplay: 'narrowSymbol',
-                    }).format(totals.total)
-                );
-                setBreakdownFormatted({
-                    transport: new Intl.NumberFormat(undefined, {
-                        style: 'currency',
-                        currency: topbar.currency,
-                        currencyDisplay: 'narrowSymbol',
-                    }).format(totals.transport),
-                    activity: new Intl.NumberFormat(undefined, {
-                        style: 'currency',
-                        currency: topbar.currency,
-                        currencyDisplay: 'narrowSymbol',
-                    }).format(totals.activity),
-                    meal: new Intl.NumberFormat(undefined, {
-                        style: 'currency',
-                        currency: topbar.currency,
-                        currencyDisplay: 'narrowSymbol',
-                    }).format(totals.meal),
-                });
-            } catch {
-                if (mounted) {
-                    setTotalFormatted('—');
-                    setBreakdownFormatted({ transport: '—', activity: '—', meal: '—' });
-                    notifyError('Failed to fetch exchange rates');
-                }
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        };
-        calc();
-        return () => {
-            mounted = false;
-        };
-    }, [content, topbar.currency]);
+    // 通貨・費用計算の副作用は useCostAnalysis に移行
 
-    useEffect(() => {
-        try {
-            const sp = new URLSearchParams(window.location.search);
-            sp.set('tz', topbar.baseTz);
-            sp.set('cur', topbar.currency);
-            sp.set('view', topbar.viewMode);
-            sp.set('dash', topbar.dashboardVisible ? '1' : '0');
-            sp.set('stay', topbar.stayMode);
-            const newSearch = `?${sp.toString()}`;
-            const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
-            history.replaceState(null, '', newUrl);
-        } catch {}
-    }, [topbar]);
+    // 検索パラメータ同期は useSyncTopbarSearch に移行
+    useSyncTopbarSearch(topbar);
 
     useEffect(() => {
         safeLocalStorage.set(CURRENCY_STORAGE_KEY, topbar.currency);
@@ -224,12 +160,8 @@ function App() {
 
     const handleShareUrl = async () => {
         try {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(content);
-            const compressed = deflate(data);
-            const base64 = btoa(String.fromCharCode(...compressed));
-            const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${base64}`;
-            await navigator.clipboard.writeText(url);
+            const url = buildShareUrlFromContent(content);
+            await writeTextToClipboard(url);
             notifySuccess('Shareable URL copied to clipboard');
         } catch (error) {
             console.error('Failed to generate URL:', error);
@@ -239,19 +171,7 @@ function App() {
 
     const handleCopyMarkdown = async () => {
         try {
-            if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(content);
-            } else {
-                const textarea = document.createElement('textarea');
-                textarea.value = content;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.focus();
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-            }
+            await writeTextToClipboard(content);
             notifySuccess('Markdown copied to clipboard');
         } catch (error) {
             console.error('Copy failed:', error);
@@ -259,15 +179,7 @@ function App() {
         }
     };
 
-    const timezoneOptions: string[] = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.('timeZone') ?? [
-        'UTC',
-        'Asia/Tokyo',
-        'America/Los_Angeles',
-        'America/New_York',
-        'Europe/London',
-        'Europe/Paris',
-        'Asia/Singapore',
-    ];
+    const timezoneOptions: string[] = getTimezoneOptions();
 
     return (
         <div className="max-w-screen-2xl mx-auto h-screen overflow-hidden flex flex-col p-8">
@@ -294,7 +206,7 @@ function App() {
                                 onClick={() => {
                                     setPendingHashContent(null);
 
-                                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                                    clearHash();
                                 }}
                             >
                                 Cancel
@@ -308,7 +220,7 @@ function App() {
                                         saveNow();
                                     }
                                     setPendingHashContent(null);
-                                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                                    clearHash();
                                     notifySuccess('Loaded content from the shared URL');
                                 }}
                             >
