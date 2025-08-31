@@ -8,7 +8,7 @@ type UseInitialContentResult = {
     pendingLoadSample: boolean;
     loadSample: () => void;
     confirmLoadSample: () => Promise<void>;
-    loadSampleWithSave: () => Promise<void>;
+
     cancelLoadSample: () => void;
 };
 
@@ -23,17 +23,14 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
     const [content, setContent] = useState('');
     const [pendingLoadSample, setPendingLoadSample] = useState(false);
 
-    // 初期読み込み（hashは useHashImport で処理済みのため、storage -> sample の順）
     useEffect(() => {
         const initializeContent = async () => {
-            // まず LocalStorage から読み込み試行
             const savedContent = safeLocalStorage.get(storageKey);
             if (savedContent && savedContent.trim() !== '') {
                 setContent(savedContent);
                 return;
             }
 
-            // LocalStorage に有効なコンテンツがない場合は sample.md を読み込み
             try {
                 const response = await fetch(samplePath);
                 if (response.ok) {
@@ -77,8 +74,6 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
         setPendingLoadSample(false);
     }, []);
 
-    const loadSampleWithSave = confirmLoadSample;
-
     return {
         content,
         setContent,
@@ -86,6 +81,5 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
         loadSample,
         confirmLoadSample,
         cancelLoadSample,
-        loadSampleWithSave,
     };
 }

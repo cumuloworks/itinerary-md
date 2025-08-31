@@ -27,7 +27,7 @@ function App() {
     const tzSelectId = useId();
 
     // 初期コンテンツ管理
-    const { content, setContent, pendingLoadSample, loadSample, cancelLoadSample, loadSampleWithSave } = useInitialContent({
+    const { content, setContent, pendingLoadSample, loadSample, cancelLoadSample, confirmLoadSample } = useInitialContent({
         storageKey: STORAGE_KEY,
         samplePath: '/sample.md',
     });
@@ -102,7 +102,7 @@ function App() {
         <div className="max-w-screen-2xl mx-auto h-screen overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
             <Header />
             <ImportDialog open={hashImport.isDialogOpen} onCancel={hashImport.cancelImport} onLoad={hashImport.confirmImport} />
-            <LoadSampleDialog open={pendingLoadSample} onCancel={cancelLoadSample} onLoad={loadSampleWithSave} />
+            <LoadSampleDialog open={pendingLoadSample} onCancel={cancelLoadSample} onLoad={confirmLoadSample} />
             <TopBar
                 tzSelectId={tzSelectId}
                 timezoneOptions={timezoneOptions}
