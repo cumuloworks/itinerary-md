@@ -53,12 +53,14 @@ export function parseItineraryEvents(markdown: string, options?: ParseItineraryE
             }
 
             while (j < lines.length) {
-                const metaLine = lines[j].trim();
-                if (!metaLine.startsWith('- ') && !metaLine.startsWith('* ')) {
-                    break;
-                }
+                const rawMetaLine = lines[j];
+                if (!rawMetaLine || rawMetaLine.trim() === '') break;
+                // メタデータはイベント行の直下にインデントされた箇条書きのみ対象
+                const indentBullet = /^\s+[-*]\s+/.test(rawMetaLine);
+                if (!indentBullet) break;
 
-                const itemText = metaLine.substring(2).trim();
+                const metaLine = rawMetaLine.replace(/^\s+[-*]\s+/, '').trim();
+                const itemText = metaLine;
                 const colonIndex = itemText.indexOf(':');
                 if (colonIndex > 0) {
                     const key = itemText.substring(0, colonIndex).trim().toLowerCase();

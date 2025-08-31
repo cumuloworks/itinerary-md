@@ -103,48 +103,73 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const paraEndLine = (para as MdNode)?.position?.end?.line as number | undefined;
 
             const paraLineIdx = typeof paraEndLine === 'number' ? paraEndLine : undefined;
-            if (typeof paraLineIdx === 'number' && paraLineIdx < lines.length) {
-                const startIdx = paraLineIdx;
-                const firstLine = lines[startIdx] ?? '';
-                if (!firstLine || firstLine.trim() === '') {
+            if (typeof paraLineIdx === 'number' && paraLineIdx >= 1 && paraLineIdx <= lines.length) {
+                const bulletRe = /^\s+[-*]\s+/;
+                // 0-based index into source lines
+                const anchorIdx = paraLineIdx - 1; // convert from 1-based to 0-based
+                const isBullet = (idx: number) => idx >= 0 && idx < lines.length && bulletRe.test(lines[idx] || '');
+
+                // 汎用的に、アンカー行が箇条書きであれば上方向に連続ブロックの先頭まで拡張。
+                // 箇条書きでなければ、次行以降で最初の箇条書きを探す（空行はスキップ）。
+                let startIdx = anchorIdx;
+                if (isBullet(startIdx)) {
+                    while (isBullet(startIdx - 1)) startIdx -= 1;
+                } else if (isBullet(startIdx + 1)) {
+                    startIdx = anchorIdx + 1;
                 } else {
-                    const isIndentedBullet = /^\s+-\s+/.test(firstLine);
-                    if (isIndentedBullet) {
-                        let endIdx = startIdx;
-                        while (endIdx < lines.length) {
-                            const ln = lines[endIdx];
-                            if (!ln || ln.trim() === '') break;
-                            if (!/^\s+-\s+/.test(ln)) break;
-                            endIdx += 1;
+                    // 下方向に最初の箇条書きを探索（空行はスキップ）
+                    startIdx = -1;
+                    for (let k = anchorIdx + 1; k < lines.length; k += 1) {
+                        const ln = lines[k];
+                        if (!ln) break;
+                        if (ln.trim() === '') continue;
+                        if (isBullet(k)) {
+                            startIdx = k;
+                            while (isBullet(startIdx - 1)) startIdx -= 1;
+                            break;
                         }
-                        const blockLines = lines.slice(startIdx, endIdx);
-                        for (const raw of blockLines) {
-                            const metaText = raw.replace(/^\s+-\s+/, '').trim();
-                            const colonIndex = metaText.indexOf(':');
-                            if (colonIndex > 0) {
-                                const key = metaText.substring(0, colonIndex).trim().toLowerCase();
-                                const value = metaText.substring(colonIndex + 1).trim();
-                                if (knownKeys.has(key)) {
-                                    mergedMeta[key] = value;
-                                } else {
-                                    notes.push(metaText);
-                                }
+                        // 箇条書きでも空行でもない行に到達したら終了
+                        break;
+                    }
+                }
+
+                if (startIdx >= 0) {
+                    let endIdx = startIdx;
+                    while (endIdx < lines.length) {
+                        const ln = lines[endIdx];
+                        if (!ln || ln.trim() === '') break;
+                        if (!isBullet(endIdx)) break;
+                        endIdx += 1;
+                    }
+
+                    const blockLines = lines.slice(startIdx, endIdx);
+                    for (const raw of blockLines) {
+                        const metaText = raw.replace(bulletRe, '').trim();
+                        const colonIndex = metaText.indexOf(':');
+                        if (colonIndex > 0) {
+                            const key = metaText.substring(0, colonIndex).trim().toLowerCase();
+                            const value = metaText.substring(colonIndex + 1).trim();
+                            if (knownKeys.has(key)) {
+                                mergedMeta[key] = value;
                             } else {
                                 notes.push(metaText);
                             }
+                        } else {
+                            notes.push(metaText);
                         }
-                        const blockStartLine = startIdx + 1;
-                        const blockEndLine = endIdx;
-                        const j = i + 1;
-                        while (j < children.length) {
-                            const child = children[j] as MdNode;
-                            const startLine = child?.position?.start?.line;
-                            if (typeof startLine !== 'number') break;
-                            if (startLine >= blockStartLine && startLine <= blockEndLine) {
-                                children.splice(j, 1);
-                            } else {
-                                break;
-                            }
+                    }
+
+                    const blockStartLine = startIdx + 1; // convert to 1-based for mdast positions
+                    const blockEndLine = endIdx;
+                    const j = i + 1;
+                    while (j < children.length) {
+                        const child = children[j] as MdNode;
+                        const startLine = child?.position?.start?.line;
+                        if (typeof startLine !== 'number') break;
+                        if (startLine >= blockStartLine && startLine <= blockEndLine) {
+                            children.splice(j, 1);
+                        } else {
+                            break;
                         }
                     }
                 }
