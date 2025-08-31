@@ -12,12 +12,8 @@ export function useAutosave(value: string, options: UseAutosaveOptions) {
     const { key, delay, onSuccess = () => notifySuccess('Saved'), onError = () => notifyError('Failed to save') } = options;
     const timeoutRef = useRef<number | null>(null);
 
-    const saveNow = useCallback(() => {
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-        }
-
+    // 保存ロジックを名前付き関数として抽出
+    const save = useCallback(() => {
         const ok = safeLocalStorage.set(key, value);
         if (ok) {
             onSuccess();
@@ -26,28 +22,37 @@ export function useAutosave(value: string, options: UseAutosaveOptions) {
         }
     }, [key, value, onSuccess, onError]);
 
+    const saveNow = useCallback(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+        save();
+    }, [save]);
+
     useEffect(() => {
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
         }
 
-        const save = () => {
-            const ok = safeLocalStorage.set(key, value);
-            if (ok) {
-                onSuccess();
-            } else {
-                onError();
-            }
+        timeoutRef.current = window.setTimeout(save, delay);
+
+        // タブ閉じ時に未保存の変更を保存するリスナーを追加
+        const handleBeforeUnload = () => {
+            saveNow();
         };
 
-        timeoutRef.current = window.setTimeout(save, delay);
+        window.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
             }
+            // beforeunloadリスナーを削除
+            window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [key, value, delay, onSuccess, onError]);
+    }, [save, delay, saveNow]);
 
     return { saveNow };
 }
