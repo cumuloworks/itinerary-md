@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { QueryParams, StayMode, ViewMode } from '../types/itinerary';
 
 /**
@@ -6,30 +5,28 @@ import type { QueryParams, StayMode, ViewMode } from '../types/itinerary';
  * @returns 解析されたクエリパラメータ
  */
 export function useQueryParams(): QueryParams {
-    return useMemo(() => {
-        try {
-            const searchParams = new URLSearchParams(window.location.search);
-            const result: QueryParams = {};
+    try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const result: QueryParams = {};
 
-            const tz = searchParams.get('tz');
-            if (tz) result.tz = tz;
+        const tz = searchParams.get('tz');
+        if (tz) result.tz = tz;
 
-            const cur = searchParams.get('cur');
-            if (cur) result.cur = cur;
+        const cur = searchParams.get('cur');
+        if (cur) result.cur = cur;
 
-            const view = searchParams.get('view') as ViewMode | null;
-            if (view === 'split' || view === 'editor' || view === 'preview') {
-                result.view = view;
-            }
-
-            const stay = searchParams.get('stay') as StayMode | null;
-            if (stay === 'default' || stay === 'header') {
-                result.stay = stay;
-            }
-
-            return result;
-        } catch {
-            return {};
+        const view = searchParams.get('view') as ViewMode | null;
+        if (view === 'split' || view === 'editor' || view === 'preview') {
+            result.view = view;
         }
-    }, []);
+
+        const stay = searchParams.get('stay') as StayMode | null;
+        if (stay === 'default' || stay === 'header') {
+            result.stay = stay;
+        }
+
+        return result;
+    } catch {
+        return {};
+    }
 }
