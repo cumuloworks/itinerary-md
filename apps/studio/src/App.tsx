@@ -48,7 +48,10 @@ function App() {
     const [topbar, updateTopbar] = useTopbarState();
 
     // 旅程データ解析
-    const { previewContent, events, frontmatterTitle, summary } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY);
+    const { previewContent, events, frontmatterTitle, summary } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
+        baseTz: topbar.baseTz,
+        stayMode: topbar.stayMode,
+    });
 
     // 費用統計
     const { totalFormatted, breakdownFormatted } = useCostStatistics(events, topbar.currency);

@@ -1,6 +1,5 @@
 import { Plane } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
 
 interface AirlineLogoProps {
     flightCode: string;
@@ -20,23 +19,13 @@ const extractAirlineCode = (flightCode: string): string | undefined => {
 };
 
 export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24, fallbackIcon = true }) => {
-    const [imageError, setImageError] = useState(false);
-    const [imageLoaded, setImageLoaded] = useState(false);
-
     const airlineCode = extractAirlineCode(flightCode);
-    const logoUrl = airlineCode ? `https://img.wway.io/pics/root/${airlineCode.toUpperCase()}@png?exar=1&rs=fit:${size}:${size}` : '';
 
-    const handleImageError = () => {
-        setImageError(true);
-    };
-
-    const handleImageLoad = () => {
-        setImageLoaded(true);
-    };
-
-    if (imageError || !airlineCode) {
-        return fallbackIcon ? <Plane aria-hidden="true" focusable="false" size={size} style={{ color: '#6b7280' }} /> : null;
+    if (!airlineCode) {
+        return fallbackIcon ? <Plane size={size} style={{ color: '#6b7280' }} /> : null;
     }
+
+    const logoUrl = `https://img.wway.io/pics/root/${airlineCode.toUpperCase()}@png?exar=1&rs=fit:${size}:${size}`;
 
     return (
         <div
@@ -46,26 +35,34 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: imageLoaded ? 'transparent' : '#f3f4f6',
                 borderRadius: '4px',
                 overflow: 'hidden',
             }}
         >
             <img
                 src={logoUrl}
-                alt={`${airlineCode || flightCode} logo`}
-                loading="lazy"
-                decoding="async"
+                alt={`${airlineCode} logo`}
                 style={{
                     maxWidth: '100%',
                     maxHeight: '100%',
                     objectFit: 'contain',
-                    display: imageLoaded ? 'block' : 'none',
                 }}
-                onError={handleImageError}
-                onLoad={handleImageLoad}
+                onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const fallbackElement = target.nextElementSibling as HTMLElement;
+                    if (fallbackElement) {
+                        fallbackElement.style.display = 'block';
+                    }
+                }}
             />
-            {!imageLoaded && !imageError && <Plane aria-hidden="true" focusable="false" size={size * 0.6} style={{ color: '#9ca3af' }} />}
+            <Plane
+                size={size * 0.6}
+                style={{
+                    color: '#9ca3af',
+                    display: 'none',
+                }}
+            />
         </div>
     );
 };

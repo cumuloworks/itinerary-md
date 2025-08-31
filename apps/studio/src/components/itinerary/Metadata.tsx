@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Bed, Calendar, Car, Clock, MapPin, Phone, Plane, Star, Tag, Users, Wallet, Wifi } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { convertAmountUSDBase, formatCurrency, getRatesUSD, parseAmountWithCurrency } from '../../utils/currency';
 
 const getMetadataConfig = (key: string) => {
@@ -35,19 +35,16 @@ export const Meta: React.FC<{
     borderColor: string;
     currency?: string;
 }> = ({ metadata, borderColor, currency }) => {
-    const entries = useMemo(() => Object.entries(metadata), [metadata]);
-    const [converted, setConverted] = useState<Record<string, string> | null>(null);
-    useEffect(() => {
+    const entries = Object.entries(metadata);
+    
+    const converted = useMemo(() => {
         if (!currency) {
-            setConverted(null);
-            return;
+            return null;
         }
 
         const ratesData = getRatesUSD();
         if (!ratesData) {
-            // レートがまだ初期化されていない場合
-            setConverted(null);
-            return;
+            return null;
         }
 
         const { rates } = ratesData;
@@ -66,8 +63,8 @@ export const Meta: React.FC<{
             if (cv == null) continue;
             out[key] = `${formatCurrency(cv, to)} (${value})`;
         }
-        setConverted(Object.keys(out).length ? out : null);
-    }, [currency, entries]);
+        return Object.keys(out).length ? out : null;
+    }, [currency, JSON.stringify(metadata)]);
 
     if (entries.length === 0) return null;
     return (

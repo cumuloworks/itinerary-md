@@ -1,19 +1,13 @@
 import type { ItineraryEvent } from '@itinerary-md/core';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import type { CostBreakdownFormatted } from '../types/itinerary';
 import { convertAmountUSDBase, getRatesUSD, parseAmountWithCurrency } from '../utils/currency';
 
 export function useCostStatistics(events: ItineraryEvent[], currency: string) {
-    const [totalFormatted, setTotalFormatted] = useState<string | null>(null);
-    const [breakdownFormatted, setBreakdownFormatted] = useState<CostBreakdownFormatted | null>(null);
-
-    useEffect(() => {
+    const result = useMemo(() => {
         const ratesData = getRatesUSD();
         if (!ratesData) {
-            // レートがまだ初期化されていない場合
-            setTotalFormatted(null);
-            setBreakdownFormatted(null);
-            return;
+            return { totalFormatted: null, breakdownFormatted: null };
         }
 
         const { rates } = ratesData;
@@ -55,13 +49,15 @@ export function useCostStatistics(events: ItineraryEvent[], currency: string) {
             currencyDisplay: 'narrowSymbol',
         });
 
-        setTotalFormatted(formatter.format(total));
-        setBreakdownFormatted({
-            transport: formatter.format(transport),
-            activity: formatter.format(activity),
-            meal: formatter.format(meal),
-        });
+        return {
+            totalFormatted: formatter.format(total),
+            breakdownFormatted: {
+                transport: formatter.format(transport),
+                activity: formatter.format(activity),
+                meal: formatter.format(meal),
+            } as CostBreakdownFormatted,
+        };
     }, [events, currency]);
 
-    return { totalFormatted, breakdownFormatted } as const;
+    return result;
 }
