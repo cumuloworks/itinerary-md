@@ -64,7 +64,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, c
                             return <Heading date={parsed.date} timezone={parsed.timezone} prevStayName={stayMode === 'header' ? parsed.prevStayName : undefined} />;
                         }
                         return (
-                            <h2 {...(rest as React.HTMLAttributes<HTMLHeadingElement>)} className="text-blue-600 border-b-2 border-gray-200 pb-2 mt-6 mb-4">
+                            <h2 {...(rest as React.HTMLAttributes<HTMLHeadingElement>)} className="text-2xl font-semibold text-blue-700 border-b-2 border-blue-200 pb-3 mt-8 mb-6">
                                 {children}
                             </h2>
                         );
