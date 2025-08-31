@@ -17,7 +17,7 @@ export const LoadSampleDialog: React.FC<LoadSampleDialogProps> = ({ open, onCanc
                     <Dialog.Description className="text-sm text-gray-600 mb-4">This will replace your current content with the sample itinerary. Select "Load" to proceed.</Dialog.Description>
                     <div className="flex justify-end gap-2">
                         <Dialog.Close asChild>
-                            <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50" onClick={onCancel}>
+                            <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
                                 Cancel
                             </button>
                         </Dialog.Close>

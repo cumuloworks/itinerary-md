@@ -17,7 +17,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ open, onCancel, onLo
                     <Dialog.Description className="text-sm text-gray-600 mb-4">The current content will be overwritten. Select "Load" to proceed.</Dialog.Description>
                     <div className="flex justify-end gap-2">
                         <Dialog.Close asChild>
-                            <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50" onClick={onCancel}>
+                            <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
                                 Cancel
                             </button>
                         </Dialog.Close>
