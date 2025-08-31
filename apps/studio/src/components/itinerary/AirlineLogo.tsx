@@ -1,4 +1,3 @@
-import { extractAirlineCode } from '@itinerary-md/core/parser';
 import { Plane } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
@@ -8,6 +7,17 @@ interface AirlineLogoProps {
     size?: number;
     fallbackIcon?: boolean;
 }
+
+/**
+ * フライトコードから航空会社コードを抽出します
+ * @param flightCode フライトコード（例: "NH123", "JL456", "3K789"）
+ * @returns 航空会社コード（IATA 2文字、英数字）または undefined
+ */
+const extractAirlineCode = (flightCode: string): string | undefined => {
+    if (!flightCode) return undefined;
+    const match = flightCode.match(/^([A-Z0-9]{2})/);
+    return match ? match[1] : undefined;
+};
 
 export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24, fallbackIcon = true }) => {
     const [imageError, setImageError] = useState(false);

@@ -91,5 +91,5 @@ export function parseItineraryEvents(markdown: string, options?: ParseItineraryE
 }
 
 export { parseDateText } from './parsers/date';
-export { type ActivityEventData, type EventData, extractAirlineCode, parseEvent, type StayEventData, type TransportationEventData } from './parsers/event';
+export { type ActivityEventData, type EventData, parseEvent, type StayEventData, type TransportationEventData } from './parsers/event';
 export { parseTimeToken, type TimeLike, type TimeRangeLike } from './parsers/time';

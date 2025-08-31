@@ -71,12 +71,6 @@ export const parseTimeAndType = (
     return { timeRange, type, rest };
 };
 
-export const extractAirlineCode = (flightCode: string): string | undefined => {
-    if (!flightCode) return undefined;
-    const match = flightCode.match(/^([A-Z]{2})/);
-    return match ? match[1] : undefined;
-};
-
 export const parseRoute = (route: string): { departure: string; arrival: string } | null => {
     if (!route) return null;
     const parts = route
