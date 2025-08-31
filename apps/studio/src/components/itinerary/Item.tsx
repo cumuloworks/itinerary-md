@@ -1,10 +1,6 @@
-/**
- * 統一されたディスプレイシステム
- */
-
 import type { EventData, TimeLike } from '@itinerary-md/core';
 import { formatDateTime, getDayOffset } from '@itinerary-md/core';
-import { MapPin as Activity, Building, Plane, Train, UtensilsCrossed } from 'lucide-react';
+import { MapPin as Activity, Bed, Building, Bus, Camera, Car, Coffee, Landmark, Plane, Ship, ShoppingBag, Sparkles, Train, TreePine, UtensilsCrossed } from 'lucide-react';
 
 import { AirlineLogo } from './AirlineLogo';
 import { Location } from './Location';
@@ -20,29 +16,9 @@ interface ItemProps {
 const getTypeColors = (type: EventData['type']) => {
     switch (type) {
         case 'flight':
-            return { text: 'text-red-600', border: 'border-red-200' };
-        case 'train':
-            return { text: 'text-green-600', border: 'border-green-200' };
-        case 'stay':
-            return { text: 'text-purple-600', border: 'border-purple-200' };
-        case 'meal':
-        case 'lunch':
-        case 'dinner':
-        case 'breakfast':
-        case 'brunch':
-            return { text: 'text-orange-600', border: 'border-orange-200' };
-        case 'activity':
-            return { text: 'text-blue-600', border: 'border-blue-200' };
-        default:
-            return { text: 'text-gray-600', border: 'border-gray-200' };
-    }
-};
-
-const getTypeConfig = (type: ItemProps['eventData']['type']) => {
-    switch (type) {
-        case 'flight':
             return {
-                icon: Plane,
+                text: 'text-red-600',
+                border: 'border-red-200',
                 bgColor: 'bg-red-500',
                 borderColor: 'border-l-red-500',
                 cardBg: 'bg-red-50',
@@ -50,19 +26,86 @@ const getTypeConfig = (type: ItemProps['eventData']['type']) => {
             };
         case 'train':
             return {
-                icon: Train,
+                text: 'text-green-600',
+                border: 'border-green-200',
                 bgColor: 'bg-green-600',
                 borderColor: 'border-l-green-600',
                 cardBg: 'bg-green-50',
                 cardBorder: 'border-green-200',
             };
-        case 'stay':
+        case 'drive':
             return {
-                icon: Building,
+                text: 'text-yellow-600',
+                border: 'border-yellow-200',
+                bgColor: 'bg-yellow-600',
+                borderColor: 'border-l-yellow-600',
+                cardBg: 'bg-yellow-50',
+                cardBorder: 'border-yellow-200',
+            };
+        case 'ferry':
+            return {
+                text: 'text-cyan-600',
+                border: 'border-cyan-200',
+                bgColor: 'bg-cyan-600',
+                borderColor: 'border-l-cyan-600',
+                cardBg: 'bg-cyan-50',
+                cardBorder: 'border-cyan-200',
+            };
+        case 'bus':
+            return {
+                text: 'text-orange-600',
+                border: 'border-orange-200',
+                bgColor: 'bg-orange-600',
+                borderColor: 'border-l-orange-600',
+                cardBg: 'bg-orange-50',
+                cardBorder: 'border-orange-200',
+            };
+        case 'taxi':
+            return {
+                text: 'text-lime-600',
+                border: 'border-lime-200',
+                bgColor: 'bg-lime-600',
+                borderColor: 'border-l-lime-600',
+                cardBg: 'bg-lime-50',
+                cardBorder: 'border-lime-200',
+            };
+        case 'subway':
+            return {
+                text: 'text-teal-600',
+                border: 'border-teal-200',
+                bgColor: 'bg-teal-600',
+                borderColor: 'border-l-teal-600',
+                cardBg: 'bg-teal-50',
+                cardBorder: 'border-teal-200',
+            };
+        case 'stay':
+        case 'hotel':
+            return {
+                text: 'text-purple-600',
+                border: 'border-purple-200',
                 bgColor: 'bg-purple-600',
                 borderColor: 'border-l-purple-600',
                 cardBg: 'bg-purple-50',
                 cardBorder: 'border-purple-200',
+            };
+        case 'dormitory':
+        case 'hostel':
+            return {
+                text: 'text-indigo-600',
+                border: 'border-indigo-200',
+                bgColor: 'bg-indigo-600',
+                borderColor: 'border-l-indigo-600',
+                cardBg: 'bg-indigo-50',
+                cardBorder: 'border-indigo-200',
+            };
+        case 'ryokan':
+            return {
+                text: 'text-red-700',
+                border: 'border-red-300',
+                bgColor: 'bg-red-700',
+                borderColor: 'border-l-red-700',
+                cardBg: 'bg-red-100',
+                cardBorder: 'border-red-300',
             };
         case 'meal':
         case 'lunch':
@@ -70,7 +113,8 @@ const getTypeConfig = (type: ItemProps['eventData']['type']) => {
         case 'breakfast':
         case 'brunch':
             return {
-                icon: UtensilsCrossed,
+                text: 'text-orange-600',
+                border: 'border-orange-200',
                 bgColor: 'bg-orange-600',
                 borderColor: 'border-l-orange-600',
                 cardBg: 'bg-orange-50',
@@ -78,20 +122,125 @@ const getTypeConfig = (type: ItemProps['eventData']['type']) => {
             };
         case 'activity':
             return {
-                icon: Activity,
+                text: 'text-blue-600',
+                border: 'border-blue-200',
                 bgColor: 'bg-blue-600',
                 borderColor: 'border-l-blue-600',
                 cardBg: 'bg-blue-50',
                 cardBorder: 'border-blue-200',
             };
+        case 'museum':
+            return {
+                text: 'text-indigo-600',
+                border: 'border-indigo-200',
+                bgColor: 'bg-indigo-600',
+                borderColor: 'border-l-indigo-600',
+                cardBg: 'bg-indigo-50',
+                cardBorder: 'border-indigo-200',
+            };
+        case 'sightseeing':
+            return {
+                text: 'text-pink-600',
+                border: 'border-pink-200',
+                bgColor: 'bg-pink-600',
+                borderColor: 'border-l-pink-600',
+                cardBg: 'bg-pink-50',
+                cardBorder: 'border-pink-200',
+            };
+        case 'shopping':
+            return {
+                text: 'text-violet-600',
+                border: 'border-violet-200',
+                bgColor: 'bg-violet-600',
+                borderColor: 'border-l-violet-600',
+                cardBg: 'bg-violet-50',
+                cardBorder: 'border-violet-200',
+            };
+        case 'spa':
+            return {
+                text: 'text-emerald-600',
+                border: 'border-emerald-200',
+                bgColor: 'bg-emerald-600',
+                borderColor: 'border-l-emerald-600',
+                cardBg: 'bg-emerald-50',
+                cardBorder: 'border-emerald-200',
+            };
+        case 'park':
+            return {
+                text: 'text-green-700',
+                border: 'border-green-300',
+                bgColor: 'bg-green-700',
+                borderColor: 'border-l-green-700',
+                cardBg: 'bg-green-100',
+                cardBorder: 'border-green-300',
+            };
+        case 'cafe':
+            return {
+                text: 'text-amber-600',
+                border: 'border-amber-200',
+                bgColor: 'bg-amber-600',
+                borderColor: 'border-l-amber-600',
+                cardBg: 'bg-amber-50',
+                cardBorder: 'border-amber-200',
+            };
         default:
             return {
-                icon: Activity,
+                text: 'text-gray-600',
+                border: 'border-gray-200',
                 bgColor: 'bg-gray-600',
                 borderColor: 'border-l-gray-600',
                 cardBg: 'bg-gray-50',
                 cardBorder: 'border-gray-200',
             };
+    }
+};
+
+const getTypeIcon = (type: EventData['type']) => {
+    switch (type) {
+        case 'flight':
+            return Plane;
+        case 'train':
+            return Train;
+        case 'drive':
+            return Car;
+        case 'ferry':
+            return Ship;
+        case 'bus':
+            return Bus;
+        case 'taxi':
+            return Car;
+        case 'subway':
+            return Train;
+        case 'stay':
+        case 'hotel':
+            return Building;
+        case 'dormitory':
+        case 'hostel':
+            return Bed;
+        case 'ryokan':
+            return Landmark;
+        case 'meal':
+        case 'lunch':
+        case 'dinner':
+        case 'breakfast':
+        case 'brunch':
+            return UtensilsCrossed;
+        case 'activity':
+            return Activity;
+        case 'museum':
+            return Landmark;
+        case 'sightseeing':
+            return Camera;
+        case 'shopping':
+            return ShoppingBag;
+        case 'spa':
+            return Sparkles;
+        case 'park':
+            return TreePine;
+        case 'cafe':
+            return Coffee;
+        default:
+            return Activity;
     }
 };
 
@@ -130,34 +279,24 @@ import { Meta } from './Metadata';
 
 export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency }) => {
     const colors = getTypeColors(eventData.type);
-    const config = getTypeConfig(eventData.type);
-    const IconComponent = config.icon;
+    const IconComponent = getTypeIcon(eventData.type);
     const mainTitle = (() => {
-        switch (eventData.type) {
-            case 'flight':
-            case 'train':
-                return 'name' in eventData ? eventData.name : '';
+        switch (eventData.baseType) {
+            case 'transportation':
+            case 'activity':
+                return eventData.name;
             case 'stay':
                 return eventData.stayName;
-            case 'meal':
-            case 'lunch':
-            case 'dinner':
-            case 'breakfast':
-            case 'brunch':
-            case 'activity':
-                return 'name' in eventData ? eventData.name : '';
             default:
                 return '';
         }
     })();
 
     const routeOrLocationDisplay = (() => {
-        if ((eventData.type === 'flight' || eventData.type === 'train') && eventData.departure && eventData.arrival) {
+        if (eventData.baseType === 'transportation' && eventData.departure && eventData.arrival) {
             return <Route departure={eventData.departure} arrival={eventData.arrival} startTime={eventData.timeRange?.start} endTime={eventData.timeRange?.end} />;
         }
-        const hasLocation =
-            eventData.type === 'stay' || eventData.type === 'meal' || eventData.type === 'lunch' || eventData.type === 'dinner' || eventData.type === 'breakfast' || eventData.type === 'brunch' || eventData.type === 'activity';
-        if (hasLocation && eventData.location) {
+        if ((eventData.baseType === 'stay' || eventData.baseType === 'activity') && eventData.location) {
             return <Location location={eventData.location} />;
         }
         return null;
@@ -175,12 +314,12 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency
             )}
 
             <div className="flex items-center justify-center relative z-10 ml-3">
-                <div className={`flex items-center justify-center w-8 h-8 ${config.bgColor} rounded-full `}>
+                <div className={`flex items-center justify-center w-8 h-8 ${colors.bgColor} rounded-full `}>
                     <IconComponent size={20} className="text-white" />
                 </div>
             </div>
 
-            <div className={`flex-1 min-w-0 p-5 ${config.cardBg} ${config.cardBorder} border-l-4 ${config.borderColor} -ml-4.5 pl-8`}>
+            <div className={`flex-1 min-w-0 p-5 ${colors.cardBg} ${colors.cardBorder} border-l-4 ${colors.borderColor} -ml-4.5 pl-8`}>
                 <div className="flex items-center gap-x-3 flex-wrap">
                     {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
                     <span className={`font-bold ${colors.text} text-lg`}>{mainTitle}</span>

@@ -7,7 +7,8 @@ export interface BaseEventData {
 }
 
 export interface TransportationEventData extends BaseEventData {
-    type: 'flight' | 'train';
+    type: 'flight' | 'train' | 'drive' | 'ferry' | 'bus' | 'taxi' | 'subway';
+    baseType: 'transportation';
     // 統合された名前フィールド（flight: flightCode, train: trainName）
     name: string;
     departure: string;
@@ -15,13 +16,15 @@ export interface TransportationEventData extends BaseEventData {
 }
 
 export interface StayEventData extends BaseEventData {
-    type: 'stay';
+    type: 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan';
+    baseType: 'stay';
     stayName: string;
     location: string;
 }
 
 export interface ActivityEventData extends BaseEventData {
-    type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity';
+    type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe';
+    baseType: 'activity';
     // 統合された名前フィールド（meal: restaurantName, activity: activityName）
     name: string;
     location?: string;
@@ -88,7 +91,7 @@ export const parseRoute = (route: string): { departure: string; arrival: string 
     return null;
 };
 
-const parseTransportationData = (rest: string, baseData: BaseEventData, type: 'flight' | 'train'): TransportationEventData | null => {
+const parseTransportationData = (rest: string, baseData: BaseEventData, type: 'flight' | 'train' | 'drive' | 'ferry' | 'bus' | 'taxi' | 'subway'): TransportationEventData | null => {
     const { mainText } = extractMetadata(rest);
     const [left, right] = mainText.split('::').map((s) => s.trim());
     const name = left || '';
@@ -98,6 +101,7 @@ const parseTransportationData = (rest: string, baseData: BaseEventData, type: 'f
     return {
         ...baseData,
         type,
+        baseType: 'transportation',
         metadata: { ...baseData.metadata },
         name,
         departure: routeInfo?.departure ?? '',
@@ -105,21 +109,27 @@ const parseTransportationData = (rest: string, baseData: BaseEventData, type: 'f
     };
 };
 
-const parseStayData = (rest: string, baseData: BaseEventData): StayEventData => {
+const parseStayData = (rest: string, baseData: BaseEventData, type: 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan'): StayEventData => {
     const { mainText } = extractMetadata(rest);
     const [left, right] = mainText.split('::').map((s) => s.trim());
     const stayName = left || '';
     const location = right || '';
     return {
         ...baseData,
-        type: 'stay',
+        type,
+        baseType: 'stay',
         metadata: { ...baseData.metadata },
         stayName,
         location,
     };
 };
 
-const parseActivityData = (rest: string, baseData: BaseEventData, type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity', originalType?: string): ActivityEventData => {
+const parseActivityData = (
+    rest: string,
+    baseData: BaseEventData,
+    type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe',
+    originalType?: string
+): ActivityEventData => {
     const { mainText } = extractMetadata(rest);
     let name = mainText;
     let location: string | undefined = '';
@@ -132,7 +142,8 @@ const parseActivityData = (rest: string, baseData: BaseEventData, type: 'meal' |
 
         // Handle alias case: empty left side or left side matches original alias
         const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
-        if (!left || (originalType && left.toLowerCase() === originalType.toLowerCase() && isMealAlias)) {
+        const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
+        if (!left || (originalType && left.toLowerCase() === originalType.toLowerCase() && (isMealAlias || isActivityAlias))) {
             // Use original alias type as name (capitalize first letter)
             name = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : left;
         } else {
@@ -149,7 +160,8 @@ const parseActivityData = (rest: string, baseData: BaseEventData, type: 'meal' |
             // Handle alias case: "at Location" with empty name
             const atOnlyMatch = mainText.match(/^at\s+(.+)$/);
             const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
-            if (atOnlyMatch && originalType && isMealAlias) {
+            const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
+            if (atOnlyMatch && originalType && (isMealAlias || isActivityAlias)) {
                 // Use original alias type as name (capitalize first letter)
                 name = originalType.charAt(0).toUpperCase() + originalType.slice(1);
                 location = atOnlyMatch[1];
@@ -160,6 +172,7 @@ const parseActivityData = (rest: string, baseData: BaseEventData, type: 'meal' |
     return {
         ...baseData,
         type,
+        baseType: 'activity',
         metadata: { ...baseData.metadata },
         name,
         location,
@@ -173,7 +186,12 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
     const baseData: BaseEventData = { timeRange, metadata: {} };
     switch (type) {
         case 'flight':
-        case 'train': {
+        case 'train':
+        case 'drive':
+        case 'ferry':
+        case 'bus':
+        case 'taxi':
+        case 'subway': {
             const parsed = parseTransportationData(rest, baseData, type);
             if (parsed) return parsed;
             if (context && context.type === type && 'name' in context && 'departure' in context && 'arrival' in context) {
@@ -182,6 +200,7 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
                     type,
+                    baseType: 'transportation',
                     metadata: { ...context.metadata, ...metadata },
                     name: context.name,
                     departure: context.departure,
@@ -190,15 +209,20 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
             }
             return null;
         }
-        case 'stay': {
-            const parsed = parseStayData(rest, baseData);
+        case 'stay':
+        case 'dormitory':
+        case 'hotel':
+        case 'hostel':
+        case 'ryokan': {
+            const parsed = parseStayData(rest, baseData, type as 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan');
             if (parsed) return parsed;
-            if (context && context.type === 'stay') {
+            if (context && (context.type === type || context.type === 'stay' || context.type === 'dormitory' || context.type === 'hotel' || context.type === 'hostel' || context.type === 'ryokan')) {
                 const { metadata } = extractMetadata(rest);
                 return {
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
-                    type: 'stay',
+                    type: type as 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan',
+                    baseType: 'stay',
                     metadata: { ...context.metadata, ...metadata },
                     stayName: context.stayName,
                     location: context.location,
@@ -211,15 +235,22 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
         case 'dinner':
         case 'breakfast':
         case 'brunch':
-        case 'activity': {
-            const parsed = parseActivityData(rest, baseData, type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity', type);
+        case 'activity':
+        case 'museum':
+        case 'sightseeing':
+        case 'shopping':
+        case 'spa':
+        case 'park':
+        case 'cafe': {
+            const parsed = parseActivityData(rest, baseData, type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe', type);
             if (parsed) return parsed;
             if (context && context.type === type && 'name' in context) {
                 const { metadata } = extractMetadata(rest);
                 return {
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
-                    type: type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity',
+                    type: type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe',
+                    baseType: 'activity',
                     metadata: { ...context.metadata, ...metadata },
                     name: context.name,
                     location: context.location,
