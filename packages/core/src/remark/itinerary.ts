@@ -74,17 +74,72 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
             if (para.type !== 'paragraph') continue;
 
-            const line = mdastToString(para as MdNode).trim();
-            const parsed = parseTimeAndType(line, frontmatterBaseTz);
+            // Get first line of paragraph for parsing
+            const paraChildren = (para as MdNode).children || [];
+            const firstLineText = paraChildren.length > 0 && paraChildren[0].type === 'text' ? String(paraChildren[0].value || '').trim() : mdastToString(para as MdNode).trim();
+
+            const parsed = parseTimeAndType(firstLineText, frontmatterBaseTz);
             if (!parsed) continue;
 
             const { mainText } = extractMetadata(parsed.rest);
             const mergedMeta: Record<string, string> = {};
             const notes: string[] = [];
 
+            // Check if the next sibling is a list with metadata
+            const nextElement = children[i + 1] as MdNode;
+            if (nextElement && nextElement.type === 'list') {
+                const listItems = (nextElement.children || []) as MdNode[];
+                for (const item of listItems) {
+                    const itemText = mdastToString(item).trim();
+                    // Parse "key: value" format
+                    const colonIndex = itemText.indexOf(':');
+                    if (colonIndex > 0) {
+                        const key = itemText.substring(0, colonIndex).trim().toLowerCase();
+                        const value = itemText.substring(colonIndex + 1).trim();
+                        if (knownKeys.has(key)) {
+                            mergedMeta[key] = value;
+                        } else {
+                            notes.push(itemText);
+                        }
+                    } else {
+                        notes.push(itemText);
+                    }
+                }
+                // Skip the list element in the next iteration
+                i += 1;
+            }
+
+            // Also try to parse metadata from the source directly (for inline YAML blocks)
             const source = String(file?.value ?? '');
             const lines = source.split(/\r?\n/);
+            const paraStartLine = (para as MdNode)?.position?.start?.line as number | undefined;
             const paraEndLine = (para as MdNode)?.position?.end?.line as number | undefined;
+
+            if (typeof paraStartLine === 'number' && typeof paraEndLine === 'number') {
+                // Get the actual lines from the source
+                const eventLines = lines.slice(paraStartLine - 1, paraEndLine);
+
+                // Check for indented metadata lines after the first line
+                for (let idx = 1; idx < eventLines.length; idx++) {
+                    const line = eventLines[idx];
+                    if (line.match(/^\s*-\s+/)) {
+                        // This is a list item with metadata
+                        const metaText = line.replace(/^\s*-\s+/, '').trim();
+                        const colonIndex = metaText.indexOf(':');
+                        if (colonIndex > 0) {
+                            const key = metaText.substring(0, colonIndex).trim().toLowerCase();
+                            const value = metaText.substring(colonIndex + 1).trim();
+                            if (knownKeys.has(key)) {
+                                mergedMeta[key] = value;
+                            } else {
+                                notes.push(metaText);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Legacy YAML block parsing (keeping for compatibility)
             const startIdx = typeof paraEndLine === 'number' ? paraEndLine : undefined;
             if (typeof startIdx === 'number' && startIdx < lines.length) {
                 let endIdx = startIdx;
