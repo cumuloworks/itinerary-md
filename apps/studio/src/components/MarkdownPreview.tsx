@@ -10,6 +10,7 @@ import YAML from 'yaml';
 import { Heading } from './itinerary/Heading';
 import { Item } from './itinerary/Item';
 import 'highlight.js/styles/github.css';
+import Statistics from './itinerary/Statistics';
 
 interface MarkdownPreviewProps {
     content: string;
@@ -17,13 +18,19 @@ interface MarkdownPreviewProps {
     currency?: string;
     stayMode?: 'default' | 'header';
     title?: string;
+    summary?: {
+        startDate?: string;
+        endDate?: string;
+        numDays?: number;
+    };
+    totalFormatted?: string;
+    breakdownFormatted?: { transport: string; activity: string; meal: string };
+    loading?: boolean;
 }
 
-export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title }) => {
+export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title, summary, totalFormatted, breakdownFormatted, loading }) => {
     const displayBaseTz = baseTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
-
     const getDataAttr = (rest: Record<string, unknown>, key: string): string | undefined => rest[key] as string | undefined;
-
     const tryParseJson = <T,>(str?: string): T | null => {
         if (!str) return null;
         try {
@@ -33,9 +40,15 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseT
         }
     };
 
+    const safeSummary = summary ?? {};
+    const safeTotalFormatted = totalFormatted ?? '';
+    const safeBreakdownFormatted = breakdownFormatted ?? { transport: '—', activity: '—', meal: '—' };
+    const safeLoading = loading ?? false;
+
     return (
-        <div className="markdown-preview h-full px-8 py-4 border border-gray-300 bg-white overflow-auto">
+        <div className="markdown-preview h-full px-8 py-4 bg-white overflow-auto">
             {title && <h1>{title}</h1>}
+            <Statistics summary={safeSummary} totalFormatted={safeTotalFormatted} breakdownFormatted={safeBreakdownFormatted} loading={safeLoading} />
             <ReactMarkdown
                 remarkPlugins={[remarkFrontmatter, [remarkExtractFrontmatter, { yaml: YAML.parse, name: 'frontmatter' }], [remarkItinerary, { baseTz, stayMode }], remarkGfm]}
                 rehypePlugins={[rehypeHighlight, rehypeRaw]}

@@ -13,7 +13,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({ value, onChange, onS
     };
 
     return (
-        <div className="h-full border border-gray-300">
+        <div className="h-full">
             <Editor
                 height="100%"
                 language="markdown"

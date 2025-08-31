@@ -1,12 +1,15 @@
-import { ChevronDown, ChevronUp, Clock, Copy, Layout, Link, PanelLeft, PanelRight } from 'lucide-react';
-import type React from 'react';
+import * as Select from '@radix-ui/react-select';
+import * as ToggleGroup from '@radix-ui/react-toggle-group';
+import * as Toolbar from '@radix-ui/react-toolbar';
+import { Check, ChevronDown, Clipboard, Clock, Columns, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
+import * as React from 'react';
 
 type ViewMode = 'split' | 'editor' | 'preview';
 type StayMode = 'default' | 'header';
+
 export type TopbarState = {
     baseTz: string;
     currency: string;
-    dashboardVisible: boolean;
     viewMode: ViewMode;
     stayMode: StayMode;
 };
@@ -14,116 +17,186 @@ export type TopbarState = {
 interface TopBarProps {
     tzSelectId: string;
     timezoneOptions: string[];
-    state: TopbarState;
-    onChange: (patch: Partial<TopbarState>) => void;
+    currencyOptions: string[];
+    topbar: TopbarState;
+    onTopbarChange: (patch: Partial<TopbarState>) => void;
     onCopyMarkdown: () => void;
     onShareUrl: () => void;
-    currencyOptions: string[];
     frontmatterBaseTz?: string;
+    className?: string;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, state, onChange, onCopyMarkdown, onShareUrl, currencyOptions, frontmatterBaseTz }) => {
+export const TopBar: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, frontmatterBaseTz, className }) => {
+    const tzLabelId = React.useId();
+    const currencyLabelId = React.useId();
+    const stayLabelId = React.useId();
     const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     return (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
-            <div className="flex items-center flex-wrap gap-3 md:gap-6">
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <label htmlFor={tzSelectId} className="text-sm text-gray-600 font-medium whitespace-nowrap">
-                        Time zone
-                    </label>
-                    <select id={tzSelectId} className="px-2 py-1 text-sm border border-gray-300 rounded-md bg-white shadow-sm w-full md:w-auto md:max-w-[320px]" value={state.baseTz} onChange={(e) => onChange({ baseTz: e.target.value })}>
-                        {timezoneOptions.map((tz) => (
-                            <option key={tz} value={tz}>
-                                {tz}
-                            </option>
-                        ))}
-                    </select>
-                    <button
+        <div className="px-0 md:px-8 w-full">
+            <Toolbar.Root
+                className={`w-full scrollbar-none inline-flex h-9 items-center gap-2 md:rounded-lg rounded-none border border-gray-300 bg-white/90 backdrop-blur pl-2 pr-1 py-1 whitespace-nowrap overflow-x-auto ${className || ''}`}
+                aria-label="Itinerary controls"
+            >
+                {/* Timezone */}
+                <div className="flex items-center gap-2 h-full">
+                    <span id={tzLabelId} className="text-xs text-gray-600 whitespace-nowrap">
+                        TZ
+                    </span>
+                    <Select.Root value={topbar.baseTz} onValueChange={(v) => onTopbarChange({ baseTz: v })}>
+                        <Select.Trigger id={tzSelectId} aria-labelledby={tzLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[220px] h-full">
+                            <Select.Value />
+                            <Select.Icon>
+                                <ChevronDown size={12} />
+                            </Select.Icon>
+                        </Select.Trigger>
+                        <Select.Portal>
+                            <Select.Content position="popper" sideOffset={4} className="z-50 overflow-auto rounded-md border border-gray-200 bg-white ">
+                                <Select.Viewport className="p-1 max-h-[240px] min-w-[var(--radix-select-trigger-width)] w-max max-w-[90vw]">
+                                    {timezoneOptions.map((tz) => (
+                                        <Select.Item
+                                            key={tz}
+                                            value={tz}
+                                            className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100"
+                                        >
+                                            <Select.ItemText>{tz}</Select.ItemText>
+                                            <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
+                                                <Check size={12} />
+                                            </Select.ItemIndicator>
+                                        </Select.Item>
+                                    ))}
+                                </Select.Viewport>
+                            </Select.Content>
+                        </Select.Portal>
+                    </Select.Root>
+                    <Toolbar.Button
                         type="button"
-                        className="px-2 py-1 text-xs border border-gray-300 rounded-md bg-white shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center aspect-square size-7 text-gray-700 border border-gray-300 rounded-md bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed h-full"
                         onClick={() => {
                             const fm = frontmatterBaseTz;
-                            const target = state.baseTz === (fm || browserTz) ? browserTz : fm || browserTz;
-                            onChange({ baseTz: target });
+                            const target = topbar.baseTz === (fm || browserTz) ? browserTz : fm || browserTz;
+                            onTopbarChange({ baseTz: target });
                         }}
+                        title={frontmatterBaseTz ? (topbar.baseTz === frontmatterBaseTz ? `Switch to device TZ (${browserTz})` : `Switch to frontmatter timezone (${frontmatterBaseTz})`) : 'No timezone in frontmatter'}
+                        aria-label="Toggle timezone source"
                         disabled={!frontmatterBaseTz}
-                        title={frontmatterBaseTz ? (state.baseTz === frontmatterBaseTz ? `Switch to device TZ (${browserTz})` : `Switch to frontmatter timezone (${frontmatterBaseTz})`) : 'No timezone in frontmatter'}
                     >
-                        <Clock size={16} />
-                    </button>
+                        <Clock size={14} />
+                    </Toolbar.Button>
                 </div>
 
-                <label className="text-sm text-gray-600 font-medium flex items-center gap-3 w-full md:w-auto whitespace-nowrap">
-                    <span className="whitespace-nowrap">Currency</span>
-                    <select className="px-2 py-1 text-sm border border-gray-300 rounded-md bg-white shadow-sm w-full md:w-auto md:max-w-[200px]" value={state.currency} onChange={(e) => onChange({ currency: e.target.value })}>
-                        {currencyOptions.map((c) => (
-                            <option key={c} value={c}>
-                                {c}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-
-                <label className="text-sm text-gray-600 font-medium flex items-center gap-3 w-full md:w-auto whitespace-nowrap">
-                    <span className="whitespace-nowrap">Stay display</span>
-                    <select className="px-2 py-1 text-sm border border-gray-300 rounded-md bg-white shadow-sm w-full md:w-auto md:max-w-[200px]" value={state.stayMode} onChange={(e) => onChange({ stayMode: e.target.value as StayMode })}>
-                        <option value="default">Default</option>
-                        <option value="header">Header</option>
-                    </select>
-                </label>
-
-                {/* ビュー切替: すべての画面サイズでボタン表示 */}
-                <div className="flex items-center">
-                    <button
-                        type="button"
-                        onClick={() => onChange({ viewMode: 'split' })}
-                        className={`px-2 py-1 text-sm border rounded-l ${state.viewMode === 'split' ? 'bg-gray-700 text-white border-gray-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
-                        title="Side by side"
-                        aria-pressed={state.viewMode === 'split'}
-                    >
-                        <Layout size={16} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => onChange({ viewMode: 'editor' })}
-                        className={`px-2 py-1 text-sm border-t border-b ${state.viewMode === 'editor' ? 'bg-gray-700 text-white border-gray-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
-                        title="Editor Only"
-                        aria-pressed={state.viewMode === 'editor'}
-                    >
-                        <PanelLeft size={16} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => onChange({ viewMode: 'preview' })}
-                        className={`px-2 py-1 text-sm border rounded-r ${state.viewMode === 'preview' ? 'bg-gray-700 text-white border-gray-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
-                        title="Preview Only"
-                        aria-pressed={state.viewMode === 'preview'}
-                    >
-                        <PanelRight size={16} />
-                    </button>
+                {/* Currency */}
+                <div className="flex items-center gap-2 h-full">
+                    <span id={currencyLabelId} className="text-xs text-gray-600 whitespace-nowrap">
+                        Cur
+                    </span>
+                    <Select.Root value={topbar.currency} onValueChange={(v) => onTopbarChange({ currency: v })}>
+                        <Select.Trigger aria-labelledby={currencyLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[140px] h-full">
+                            <Select.Value />
+                            <Select.Icon>
+                                <ChevronDown size={12} />
+                            </Select.Icon>
+                        </Select.Trigger>
+                        <Select.Portal>
+                            <Select.Content position="popper" sideOffset={4} className="z-50 overflow-auto rounded-md border border-gray-200 bg-white ">
+                                <Select.Viewport className="p-1 max-h-[240px] min-w-[var(--radix-select-trigger-width)] w-max max-w-[90vw]">
+                                    {currencyOptions.map((c) => (
+                                        <Select.Item
+                                            key={c}
+                                            value={c}
+                                            className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100"
+                                        >
+                                            <Select.ItemText>{c}</Select.ItemText>
+                                            <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
+                                                <Check size={12} />
+                                            </Select.ItemIndicator>
+                                        </Select.Item>
+                                    ))}
+                                </Select.Viewport>
+                            </Select.Content>
+                        </Select.Portal>
+                    </Select.Root>
                 </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={onCopyMarkdown} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-700 text-white rounded hover:bg-gray-800 transition-colors" title="Copy Markdown to clipboard">
-                    <Copy size={16} />
-                    Copy Markdown
-                </button>
-                <button type="button" onClick={onShareUrl} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-teal-600 text-white rounded hover:bg-teal-700 transition-colors" title="Compress into URL and copy share link">
-                    <Link size={16} />
-                    Share via URL
-                </button>
-                <button
-                    type="button"
-                    onClick={() => onChange({ dashboardVisible: !state.dashboardVisible })}
-                    className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-                    title={state.dashboardVisible ? 'Collapse dashboard' : 'Expand dashboard'}
-                    aria-label="Toggle dashboard"
+
+                {/* Stay display */}
+                <div className="flex items-center gap-2 h-full">
+                    <span id={stayLabelId} className="text-xs text-gray-600 whitespace-nowrap">
+                        Stay
+                    </span>
+                    <Select.Root value={topbar.stayMode} onValueChange={(v) => onTopbarChange({ stayMode: v as StayMode })}>
+                        <Select.Trigger aria-labelledby={stayLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[140px] h-full">
+                            <Select.Value />
+                            <Select.Icon>
+                                <ChevronDown size={12} />
+                            </Select.Icon>
+                        </Select.Trigger>
+                        <Select.Portal>
+                            <Select.Content position="popper" sideOffset={4} className="z-50 overflow-auto rounded-md border border-gray-200 bg-white ">
+                                <Select.Viewport className="p-1 max-h-[240px] min-w-[var(--radix-select-trigger-width)] w-max max-w-[90vw]">
+                                    <Select.Item value="default" className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100">
+                                        <Select.ItemText>Default</Select.ItemText>
+                                        <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
+                                            <Check size={12} />
+                                        </Select.ItemIndicator>
+                                    </Select.Item>
+                                    <Select.Item value="header" className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100">
+                                        <Select.ItemText>Header</Select.ItemText>
+                                        <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
+                                            <Check size={12} />
+                                        </Select.ItemIndicator>
+                                    </Select.Item>
+                                </Select.Viewport>
+                            </Select.Content>
+                        </Select.Portal>
+                    </Select.Root>
+                </div>
+
+                {/* View mode */}
+                <ToggleGroup.Root
+                    type="single"
+                    value={topbar.viewMode}
+                    onValueChange={(v) => v && onTopbarChange({ viewMode: v as ViewMode })}
+                    aria-label="View mode"
+                    className="inline-flex flex-shrink-0 rounded-md divide-x h-full border divide-gray-300 border-gray-300 overflow-hidden"
                 >
-                    {state.dashboardVisible ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </button>
-            </div>
+                    <ToggleGroup.Item value="editor" aria-label="Editor only" className={`px-2 py-1 text-xs ${topbar.viewMode === 'editor' ? 'bg-gray-700 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                        <PanelBottom size={14} className="md:hidden" />
+                        <PanelRight size={14} className="hidden md:block" />
+                    </ToggleGroup.Item>
+                    <ToggleGroup.Item value="split" aria-label="Side by side" className={`px-2 py-1 text-xs ${topbar.viewMode === 'split' ? 'bg-gray-700 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                        <Rows size={14} className="md:hidden" />
+                        <Columns size={14} className="hidden md:block" />
+                    </ToggleGroup.Item>
+                    <ToggleGroup.Item value="preview" aria-label="Preview only" className={`px-2 py-1 text-xs ${topbar.viewMode === 'preview' ? 'bg-gray-700 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                        <PanelTop size={14} className="md:hidden" />
+                        <PanelLeft size={14} className="hidden md:block" />
+                    </ToggleGroup.Item>
+                </ToggleGroup.Root>
+
+                <Toolbar.Separator className="w-px mr-auto" />
+
+                {/* Actions */}
+                <Toolbar.Button
+                    type="button"
+                    aria-label="Copy Markdown"
+                    title="Copy Markdown"
+                    onClick={onCopyMarkdown}
+                    className="inline-flex items-center justify-center px-2 h-full text-gray-700 border border-gray-300 rounded-md bg-white hover:bg-gray-50"
+                >
+                    <Clipboard size={14} />
+                    <span className="hidden md:block text-xs ml-1">Copy Markdown</span>
+                </Toolbar.Button>
+                <Toolbar.Button
+                    type="button"
+                    title="Share via URL"
+                    onClick={onShareUrl}
+                    className="inline-flex items-center justify-center px-2 h-full text-white rounded-md bg-teal-600 hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
+                >
+                    <Share2 size={14} />
+                    <span className="hidden md:block text-xs ml-1">Share via URL</span>
+                </Toolbar.Button>
+            </Toolbar.Root>
         </div>
     );
 };
-
 export default TopBar;

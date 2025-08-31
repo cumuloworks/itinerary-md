@@ -113,7 +113,7 @@ const TimeDisplay: React.FC<{
     return (
         <span className="font-mono text-lg font-bold text-gray-800 leading-tight relative inline-block">
             {timeText}
-            {plusBadge && <span className="absolute -bottom-3 -right-0 text-xs font-bold text-white bg-red-500 rounded px-0.5 shadow-sm">{plusBadge}</span>}
+            {plusBadge && <span className="absolute -bottom-3 -right-0 text-xs font-bold text-white bg-red-500 rounded px-0.5 ">{plusBadge}</span>}
         </span>
     );
 };
@@ -163,7 +163,7 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency
             )}
 
             <div className="flex items-center justify-center relative z-10 ml-3">
-                <div className={`flex items-center justify-center w-8 h-8 ${config.bgColor} rounded-full shadow-md`}>
+                <div className={`flex items-center justify-center w-8 h-8 ${config.bgColor} rounded-full `}>
                     <IconComponent size={20} className="text-white" />
                 </div>
             </div>
