@@ -16,13 +16,13 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({ trigger }) => {
                     <Dialog.Description className="text-sm text-gray-600 mb-4">Itinerary MD Studio — a playground for composing travel itineraries in Markdown.</Dialog.Description>
                     <div className="text-sm text-gray-600 space-y-2">
                         The cost calculation and currency conversion in this app are for reference only. Accuracy and timeliness are not guaranteed. Exchange rates are provided by
-                        <a href="https://open.er-api.com" className="underline ml-1" target="_blank" rel="noreferrer">
+                        <a href="https://open.er-api.com" className="underline ml-1" target="_blank" rel="noopener noreferrer">
                             open.er-api.com
                         </a>
                         .
                         <p>
                             Source:{' '}
-                            <a href="https://github.com/itinerary-md/itinerary-md" target="_blank" rel="noreferrer" className="underline">
+                            <a href="https://github.com/cumuloworks/itinerary-md" target="_blank" rel="noopener noreferrer" className="underline">
                                 GitHub
                             </a>
                         </p>
