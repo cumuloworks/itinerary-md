@@ -50,10 +50,27 @@ export const fetchRatesUSD = async (): Promise<RatesUSDBase> => {
     return data;
 };
 
-export const getRatesUSD = async (): Promise<RatesUSDBase> => {
-    const cached = getCachedRatesUSD();
-    if (cached) return cached;
-    return fetchRatesUSD();
+/**
+ * アプリ起動時にレートを事前フェッチする
+ * TTLを考慮してキャッシュが期限切れの場合も新しいレートを取得
+ */
+export const initializeRates = async (): Promise<void> => {
+    try {
+        const cached = getCachedRatesUSD(); // TTLチェック済み
+        if (!cached) {
+            await fetchRatesUSD();
+        }
+    } catch (error) {
+        console.warn('Failed to initialize currency rates:', error);
+    }
+};
+
+/**
+ * キャッシュされたレートを同期的に取得
+ * initializeRates()でアプリ起動時に事前フェッチされている前提
+ */
+export const getRatesUSD = (): RatesUSDBase | null => {
+    return getCachedRatesUSD();
 };
 
 const SYMBOL_TO_CODE: Record<string, CurrencyCode> = {

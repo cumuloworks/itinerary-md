@@ -50,7 +50,7 @@ function App() {
     const { previewContent, events, frontmatterTitle, summary } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY);
 
     // 費用統計
-    const { loading, totalFormatted, breakdownFormatted } = useCostStatistics(events, topbar.currency);
+    const { totalFormatted, breakdownFormatted } = useCostStatistics(events, topbar.currency);
 
     // MarkdownPreview用にpropsを最適化（参照安定化）
     const previewProps = useMemo(
@@ -128,7 +128,7 @@ function App() {
                             <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Preview</div>
                             <div className="h-[calc(100%-41px)] min-h-0">
                                 <MarkdownPreviewErrorBoundary>
-                                    <MarkdownPreview content={previewContent} {...previewProps} title={frontmatterTitle} summary={summary} totalFormatted={totalFormatted} breakdownFormatted={breakdownFormatted} loading={loading} />
+                                    <MarkdownPreview content={previewContent} {...previewProps} title={frontmatterTitle} summary={summary} totalFormatted={totalFormatted} breakdownFormatted={breakdownFormatted} />
                                 </MarkdownPreviewErrorBoundary>
                             </div>
                         </div>

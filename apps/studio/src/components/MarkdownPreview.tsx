@@ -25,10 +25,9 @@ interface MarkdownPreviewProps {
     };
     totalFormatted?: string | null;
     breakdownFormatted?: { transport: string; activity: string; meal: string } | null;
-    loading?: boolean;
 }
 
-const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title, summary, totalFormatted, breakdownFormatted, loading }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title, summary, totalFormatted, breakdownFormatted }) => {
     const displayBaseTz = baseTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const getDataAttr = (rest: Record<string, unknown>, key: string): string | undefined => rest[key] as string | undefined;
     const tryParseJson = <T,>(str?: string): T | null => {
@@ -43,12 +42,11 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, c
     const safeSummary = summary ?? {};
     const safeTotalFormatted = totalFormatted ?? null;
     const safeBreakdownFormatted = breakdownFormatted ?? null;
-    const safeLoading = loading ?? false;
 
     return (
         <div className="markdown-preview h-full px-8 py-4 bg-white overflow-auto">
             {title && <h1>{title}</h1>}
-            <Statistics summary={safeSummary} totalFormatted={safeTotalFormatted} breakdownFormatted={safeBreakdownFormatted} loading={safeLoading} />
+            <Statistics summary={safeSummary} totalFormatted={safeTotalFormatted} breakdownFormatted={safeBreakdownFormatted} />
             <ReactMarkdown
                 remarkPlugins={[remarkFrontmatter, [remarkExtractFrontmatter, { yaml: YAML.parse, name: 'frontmatter' }], [remarkItinerary, { baseTz, stayMode }], remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}

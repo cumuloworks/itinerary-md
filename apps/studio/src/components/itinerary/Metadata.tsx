@@ -38,39 +38,35 @@ export const Meta: React.FC<{
     const entries = useMemo(() => Object.entries(metadata), [metadata]);
     const [converted, setConverted] = useState<Record<string, string> | null>(null);
     useEffect(() => {
-        let mounted = true;
-        const run = async () => {
-            if (!currency) {
-                setConverted(null);
-                return;
+        if (!currency) {
+            setConverted(null);
+            return;
+        }
+
+        const ratesData = getRatesUSD();
+        if (!ratesData) {
+            // レートがまだ初期化されていない場合
+            setConverted(null);
+            return;
+        }
+
+        const { rates } = ratesData;
+        const out: Record<string, string> = {};
+        for (const [key, value] of entries) {
+            if (key !== 'cost' && key !== 'price') continue;
+            const parsed = parseAmountWithCurrency(value, currency);
+            if (parsed.amount == null) continue;
+            const from = parsed.currency || currency;
+            const to = currency;
+            if (from === to) {
+                out[key] = formatCurrency(parsed.amount, to);
+                continue;
             }
-            try {
-                const { rates } = await getRatesUSD();
-                const out: Record<string, string> = {};
-                for (const [key, value] of entries) {
-                    if (key !== 'cost' && key !== 'price') continue;
-                    const parsed = parseAmountWithCurrency(value, currency);
-                    if (parsed.amount == null) continue;
-                    const from = parsed.currency || currency;
-                    const to = currency;
-                    if (from === to) {
-                        out[key] = formatCurrency(parsed.amount, to);
-                        continue;
-                    }
-                    const cv = convertAmountUSDBase(parsed.amount, from, to, rates);
-                    if (cv == null) continue;
-                    out[key] = `${formatCurrency(cv, to)} (${value})`;
-                }
-                if (mounted) setConverted(Object.keys(out).length ? out : null);
-            } catch (e) {
-                console.warn('[metadata] currency convert failed', e);
-                if (mounted) setConverted(null);
-            }
-        };
-        run();
-        return () => {
-            mounted = false;
-        };
+            const cv = convertAmountUSDBase(parsed.amount, from, to, rates);
+            if (cv == null) continue;
+            out[key] = `${formatCurrency(cv, to)} (${value})`;
+        }
+        setConverted(Object.keys(out).length ? out : null);
     }, [currency, entries]);
 
     if (entries.length === 0) return null;
