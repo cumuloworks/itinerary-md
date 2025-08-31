@@ -9,12 +9,11 @@ interface HeadingProps {
 }
 
 export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStayName }) => {
-    const dayOfWeek = DateTime.fromISO(date, { zone: timezone || 'UTC' })
-        .setLocale('en')
-        .toFormat('ccc');
+    const dt = DateTime.fromISO(date, { zone: timezone || 'UTC' });
+    const dayOfWeek = dt.isValid ? dt.setLocale('en').toFormat('ccc') : '';
 
     return (
-        <h2 className="flex-wrap gap-y-2 text-xl font-semibold text-blue-700 border-b-2 border-blue-200 pb-3 mt-8 mb-6 flex items-center justify-between">
+        <h2 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-y-2 text-xl font-semibold text-blue-700 border-b-2 border-blue-200 pb-3 mt-8 mb-6">
             <span className="flex items-center">
                 <span className="text-2xl whitespace-nowrap">{date}</span>
                 <span className="whitespace-nowrap ml-2 text-sm text-gray-600 bg-gray-200 px-2 py-1 rounded-md">{dayOfWeek}</span>

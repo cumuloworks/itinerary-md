@@ -174,7 +174,11 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                         } else if (typeof parsedYaml === 'string') {
                             addNote(parsedYaml);
                         }
-                    } catch {}
+                    } catch (e) {
+                        if (process.env.NODE_ENV === 'development') {
+                            console.warn('Failed to parse YAML block:', e);
+                        }
+                    }
 
                     const blockStartLine = startIdx + 1;
                     const blockEndLine = endIdx;

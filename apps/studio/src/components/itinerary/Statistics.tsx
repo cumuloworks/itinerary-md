@@ -14,7 +14,9 @@ export const Statistics: React.FC<StatisticsProps> = ({ summary, totalFormatted,
     return (
         <div className="flex flex-wrap justify-evenly py-4 rounded bg-gray-50 border border-gray-300">
             <div className="basis-1/2 p-4 rounded-lg flex flex-col items-center justify-center">
-                <div className="text-3xl font-bold text-emerald-600">{totalFormatted ?? '—'}</div>
+                <div className="text-3xl font-bold text-emerald-600" aria-live="polite">
+                    {totalFormatted ?? '—'}
+                </div>
                 <div className="w-full px-4 mt-2">
                     <div className="flex justify-center gap-x-10 text-center">
                         <div className="flex flex-col items-center">

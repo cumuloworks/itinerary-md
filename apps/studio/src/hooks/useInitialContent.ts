@@ -24,6 +24,7 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
     const [pendingLoadSample, setPendingLoadSample] = useState(false);
 
     useEffect(() => {
+        const ac = new AbortController();
         const initializeContent = async () => {
             const savedContent = safeLocalStorage.get(storageKey);
             if (savedContent && savedContent.trim() !== '') {
@@ -32,7 +33,7 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
             }
 
             try {
-                const response = await fetch(samplePath);
+                const response = await fetch(samplePath, { signal: ac.signal });
                 if (response.ok) {
                     const text = await response.text();
                     setContent(text);
@@ -46,6 +47,7 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
         };
 
         initializeContent();
+        return () => ac.abort();
     }, [storageKey, samplePath]);
 
     const loadSample = useCallback(() => {

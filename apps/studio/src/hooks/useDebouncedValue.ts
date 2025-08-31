@@ -10,13 +10,14 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState(value);
 
     useEffect(() => {
-        const timeoutId = window.setTimeout(() => {
+        if (delay <= 0) {
+            setDebouncedValue(value);
+            return;
+        }
+        const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
             setDebouncedValue(value);
         }, delay);
-
-        return () => {
-            clearTimeout(timeoutId);
-        };
+        return () => clearTimeout(timeoutId);
     }, [value, delay]);
 
     return debouncedValue;

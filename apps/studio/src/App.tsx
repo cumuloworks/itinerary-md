@@ -33,9 +33,10 @@ function App() {
     });
 
     // ハッシュインポート管理
-    const hashImport = useHashImport((hashContent: string) => {
-        setContent(hashContent);
-    });
+    const hashImport = useHashImport(
+        (hashContent: string) => setContent(hashContent),
+        () => saveNow()
+    );
 
     // 自動保存（通知も内部で処理）
     const { saveNow } = useAutosave(content, {

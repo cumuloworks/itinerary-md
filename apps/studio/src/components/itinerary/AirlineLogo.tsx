@@ -35,7 +35,7 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24,
     };
 
     if (imageError || !airlineCode) {
-        return fallbackIcon ? <Plane size={size} style={{ color: '#6b7280' }} /> : null;
+        return fallbackIcon ? <Plane aria-hidden="true" focusable="false" size={size} style={{ color: '#6b7280' }} /> : null;
     }
 
     return (
@@ -54,6 +54,8 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24,
             <img
                 src={logoUrl}
                 alt={`${airlineCode || flightCode} logo`}
+                loading="lazy"
+                decoding="async"
                 style={{
                     maxWidth: '100%',
                     maxHeight: '100%',
@@ -63,7 +65,7 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24,
                 onError={handleImageError}
                 onLoad={handleImageLoad}
             />
-            {!imageLoaded && !imageError && <Plane size={size * 0.6} style={{ color: '#9ca3af' }} />}
+            {!imageLoaded && !imageError && <Plane aria-hidden="true" focusable="false" size={size * 0.6} style={{ color: '#9ca3af' }} />}
         </div>
     );
 };

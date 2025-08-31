@@ -22,7 +22,7 @@ export class MarkdownPreviewErrorBoundary extends React.Component<PropsWithChild
     render() {
         if (this.state.hasError) {
             return (
-                <div className="flex items-center justify-center h-full bg-red-50 border border-red-200 rounded p-4">
+                <div role="alert" aria-live="assertive" className="flex items-center justify-center h-full bg-red-50 border border-red-200 rounded p-4">
                     <div className="text-center">
                         <div className="text-red-600 font-medium mb-2">Preview Rendering Error</div>
                         <div className="text-sm text-red-500 mb-3">{this.state.error?.message || 'An error occurred while rendering the preview'}</div>

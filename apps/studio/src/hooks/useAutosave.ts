@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { notifyError, notifySuccess, safeLocalStorage } from '../core/errors';
+import { notifyError, safeLocalStorage } from '../core/errors';
 import type { UseAutosaveOptions } from '../types/itinerary';
 
 /**
@@ -9,16 +9,19 @@ import type { UseAutosaveOptions } from '../types/itinerary';
  * @returns saveNow: 即座に保存する関数
  */
 export function useAutosave(value: string, options: UseAutosaveOptions) {
-    const { key, delay, onSuccess = () => notifySuccess('Saved'), onError = () => notifyError('Failed to save') } = options;
+    const { key, delay, onSuccess, onError = () => notifyError('Failed to save') } = options;
     const timeoutRef = useRef<number | null>(null);
+    const lastSavedRef = useRef<string | null>(null);
 
     // 保存ロジックを名前付き関数として抽出
     const save = useCallback(() => {
+        if (lastSavedRef.current === value) return;
         const ok = safeLocalStorage.set(key, value);
         if (ok) {
-            onSuccess();
+            lastSavedRef.current = value;
+            onSuccess?.();
         } else {
-            onError();
+            onError?.();
         }
     }, [key, value, onSuccess, onError]);
 
@@ -35,7 +38,7 @@ export function useAutosave(value: string, options: UseAutosaveOptions) {
             clearTimeout(timeoutRef.current);
         }
 
-        timeoutRef.current = window.setTimeout(save, delay);
+        timeoutRef.current = window.setTimeout(save, Math.max(0, delay));
 
         // タブ閉じ時に未保存の変更を保存するリスナーを追加
         const handleBeforeUnload = () => {

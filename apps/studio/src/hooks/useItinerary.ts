@@ -18,7 +18,7 @@ type UseItineraryResult = {
  * @param previewDelay プレビュー遅延時間（デフォルト: 300ms）
  * @returns 解析された旅程データ
  */
-export function useItinerary(rawContent: string, previewDelay = 300): UseItineraryResult {
+export function useItinerary(rawContent: string, previewDelay = 300, opts?: { baseTz?: string; stayMode?: 'default' | 'header' }): UseItineraryResult {
     const previewContent = useDebouncedValue(rawContent, previewDelay);
 
     const lastSuccessfulParseRef = useRef<{
@@ -38,13 +38,13 @@ export function useItinerary(rawContent: string, previewDelay = 300): UseItinera
         }
 
         try {
-            const parsedEvents = parseItineraryEvents(previewContent);
+            const parsedEvents = parseItineraryEvents(previewContent, opts);
             lastSuccessfulParseRef.current.events = parsedEvents;
             return parsedEvents;
         } catch {
             return lastSuccessfulParseRef.current.events;
         }
-    }, [previewContent]);
+    }, [previewContent, opts]);
 
     const frontmatterTitle = useMemo(() => {
         if (!previewContent.trim()) {

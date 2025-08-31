@@ -3,6 +3,9 @@ import type { StayMode, TopbarState, ViewMode } from '../types/itinerary';
 
 const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
 
+const VIEW_VALUES: readonly ViewMode[] = ['split', 'editor', 'preview'];
+const STAY_VALUES: readonly StayMode[] = ['default', 'header'];
+
 /**
  * Topbar状態を管理するHook（初期化と同期を分離）
  * @returns [state, setState] - 状態と更新関数
@@ -41,14 +44,14 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             const cur = searchParams.get('cur');
             if (cur) patch.currency = cur;
 
-            const view = searchParams.get('view') as ViewMode | null;
-            if (view === 'split' || view === 'editor' || view === 'preview') {
-                patch.viewMode = view;
+            const view = searchParams.get('view');
+            if (view && VIEW_VALUES.includes(view as ViewMode)) {
+                patch.viewMode = view as ViewMode;
             }
 
-            const stay = searchParams.get('stay') as StayMode | null;
-            if (stay === 'default' || stay === 'header') {
-                patch.stayMode = stay;
+            const stay = searchParams.get('stay');
+            if (stay && STAY_VALUES.includes(stay as StayMode)) {
+                patch.stayMode = stay as StayMode;
             }
 
             if (Object.keys(patch).length > 0) {
@@ -73,6 +76,9 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
 
     useEffect(() => {
         try {
+            const curr = new URLSearchParams(window.location.search);
+            if (curr.get('tz') === state.baseTz && curr.get('cur') === state.currency && curr.get('view') === state.viewMode && curr.get('stay') === state.stayMode) return;
+
             const searchParams = new URLSearchParams(window.location.search);
             searchParams.set('tz', state.baseTz);
             searchParams.set('cur', state.currency);

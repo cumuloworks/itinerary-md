@@ -42,5 +42,5 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave 
     );
 };
 
-// メモ化してprops変更時のみ再レンダリング
+// Memoized to re-render only when props change
 export const MonacoEditor = memo(MonacoEditorComponent);

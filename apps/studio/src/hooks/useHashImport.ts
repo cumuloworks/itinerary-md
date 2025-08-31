@@ -36,13 +36,16 @@ export function useHashImport(onContentLoaded?: (content: string) => void, saveF
     }, []);
 
     const confirmImport = useCallback(() => {
-        if (pendingHashContent !== null) {
-            onContentLoaded?.(pendingHashContent);
-            saveFunction?.();
-            notifySuccess('Loaded content from the shared URL');
+        try {
+            if (pendingHashContent !== null) {
+                onContentLoaded?.(pendingHashContent);
+                saveFunction?.();
+                notifySuccess('Loaded content from the shared URL');
+            }
+        } finally {
+            setPendingHashContent(null);
+            clearHash();
         }
-        setPendingHashContent(null);
-        clearHash();
     }, [pendingHashContent, onContentLoaded, saveFunction]);
 
     const cancelImport = useCallback(() => {

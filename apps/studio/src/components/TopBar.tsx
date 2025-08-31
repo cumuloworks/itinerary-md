@@ -4,16 +4,7 @@ import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import { Check, ChevronDown, Clipboard, Columns, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
 import * as React from 'react';
-
-type ViewMode = 'split' | 'editor' | 'preview';
-type StayMode = 'default' | 'header';
-
-export type TopbarState = {
-    baseTz: string;
-    currency: string;
-    viewMode: ViewMode;
-    stayMode: StayMode;
-};
+import type { StayMode, TopbarState, ViewMode } from '../types/itinerary';
 
 interface TopBarProps {
     tzSelectId: string;
@@ -41,7 +32,8 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                 {/* Timezone */}
                 <div className="flex items-center gap-2 h-full">
                     <span id={tzLabelId} className="text-xs text-gray-600 whitespace-nowrap">
-                        TZ
+                        <span aria-hidden>TZ</span>
+                        <span className="sr-only">Timezone</span>
                     </span>
                     <Select.Root value={topbar.baseTz} onValueChange={(v) => onTopbarChange({ baseTz: v })}>
                         <Select.Trigger id={tzSelectId} aria-labelledby={tzLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[220px] h-full">
@@ -74,7 +66,8 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                 {/* Currency */}
                 <div className="flex items-center gap-2 h-full">
                     <span id={currencyLabelId} className="text-xs text-gray-600 whitespace-nowrap">
-                        Cur
+                        <span aria-hidden>Cur</span>
+                        <span className="sr-only">Currency</span>
                     </span>
                     <Select.Root value={topbar.currency} onValueChange={(v) => onTopbarChange({ currency: v })}>
                         <Select.Trigger aria-labelledby={currencyLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[140px] h-full">
@@ -107,7 +100,8 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                 {/* Stay display */}
                 <div className="flex items-center gap-2 h-full">
                     <span id={stayLabelId} className="text-xs text-gray-600 whitespace-nowrap">
-                        Stay
+                        <span aria-hidden>Stay</span>
+                        <span className="sr-only">Stay mode</span>
                     </span>
                     <Select.Root value={topbar.stayMode} onValueChange={(v) => onTopbarChange({ stayMode: v as StayMode })}>
                         <Select.Trigger aria-labelledby={stayLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[140px] h-full">
@@ -167,7 +161,7 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     aria-label="Copy Markdown"
                     title="Copy Markdown"
                     onClick={onCopyMarkdown}
-                    className="inline-flex items-center justify-center px-2 h-full text-gray-700 border border-gray-300 rounded-md bg-white hover:bg-gray-50"
+                    className="inline-flex items-center justify-center px-2 h-full text-gray-700 border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
                 >
                     <Clipboard size={14} />
                     <span className="hidden md:block text-xs ml-1">Copy Markdown</span>
