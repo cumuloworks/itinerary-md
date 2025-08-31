@@ -1,3 +1,4 @@
+import { isValidIanaTimeZone } from '../../time/iana';
 import type { TimeRangeLike } from './time';
 import { parseTimeRangeTokens, resolveTimeRange } from './time';
 
@@ -41,7 +42,7 @@ export const parseTimeAndType = (
 } | null => {
     const unified = text.match(/^(\[(?:[\d:+@A-Za-z_/-]+|)\](?:\s*-\s*\[(?:[\d:+@A-Za-z_/-]+|)\])?)\s+(\w+)\s*(.*)/);
     if (!unified) return null;
-    const defaultTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const defaultTimezone = isValidIanaTimeZone(timezone) ? timezone : Intl.DateTimeFormat().resolvedOptions().timeZone;
     const [, timeRangeText, type, eventDescription] = unified;
     const tokens = parseTimeRangeTokens(timeRangeText);
     const timeRange = tokens ? resolveTimeRange(tokens, defaultTimezone, baseDate) : undefined;

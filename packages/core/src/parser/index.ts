@@ -43,7 +43,7 @@ export function parseItineraryEvents(markdown: string, options?: ParseItineraryE
 
         if (!trimmedLine || !currentDate) continue;
 
-        const eventData = parseEvent(trimmedLine, previousEvent || undefined, options?.timezone, currentDate);
+        const eventData = parseEvent(trimmedLine, previousEvent || undefined, currentTimezone ?? options?.timezone, currentDate);
         if (eventData) {
             const metadata: Record<string, string> = { ...eventData.metadata };
             let j = i + 1;

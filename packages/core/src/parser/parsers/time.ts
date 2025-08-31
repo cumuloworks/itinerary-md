@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { isValidIanaTimeZone } from '../../time/iana';
 
 export type TimeToken = { kind: 'clock'; hour: number; minute: number; tz?: string; dayOffset?: number; originalText: string } | { kind: 'ampm'; value: 'am' | 'pm'; originalText: string };
 
@@ -62,7 +63,7 @@ export const parseTimeRangeTokens = (timeRangeText: string): { start?: TimeToken
 export const resolveTimeToken = (token: TimeToken, timezone: string, baseDate?: string): TimeLike => {
     if (token.kind === 'ampm') return { kind: 'placeholder', value: token.value, original: token };
     const dateStr = (baseDate || DateTime.now().toFormat('yyyy-MM-dd')) as string;
-    const zone = token.tz || timezone;
+    const zone = token.tz && isValidIanaTimeZone(token.tz) ? token.tz : timezone;
     let dt = DateTime.fromISO(`${dateStr}T${String(token.hour).padStart(2, '0')}:${String(token.minute).padStart(2, '0')}`, { zone });
     if (token.dayOffset) dt = dt.plus({ days: token.dayOffset });
     return { kind: 'resolved', epochMs: dt.toMillis(), zone, original: token };

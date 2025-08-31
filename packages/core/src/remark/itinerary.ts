@@ -4,6 +4,7 @@ import type { Plugin } from 'unified';
 import type { VFile } from 'vfile';
 import { parseDateText } from '../parser/parsers/date';
 import { parseEvent, parseTimeAndType } from '../parser/parsers/event';
+import { isValidIanaTimeZone } from '../time/iana';
 //
 
 export type StayMode = 'default' | 'header';
@@ -29,7 +30,8 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const typeRaw = getString((raw as Record<string, unknown>)['type']);
             const typeLc = typeRaw ? typeRaw.toLowerCase() : undefined;
             const isItin = typeLc === 'itinerary-md' || typeLc === 'itmd';
-            const timezone = getString((raw as Record<string, unknown>)['timezone']);
+            const tzRaw = getString((raw as Record<string, unknown>)['timezone']);
+            const timezone = isValidIanaTimeZone(tzRaw) ? tzRaw : undefined;
             return { isItinerary: isItin, timezone };
         };
         {
@@ -61,7 +63,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
             if (para.type === 'heading' && (para as unknown as { depth?: number }).depth === 2) {
                 const line = mdastToString(para as MdNode).trim();
-                const dateData = parseDateText(line, frontmatterTimezone || options?.timezone);
+                const dateData = parseDateText(line, isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone);
                 if (dateData) {
                     prevDayHadStay = currentDayHasStay;
                     currentDayHasStay = false;
@@ -72,6 +74,13 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                     const prevH = (prevData.hProperties as Record<string, unknown>) || {};
                     const hProps: Record<string, unknown> = { ...prevH };
                     hProps['data-itin-date'] = JSON.stringify({ ...dateData, prevStayName: prevDayHadStay ? lastStayName || undefined : undefined });
+                    const tzInHeading = (() => {
+                        const m = line.match(/@\s*([A-Za-z0-9_./+-]+)/);
+                        return m?.[1];
+                    })();
+                    if (tzInHeading && !isValidIanaTimeZone(tzInHeading)) {
+                        hProps['data-itin-warn-date-tz'] = tzInHeading;
+                    }
                     para.data = { ...prevData, hProperties: hProps } as MdNode['data'];
                 }
                 continue;
@@ -154,8 +163,15 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const itinMeta: Record<string, string> = { ...mergedMeta };
             const hProps: Record<string, unknown> = { ...prevH };
             hProps['data-itin-meta'] = JSON.stringify(itinMeta);
+            if (parsed.timeRange?.originalText) {
+                const tzTokens = Array.from(parsed.timeRange.originalText.matchAll(/@([A-Za-z0-9_./+-]+)/g)).map((m) => m[1]);
+                const invalids = tzTokens.filter((z) => !isValidIanaTimeZone(z));
+                if (invalids.length > 0) {
+                    hProps['data-itin-warn-event-tz'] = JSON.stringify(Array.from(new Set(invalids)));
+                }
+            }
 
-            const parseTimezone = currentDateTz || frontmatterTimezone || options?.timezone;
+            const parseTimezone = currentDateTz && isValidIanaTimeZone(currentDateTz) ? currentDateTz : isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone;
             const eventData = parseEvent(rebuilt, previousEvent || undefined, parseTimezone, currentDateStr);
             if (eventData) {
                 const mergedEvent = { ...eventData, metadata: { ...eventData.metadata, ...itinMeta } } as typeof eventData;

@@ -28,3 +28,4 @@ export {
 } from './parser/parsers/time';
 export type { StayMode } from './remark';
 export { remarkItinerary } from './remark';
+export { coerceIanaTimeZone, isValidIanaTimeZone } from './time';

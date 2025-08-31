@@ -264,7 +264,7 @@ const TimeDisplay: React.FC<{
     const date = new Date(parsedTime.epochMs);
     const timeText = formatDateTime(date, displayTz);
 
-    const dayOffset = dateStr && timezone ? getDayOffset(date, dateStr, timezone) : 0;
+    const dayOffset = dateStr && displayTz ? getDayOffset(date, dateStr, displayTz) : 0;
     const plusBadge = dayOffset !== 0 ? `${dayOffset > 0 ? '+' : ''}${dayOffset}d` : '';
 
     return (
