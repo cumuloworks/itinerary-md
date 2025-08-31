@@ -26,6 +26,10 @@ const getTypeColors = (type: EventData['type']) => {
         case 'stay':
             return { text: 'text-purple-600', border: 'border-purple-200' };
         case 'meal':
+        case 'lunch':
+        case 'dinner':
+        case 'breakfast':
+        case 'brunch':
             return { text: 'text-orange-600', border: 'border-orange-200' };
         case 'activity':
             return { text: 'text-blue-600', border: 'border-blue-200' };
@@ -61,6 +65,10 @@ const getTypeConfig = (type: ItemProps['eventData']['type']) => {
                 cardBorder: 'border-purple-200',
             };
         case 'meal':
+        case 'lunch':
+        case 'dinner':
+        case 'breakfast':
+        case 'brunch':
             return {
                 icon: UtensilsCrossed,
                 bgColor: 'bg-orange-600',
@@ -127,15 +135,17 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency
     const mainTitle = (() => {
         switch (eventData.type) {
             case 'flight':
-                return eventData.flightCode;
             case 'train':
-                return eventData.trainName;
+                return 'name' in eventData ? eventData.name : '';
             case 'stay':
                 return eventData.stayName;
             case 'meal':
-                return eventData.restaurantName;
+            case 'lunch':
+            case 'dinner':
+            case 'breakfast':
+            case 'brunch':
             case 'activity':
-                return eventData.activityName;
+                return 'name' in eventData ? eventData.name : '';
             default:
                 return '';
         }
@@ -145,7 +155,9 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency
         if ((eventData.type === 'flight' || eventData.type === 'train') && eventData.departure && eventData.arrival) {
             return <Route departure={eventData.departure} arrival={eventData.arrival} startTime={eventData.timeRange?.start} endTime={eventData.timeRange?.end} />;
         }
-        if ((eventData.type === 'stay' || eventData.type === 'meal' || eventData.type === 'activity') && eventData.location) {
+        const hasLocation =
+            eventData.type === 'stay' || eventData.type === 'meal' || eventData.type === 'lunch' || eventData.type === 'dinner' || eventData.type === 'breakfast' || eventData.type === 'brunch' || eventData.type === 'activity';
+        if (hasLocation && eventData.location) {
             return <Location location={eventData.location} />;
         }
         return null;
@@ -170,7 +182,7 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency
 
             <div className={`flex-1 min-w-0 p-5 ${config.cardBg} ${config.cardBorder} border-l-4 ${config.borderColor} -ml-4.5 pl-8`}>
                 <div className="flex items-center gap-x-3 flex-wrap">
-                    {eventData.type === 'flight' && eventData.flightCode && <AirlineLogo flightCode={eventData.flightCode} size={24} />}
+                    {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
                     <span className={`font-bold ${colors.text} text-lg`}>{mainTitle}</span>
                     {routeOrLocationDisplay && <div className="text-gray-700 text-sm font-medium">{routeOrLocationDisplay}</div>}
                 </div>

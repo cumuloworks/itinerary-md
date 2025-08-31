@@ -2,21 +2,14 @@ import type { TimeRangeLike } from './time';
 import { parseTimeRangeTokens, resolveTimeRange } from './time';
 
 export interface BaseEventData {
-    type: 'flight' | 'train' | 'stay' | 'meal' | 'activity';
     timeRange?: TimeRangeLike;
     metadata: Record<string, string>;
 }
 
-export interface FlightEventData extends BaseEventData {
-    type: 'flight';
-    flightCode: string;
-    departure: string;
-    arrival: string;
-}
-
-export interface TrainEventData extends BaseEventData {
-    type: 'train';
-    trainName: string;
+export interface TransportationEventData extends BaseEventData {
+    type: 'flight' | 'train';
+    // 統合された名前フィールド（flight: flightCode, train: trainName）
+    name: string;
     departure: string;
     arrival: string;
 }
@@ -27,19 +20,14 @@ export interface StayEventData extends BaseEventData {
     location: string;
 }
 
-export interface MealEventData extends BaseEventData {
-    type: 'meal';
-    restaurantName: string;
-    location?: string;
-}
-
 export interface ActivityEventData extends BaseEventData {
-    type: 'activity';
-    activityName: string;
+    type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity';
+    // 統合された名前フィールド（meal: restaurantName, activity: activityName）
+    name: string;
     location?: string;
 }
 
-export type EventData = FlightEventData | TrainEventData | StayEventData | MealEventData | ActivityEventData;
+export type EventData = TransportationEventData | StayEventData | ActivityEventData;
 
 export const parseMetadata = (meta: string): Record<string, string> => {
     const result: Record<string, string> = {};
@@ -78,6 +66,7 @@ export const parseTimeAndType = (
     const [, timeRangeText, type, rest] = unified;
     const tokens = parseTimeRangeTokens(timeRangeText);
     const timeRange = tokens ? resolveTimeRange(tokens, defaultBaseTz, baseDate) : undefined;
+
     return { timeRange, type, rest };
 };
 
@@ -99,41 +88,24 @@ export const parseRoute = (route: string): { departure: string; arrival: string 
     return null;
 };
 
-const parseFlightData = (rest: string, baseData: Omit<BaseEventData, 'type'>): FlightEventData | null => {
+const parseTransportationData = (rest: string, baseData: BaseEventData, type: 'flight' | 'train'): TransportationEventData | null => {
     const { mainText } = extractMetadata(rest);
     const [left, right] = mainText.split('::').map((s) => s.trim());
-    const flightCode = left || '';
+    const name = left || '';
     const routeText = right || '';
-    if (!flightCode) return null;
+    if (!name) return null;
     const routeInfo = routeText ? parseRoute(routeText) : null;
     return {
         ...baseData,
-        type: 'flight',
+        type,
         metadata: { ...baseData.metadata },
-        flightCode,
+        name,
         departure: routeInfo?.departure ?? '',
         arrival: routeInfo?.arrival ?? '',
     };
 };
 
-const parseTrainData = (rest: string, baseData: Omit<BaseEventData, 'type'>): TrainEventData | null => {
-    const { mainText } = extractMetadata(rest);
-    const [left, right] = mainText.split('::').map((s) => s.trim());
-    const trainName = left || '';
-    const routeText = right || '';
-    if (!trainName) return null;
-    const routeInfo = routeText ? parseRoute(routeText) : null;
-    return {
-        ...baseData,
-        type: 'train',
-        metadata: { ...baseData.metadata },
-        trainName,
-        departure: routeInfo?.departure ?? '',
-        arrival: routeInfo?.arrival ?? '',
-    };
-};
-
-const parseStayData = (rest: string, baseData: Omit<BaseEventData, 'type'>): StayEventData => {
+const parseStayData = (rest: string, baseData: BaseEventData): StayEventData => {
     const { mainText } = extractMetadata(rest);
     const [left, right] = mainText.split('::').map((s) => s.trim());
     const stayName = left || '';
@@ -147,50 +119,49 @@ const parseStayData = (rest: string, baseData: Omit<BaseEventData, 'type'>): Sta
     };
 };
 
-const parseMealData = (rest: string, baseData: Omit<BaseEventData, 'type'>): MealEventData => {
+const parseActivityData = (rest: string, baseData: BaseEventData, type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity', originalType?: string): ActivityEventData => {
     const { mainText } = extractMetadata(rest);
-    let restaurantName = mainText;
-    let location = '';
+    let name = mainText;
+    let location: string | undefined = '';
 
+    // Unified parsing logic for both meal and activity
     // If :: separator exists, use it and ignore "at" pattern
     if (mainText.includes('::')) {
         const [left, right] = mainText.split('::').map((s) => s.trim());
-        restaurantName = left || '';
         location = right || '';
+
+        // Handle alias case: empty left side or left side matches original alias
+        const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
+        if (!left || (originalType && left.toLowerCase() === originalType.toLowerCase() && isMealAlias)) {
+            // Use original alias type as name (capitalize first letter)
+            name = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : left;
+        } else {
+            name = left;
+        }
     } else {
         // Only try "at" pattern if no :: separator
         const atMatch = mainText.match(/^(.+?)\s+at\s+(.+)$/);
         if (atMatch) {
-            const [, name, place] = atMatch;
-            restaurantName = name;
+            const [, activityName, place] = atMatch;
+            name = activityName;
             location = place;
+        } else {
+            // Handle alias case: "at Location" with empty name
+            const atOnlyMatch = mainText.match(/^at\s+(.+)$/);
+            const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
+            if (atOnlyMatch && originalType && isMealAlias) {
+                // Use original alias type as name (capitalize first letter)
+                name = originalType.charAt(0).toUpperCase() + originalType.slice(1);
+                location = atOnlyMatch[1];
+            }
         }
     }
 
     return {
         ...baseData,
-        type: 'meal',
+        type,
         metadata: { ...baseData.metadata },
-        restaurantName,
-        location,
-    };
-};
-
-const parseActivityData = (rest: string, baseData: Omit<BaseEventData, 'type'>): ActivityEventData => {
-    const { mainText } = extractMetadata(rest);
-    let activityName = mainText;
-    let location: string | undefined;
-    const atMatch = mainText.match(/^(.+?)\s+at\s+(.+)$/);
-    if (atMatch) {
-        const [, activity, place] = atMatch;
-        activityName = activity;
-        location = place;
-    }
-    return {
-        ...baseData,
-        type: 'activity',
-        metadata: { ...baseData.metadata },
-        activityName,
+        name,
         location,
     };
 };
@@ -199,36 +170,20 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
     const parsed = parseTimeAndType(text, baseTz, baseDate);
     if (!parsed) return null;
     const { type, rest, timeRange } = parsed;
-    const baseData: Omit<BaseEventData, 'type'> = { timeRange, metadata: {} };
+    const baseData: BaseEventData = { timeRange, metadata: {} };
     switch (type) {
-        case 'flight': {
-            const parsedFlight = parseFlightData(rest, baseData);
-            if (parsedFlight) return parsedFlight;
-            if (context && context.type === 'flight') {
-                const { metadata } = extractMetadata(rest);
-                return {
-                    ...baseData,
-                    timeRange: baseData.timeRange || context.timeRange,
-                    type: 'flight',
-                    metadata: { ...context.metadata, ...metadata },
-                    flightCode: context.flightCode,
-                    departure: context.departure,
-                    arrival: context.arrival,
-                };
-            }
-            return null;
-        }
+        case 'flight':
         case 'train': {
-            const parsedTrain = parseTrainData(rest, baseData);
-            if (parsedTrain) return parsedTrain;
-            if (context && context.type === 'train') {
+            const parsed = parseTransportationData(rest, baseData, type);
+            if (parsed) return parsed;
+            if (context && context.type === type && 'name' in context && 'departure' in context && 'arrival' in context) {
                 const { metadata } = extractMetadata(rest);
                 return {
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
-                    type: 'train',
+                    type,
                     metadata: { ...context.metadata, ...metadata },
-                    trainName: context.trainName,
+                    name: context.name,
                     departure: context.departure,
                     arrival: context.arrival,
                 };
@@ -236,8 +191,8 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
             return null;
         }
         case 'stay': {
-            const parsedStay = parseStayData(rest, baseData);
-            if (parsedStay) return parsedStay;
+            const parsed = parseStayData(rest, baseData);
+            if (parsed) return parsed;
             if (context && context.type === 'stay') {
                 const { metadata } = extractMetadata(rest);
                 return {
@@ -251,33 +206,22 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
             }
             return null;
         }
-        case 'meal': {
-            const parsedMeal = parseMealData(rest, baseData);
-            if (parsedMeal) return parsedMeal;
-            if (context && context.type === 'meal') {
-                const { metadata } = extractMetadata(rest);
-                return {
-                    ...baseData,
-                    timeRange: baseData.timeRange || context.timeRange,
-                    type: 'meal',
-                    metadata: { ...context.metadata, ...metadata },
-                    restaurantName: context.restaurantName,
-                    location: context.location,
-                };
-            }
-            return null;
-        }
+        case 'meal':
+        case 'lunch':
+        case 'dinner':
+        case 'breakfast':
+        case 'brunch':
         case 'activity': {
-            const parsedActivity = parseActivityData(rest, baseData);
-            if (parsedActivity) return parsedActivity;
-            if (context && context.type === 'activity') {
+            const parsed = parseActivityData(rest, baseData, type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity', type);
+            if (parsed) return parsed;
+            if (context && context.type === type && 'name' in context) {
                 const { metadata } = extractMetadata(rest);
                 return {
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
-                    type: 'activity',
+                    type: type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity',
                     metadata: { ...context.metadata, ...metadata },
-                    activityName: context.activityName,
+                    name: context.name,
                     location: context.location,
                 };
             }

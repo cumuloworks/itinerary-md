@@ -9,10 +9,8 @@ export type {
     ActivityEventData,
     BaseEventData,
     EventData,
-    FlightEventData,
-    MealEventData,
     StayEventData,
-    TrainEventData,
+    TransportationEventData,
 } from './parser/parsers/event';
 export { parseEvent } from './parser/parsers/event';
 export type {
