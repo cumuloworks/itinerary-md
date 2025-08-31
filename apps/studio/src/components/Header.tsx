@@ -7,14 +7,8 @@ const HeaderComponent: React.FC = () => {
         <header className="mb-4 px-8">
             <div className="flex items-center justify-between">
                 <h1 className="text-4xl leading-tight text-blue-600">Itinerary MD Studio</h1>
-                <div className="flex items-center gap-2">
-                    <AboutDialog
-                        trigger={
-                            <button type="button" aria-label="About" className="inline-flex items-center justify-center w-8 h-8 text-gray- hover:bg-gray-50">
-                                <Info size={16} />
-                            </button>
-                        }
-                    />
+                <div className="flex items-center gap-2 p-2">
+                    <AboutDialog trigger={<Info size={20} />} />
                 </div>
             </div>
         </header>
