@@ -8,20 +8,27 @@ const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
  * @returns [state, setState] - 状態と更新関数
  */
 export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) => void] {
-    // 初期化フラグ
     const isInitializedRef = useRef(false);
 
-    // デフォルト値を設定
     const [state, setState] = useState<TopbarState>(() => ({
         baseTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        currency: localStorage.getItem(CURRENCY_STORAGE_KEY) || 'JPY',
+        currency: 'USD',
         viewMode: 'split',
         stayMode: 'default',
     }));
 
-    // 初期化フェーズ: URLパラメータを一度だけ適用
     useEffect(() => {
-        // 既に初期化済みの場合はスキップ
+        if (typeof window !== 'undefined') {
+            try {
+                const storedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
+                if (storedCurrency) {
+                    setState((prevState) => ({ ...prevState, currency: storedCurrency }));
+                }
+            } catch {}
+        }
+    }, []);
+
+    useEffect(() => {
         if (isInitializedRef.current) return;
 
         try {
@@ -47,24 +54,23 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             if (Object.keys(patch).length > 0) {
                 setState((prevState) => ({ ...prevState, ...patch }));
             }
-        } catch {
-            // URL解析に失敗した場合はデフォルト値を使用
-        }
+        } catch {}
 
-        // 初期化完了をマーク
         isInitializedRef.current = true;
     }, []);
 
-    // 同期フェーズ: currency変更時のみLocalStorage同期
     useEffect(() => {
-        localStorage.setItem(CURRENCY_STORAGE_KEY, state.currency);
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem(CURRENCY_STORAGE_KEY, state.currency);
+            } catch {}
+        }
     }, [state.currency]);
 
     const updateState = useCallback((patch: Partial<TopbarState>) => {
         setState((prevState) => ({ ...prevState, ...patch }));
     }, []);
 
-    // URL同期（統合されたuseSyncTopbarSearch）
     useEffect(() => {
         try {
             const searchParams = new URLSearchParams(window.location.search);
@@ -76,9 +82,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             const newSearch = `?${searchParams.toString()}`;
             const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
             history.replaceState(null, '', newUrl);
-        } catch {
-            // URL更新に失敗した場合は無視
-        }
+        } catch {}
     }, [state.baseTz, state.currency, state.viewMode, state.stayMode]);
 
     return [state, updateState];
