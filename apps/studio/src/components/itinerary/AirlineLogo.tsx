@@ -1,5 +1,6 @@
 import { Plane } from 'lucide-react';
 import type React from 'react';
+import { useState } from 'react';
 
 interface AirlineLogoProps {
     flightCode: string;
@@ -19,6 +20,7 @@ const extractAirlineCode = (flightCode: string): string | undefined => {
 };
 
 export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24, fallbackIcon = true }) => {
+    const [hasError, setHasError] = useState(false);
     const airlineCode = extractAirlineCode(flightCode);
 
     if (!airlineCode) {
@@ -39,30 +41,26 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24,
                 overflow: 'hidden',
             }}
         >
-            <img
-                src={logoUrl}
-                alt={`${airlineCode} logo`}
-                style={{
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    objectFit: 'contain',
-                }}
-                onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const fallbackElement = target.nextElementSibling as HTMLElement;
-                    if (fallbackElement) {
-                        fallbackElement.style.display = 'block';
-                    }
-                }}
-            />
-            <Plane
-                size={size * 0.6}
-                style={{
-                    color: '#9ca3af',
-                    display: 'none',
-                }}
-            />
+            {!hasError ? (
+                <img
+                    src={logoUrl}
+                    alt={`${airlineCode} logo`}
+                    title={`${airlineCode} logo`}
+                    style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        objectFit: 'contain',
+                    }}
+                    onError={() => setHasError(true)}
+                />
+            ) : (
+                <Plane
+                    size={size * 0.6}
+                    style={{
+                        color: '#9ca3af',
+                    }}
+                />
+            )}
         </div>
     );
 };

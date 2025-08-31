@@ -2,7 +2,8 @@ import type { LucideIcon } from 'lucide-react';
 import { Bed, Calendar, Car, Clock, MapPin, Phone, Plane, Star, Tag, Users, Wallet, Wifi } from 'lucide-react';
 import type React from 'react';
 import { useMemo } from 'react';
-import { convertAmountUSDBase, formatCurrency, getRatesUSD, parseAmountWithCurrency } from '../../utils/currency';
+import { useRatesUSD } from '../../hooks/useRatesUSD';
+import { convertAmountUSDBase, formatCurrency, parseAmountWithCurrency } from '../../utils/currency';
 
 const getMetadataConfig = (key: string) => {
     const configs: Record<string, { icon: LucideIcon; label: string; isSpecial?: boolean }> = {
@@ -36,15 +37,21 @@ export const Meta: React.FC<{
     currency?: string;
 }> = ({ metadata, borderColor, currency }) => {
     const entries = Object.entries(metadata);
-    
+    const { data: ratesData } = useRatesUSD();
+
     const converted = useMemo(() => {
         if (!currency) {
             return null;
         }
 
-        const ratesData = getRatesUSD();
+        // ratesDataが利用可能でない場合、元の値をそのまま使用
         if (!ratesData) {
-            return null;
+            const out: Record<string, string> = {};
+            for (const [key, value] of entries) {
+                if (key !== 'cost' && key !== 'price') continue;
+                out[key] = value;
+            }
+            return Object.keys(out).length ? out : null;
         }
 
         const { rates } = ratesData;
@@ -64,7 +71,7 @@ export const Meta: React.FC<{
             out[key] = `${formatCurrency(cv, to)} (${value})`;
         }
         return Object.keys(out).length ? out : null;
-    }, [currency, JSON.stringify(metadata)]);
+    }, [currency, entries, ratesData]);
 
     if (entries.length === 0) return null;
     return (

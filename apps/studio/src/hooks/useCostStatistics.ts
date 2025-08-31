@@ -1,17 +1,13 @@
 import type { ItineraryEvent } from '@itinerary-md/core';
 import { useMemo } from 'react';
 import type { CostBreakdownFormatted } from '../types/itinerary';
-import { convertAmountUSDBase, getRatesUSD, parseAmountWithCurrency } from '../utils/currency';
+import { convertAmountUSDBase, parseAmountWithCurrency } from '../utils/currency';
+import { useRatesUSD } from './useRatesUSD';
 
 export function useCostStatistics(events: ItineraryEvent[], currency: string) {
+    const { data: ratesData } = useRatesUSD();
+
     const result = useMemo(() => {
-        const ratesData = getRatesUSD();
-        if (!ratesData) {
-            return { totalFormatted: null, breakdownFormatted: null };
-        }
-
-        const { rates } = ratesData;
-
         let total = 0;
         let transport = 0;
         let activity = 0;
@@ -26,8 +22,18 @@ export function useCostStatistics(events: ItineraryEvent[], currency: string) {
 
             const from = parsed.currency || currency;
             const to = currency;
-            const converted = from === to ? parsed.amount : convertAmountUSDBase(parsed.amount, from, to, rates);
-            if (converted == null) continue;
+
+            let converted: number;
+            if (from === to) {
+                converted = parsed.amount;
+            } else if (ratesData) {
+                const convertedAmount = convertAmountUSDBase(parsed.amount, from, to, ratesData.rates);
+                if (convertedAmount == null) continue;
+                converted = convertedAmount;
+            } else {
+                // レートが利用できない場合は元の値をそのまま使用（同一通貨として扱う）
+                converted = parsed.amount;
+            }
 
             total += converted;
 
@@ -57,7 +63,7 @@ export function useCostStatistics(events: ItineraryEvent[], currency: string) {
                 meal: formatter.format(meal),
             } as CostBreakdownFormatted,
         };
-    }, [events, currency]);
+    }, [events, currency, ratesData]);
 
     return result;
 }
