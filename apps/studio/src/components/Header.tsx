@@ -1,8 +1,8 @@
 import { Info } from 'lucide-react';
-import type React from 'react';
+import React from 'react';
 import { AboutDialog } from './dialog/AboutDialog';
 
-export const Header: React.FC = () => {
+const HeaderComponent: React.FC = () => {
     return (
         <header className="mb-4 px-8">
             <div className="flex items-center justify-between">
@@ -21,4 +21,5 @@ export const Header: React.FC = () => {
     );
 };
 
+export const Header = React.memo(HeaderComponent);
 export default Header;

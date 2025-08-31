@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Select from '@radix-ui/react-select';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
-import { Check, ChevronDown, Clipboard, Clock, Columns, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
+import { Check, ChevronDown, Clipboard, Columns, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
 import * as React from 'react';
 
 type ViewMode = 'split' | 'editor' | 'preview';
@@ -24,15 +24,13 @@ interface TopBarProps {
     onCopyMarkdown: () => void;
     onShareUrl: () => void;
     onLoadSample: () => void;
-    frontmatterBaseTz?: string;
     className?: string;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, frontmatterBaseTz, className }) => {
+const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, className }) => {
     const tzLabelId = React.useId();
     const currencyLabelId = React.useId();
     const stayLabelId = React.useId();
-    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     return (
         <div className="px-0 md:px-8 w-full">
@@ -71,20 +69,6 @@ export const TopBar: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, cur
                             </Select.Content>
                         </Select.Portal>
                     </Select.Root>
-                    <Toolbar.Button
-                        type="button"
-                        className="inline-flex items-center justify-center aspect-square size-7 text-gray-700 border border-gray-300 rounded-md bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed h-full"
-                        onClick={() => {
-                            const fm = frontmatterBaseTz;
-                            const target = topbar.baseTz === (fm || browserTz) ? browserTz : fm || browserTz;
-                            onTopbarChange({ baseTz: target });
-                        }}
-                        title={frontmatterBaseTz ? (topbar.baseTz === frontmatterBaseTz ? `Switch to device TZ (${browserTz})` : `Switch to frontmatter timezone (${frontmatterBaseTz})`) : 'No timezone in frontmatter'}
-                        aria-label="Toggle timezone source"
-                        disabled={!frontmatterBaseTz}
-                    >
-                        <Clock size={14} />
-                    </Toolbar.Button>
                 </div>
 
                 {/* Currency */}
@@ -216,4 +200,6 @@ export const TopBar: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, cur
         </div>
     );
 };
+
+export const TopBar = React.memo(TopBarComponent);
 export default TopBar;
