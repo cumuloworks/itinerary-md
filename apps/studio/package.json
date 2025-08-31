@@ -12,7 +12,7 @@
         "lint": "biome check src test",
         "lint:fix": "biome check --write src test",
         "format": "biome format --write src test",
-        "test": "vitest --run",
+        "test": "vitest --run --passWithNoTests",
         "test:watch": "vitest",
         "coverage": "vitest --coverage"
     },

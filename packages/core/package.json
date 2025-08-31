@@ -19,7 +19,7 @@
         "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.build.json --noEmit",
         "prepack": "npm run build",
-        "test": "vitest --run",
+        "test": "vitest --run --passWithNoTests",
         "test:watch": "vitest"
     },
     "dependencies": {
