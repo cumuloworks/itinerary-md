@@ -1,7 +1,8 @@
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Select from '@radix-ui/react-select';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
-import { Check, ChevronDown, Clipboard, Clock, Columns, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
+import { Check, ChevronDown, Clipboard, Clock, Columns, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
 import * as React from 'react';
 
 type ViewMode = 'split' | 'editor' | 'preview';
@@ -22,11 +23,12 @@ interface TopBarProps {
     onTopbarChange: (patch: Partial<TopbarState>) => void;
     onCopyMarkdown: () => void;
     onShareUrl: () => void;
+    onLoadSample: () => void;
     frontmatterBaseTz?: string;
     className?: string;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, frontmatterBaseTz, className }) => {
+export const TopBar: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, frontmatterBaseTz, className }) => {
     const tzLabelId = React.useId();
     const currencyLabelId = React.useId();
     const stayLabelId = React.useId();
@@ -195,6 +197,21 @@ export const TopBar: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, cur
                     <Share2 size={14} />
                     <span className="hidden md:block text-xs ml-1">Share via URL</span>
                 </Toolbar.Button>
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger asChild>
+                        <Toolbar.Button type="button" title="More options" className="inline-flex items-center justify-center aspect-square size-9 text-gray-700 border border-gray-300 rounded-md bg-white hover:bg-gray-50 h-full">
+                            <MoreHorizontal size={14} />
+                        </Toolbar.Button>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Portal>
+                        <DropdownMenu.Content align="end" sideOffset={4} className="z-50 min-w-[160px] overflow-auto rounded-md border border-gray-200 bg-white p-1 shadow-md">
+                            <DropdownMenu.Item onClick={onLoadSample} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-gray-100">
+                                <FileText size={16} className="mr-2" />
+                                Load Sample
+                            </DropdownMenu.Item>
+                        </DropdownMenu.Content>
+                    </DropdownMenu.Portal>
+                </DropdownMenu.Root>
             </Toolbar.Root>
         </div>
     );

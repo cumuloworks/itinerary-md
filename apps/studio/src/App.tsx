@@ -2,6 +2,7 @@ import { parseItineraryFrontmatter } from '@itinerary-md/core';
 import { analyzeDates } from '@itinerary-md/statistics';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ImportDialog } from './components/dialog/ImportDialog';
+import { LoadSampleDialog } from './components/dialog/LoadSampleDialog';
 import { Header } from './components/Header';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { MonacoEditor } from './components/MonacoEditor';
@@ -32,6 +33,7 @@ function App() {
     const [frontmatterBaseTz, setFrontmatterBaseTz] = useState<string | undefined>(undefined);
     const [frontmatterTitle, setFrontmatterTitle] = useState<string | undefined>(undefined);
     const [pendingHashContent, setPendingHashContent] = useState<string | null>(null);
+    const [pendingLoadSample, setPendingLoadSample] = useState(false);
     const [topbar, setTopbar] = useState<TopbarState>(() => {
         let initialStay: StayMode = 'default';
         try {
@@ -173,6 +175,28 @@ function App() {
         }
     };
 
+    const handleLoadSample = () => {
+        setPendingLoadSample(true);
+    };
+
+    const handleLoadSampleConfirm = async () => {
+        try {
+            const response = await fetch('/sample.md');
+            if (response.ok) {
+                const text = await response.text();
+                setContent(text);
+                saveNow();
+                notifySuccess('Sample itinerary loaded');
+            } else {
+                notifyError('Failed to load sample.md');
+            }
+        } catch (error) {
+            console.error('Failed to load sample:', error);
+            notifyError('Failed to load sample.md');
+        }
+        setPendingLoadSample(false);
+    };
+
     const timezoneOptions: string[] = getTimezoneOptions();
 
     return (
@@ -194,6 +218,7 @@ function App() {
                     notifySuccess('Loaded content from the shared URL');
                 }}
             />
+            <LoadSampleDialog open={pendingLoadSample} onCancel={() => setPendingLoadSample(false)} onLoad={handleLoadSampleConfirm} />
             <TopBar
                 tzSelectId={tzSelectId}
                 timezoneOptions={timezoneOptions}
@@ -202,6 +227,7 @@ function App() {
                 onTopbarChange={handleTopbarChange}
                 onCopyMarkdown={handleCopyMarkdown}
                 onShareUrl={handleShareUrl}
+                onLoadSample={handleLoadSample}
                 frontmatterBaseTz={frontmatterBaseTz}
             />
             <div className="px-0 md:px-8 w-full flex-1 min-h-0">
