@@ -1,3 +1,5 @@
+export type { ItineraryEvent, ParseItineraryEventsOptions } from './parser';
+export { parseItineraryEvents } from './parser';
 export {
     formatDateTime,
     formatDateWithTimezone,

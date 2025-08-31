@@ -1,6 +1,6 @@
-import { parseItineraryFrontmatter } from '@itinerary-md/core';
-import { analyzeDates } from '@itinerary-md/statistics';
+import { parseItineraryEvents } from '@itinerary-md/core';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import YAML from 'yaml';
 import { ImportDialog } from './components/dialog/ImportDialog';
 import { LoadSampleDialog } from './components/dialog/LoadSampleDialog';
 import { Header } from './components/Header';
@@ -8,7 +8,7 @@ import { MarkdownPreview } from './components/MarkdownPreview';
 import { MonacoEditor } from './components/MonacoEditor';
 import { TopBar } from './components/TopBar';
 import { notifyError, notifySuccess, safeLocalStorage } from './core/errors';
-import { useCostAnalysis } from './hooks/useCostAnalysis';
+import { useCostStatistics } from './hooks/useCostStatistics';
 import { useSyncTopbarSearch } from './hooks/useSyncTopbarSearch';
 import { writeTextToClipboard } from './utils/clipboard';
 import { COMMON_CURRENCIES } from './utils/currency';
@@ -17,6 +17,7 @@ import { getTimezoneOptions } from './utils/timezone';
 
 const STORAGE_KEY = 'itinerary-md-content';
 const AUTOSAVE_DELAY = 1000;
+const PREVIEW_DEBOUNCE_DELAY = 300;
 const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
 
 type ViewMode = 'split' | 'editor' | 'preview';
@@ -30,8 +31,7 @@ type TopbarState = {
 
 function App() {
     const [content, setContent] = useState('');
-    const [frontmatterBaseTz, setFrontmatterBaseTz] = useState<string | undefined>(undefined);
-    const [frontmatterTitle, setFrontmatterTitle] = useState<string | undefined>(undefined);
+    const [previewContent, setPreviewContent] = useState('');
     const [pendingHashContent, setPendingHashContent] = useState<string | null>(null);
     const [pendingLoadSample, setPendingLoadSample] = useState(false);
     const [topbar, setTopbar] = useState<TopbarState>(() => {
@@ -49,10 +49,44 @@ function App() {
         };
     });
     const autosaveTimeoutRef = useRef<number | null>(null);
+    const previewTimeoutRef = useRef<number | null>(null);
     const tzSelectId = useId();
 
-    const { loading, totalFormatted, breakdownFormatted } = useCostAnalysis(content, topbar.currency);
-    const summary = useMemo(() => analyzeDates(content), [content]);
+    const events = useMemo(() => parseItineraryEvents(previewContent), [previewContent]);
+    console.log('events', events);
+
+    const summary = useMemo(() => {
+        const dates = events.map((e) => e.date).filter(Boolean);
+        const uniqueDates = [...new Set(dates)].sort();
+
+        const startDate = uniqueDates[0];
+        const endDate = uniqueDates[uniqueDates.length - 1];
+        let numDays: number | undefined;
+
+        if (startDate && endDate) {
+            try {
+                const s = new Date(startDate);
+                const e = new Date(endDate);
+                const diff = Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                if (Number.isFinite(diff)) numDays = diff;
+            } catch {}
+        }
+
+        return { startDate, endDate, numDays };
+    }, [events]);
+    const { loading, totalFormatted, breakdownFormatted } = useCostStatistics(events, topbar.currency);
+
+    const frontmatterTitle = useMemo(() => {
+        const frontmatterMatch = previewContent.match(/^---\s*\n([\s\S]*?)\n---/);
+        if (!frontmatterMatch) return undefined;
+
+        try {
+            const frontmatter = YAML.parse(frontmatterMatch[1]);
+            return frontmatter?.title as string | undefined;
+        } catch {
+            return undefined;
+        }
+    }, [previewContent]);
 
     useEffect(() => {
         const initializeContent = async () => {
@@ -79,12 +113,14 @@ function App() {
             const savedContent = safeLocalStorage.get(STORAGE_KEY);
             if (savedContent && savedContent.trim() !== '') {
                 setContent(savedContent);
+                setPreviewContent(savedContent);
             } else {
                 try {
                     const response = await fetch('/sample.md');
                     if (response.ok) {
                         const text = await response.text();
                         setContent(text);
+                        setPreviewContent(text);
                     }
                 } catch {
                     notifyError('Failed to load sample.md');
@@ -95,15 +131,17 @@ function App() {
     }, []);
 
     useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            const fm = await parseItineraryFrontmatter(content);
-            if (cancelled) return;
-            setFrontmatterBaseTz(fm?.timezone);
-            setFrontmatterTitle(fm?.title);
-        })();
+        if (previewTimeoutRef.current) {
+            clearTimeout(previewTimeoutRef.current);
+        }
+        const timeoutId = window.setTimeout(() => {
+            setPreviewContent(content);
+            previewTimeoutRef.current = null;
+        }, PREVIEW_DEBOUNCE_DELAY);
+        previewTimeoutRef.current = timeoutId;
+
         return () => {
-            cancelled = true;
+            clearTimeout(timeoutId);
         };
     }, [content]);
 
@@ -154,37 +192,41 @@ function App() {
         setTopbar((s) => ({ ...s, ...patch }));
     }, []);
 
-    const handleShareUrl = async () => {
+    const contentRef = useRef(content);
+    contentRef.current = content;
+
+    const handleShareUrl = useCallback(async () => {
         try {
-            const url = buildShareUrlFromContent(content);
+            const url = buildShareUrlFromContent(contentRef.current);
             await writeTextToClipboard(url);
             notifySuccess('Shareable URL copied to clipboard');
         } catch (error) {
             console.error('Failed to generate URL:', error);
             notifyError('Failed to generate URL');
         }
-    };
+    }, []);
 
-    const handleCopyMarkdown = async () => {
+    const handleCopyMarkdown = useCallback(async () => {
         try {
-            await writeTextToClipboard(content);
+            await writeTextToClipboard(contentRef.current);
             notifySuccess('Markdown copied to clipboard');
         } catch (error) {
             console.error('Copy failed:', error);
             notifyError('Copy failed');
         }
-    };
+    }, []);
 
-    const handleLoadSample = () => {
+    const handleLoadSample = useCallback(() => {
         setPendingLoadSample(true);
-    };
+    }, []);
 
-    const handleLoadSampleConfirm = async () => {
+    const handleLoadSampleConfirm = useCallback(async () => {
         try {
             const response = await fetch('/sample.md');
             if (response.ok) {
                 const text = await response.text();
                 setContent(text);
+                setPreviewContent(text);
                 saveNow();
                 notifySuccess('Sample itinerary loaded');
             } else {
@@ -195,9 +237,9 @@ function App() {
             notifyError('Failed to load sample.md');
         }
         setPendingLoadSample(false);
-    };
+    }, [saveNow]);
 
-    const timezoneOptions: string[] = getTimezoneOptions();
+    const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
 
     return (
         <div className="max-w-screen-2xl mx-auto h-screen overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
@@ -211,6 +253,7 @@ function App() {
                 onLoad={() => {
                     if (pendingHashContent !== null) {
                         setContent(pendingHashContent);
+                        setPreviewContent(pendingHashContent);
                         saveNow();
                     }
                     setPendingHashContent(null);
@@ -228,7 +271,6 @@ function App() {
                 onCopyMarkdown={handleCopyMarkdown}
                 onShareUrl={handleShareUrl}
                 onLoadSample={handleLoadSample}
-                frontmatterBaseTz={frontmatterBaseTz}
             />
             <div className="px-0 md:px-8 w-full flex-1 min-h-0">
                 <div className={`mt-4 mb-4 h-full border border-gray-300 bg-white rounded-none md:rounded-lg overflow-hidden divide-gray-300 ${topbar.viewMode === 'split' ? 'flex flex-col divide-y md:flex-row md:divide-x' : 'flex'}`}>
@@ -245,7 +287,7 @@ function App() {
                             <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Preview</div>
                             <div className="h-[calc(100%-41px)] min-h-0">
                                 <MarkdownPreview
-                                    content={content}
+                                    content={previewContent}
                                     baseTz={topbar.baseTz}
                                     currency={topbar.currency}
                                     stayMode={topbar.stayMode}

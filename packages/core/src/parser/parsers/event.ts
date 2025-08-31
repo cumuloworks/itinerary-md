@@ -9,7 +9,6 @@ export interface BaseEventData {
 export interface TransportationEventData extends BaseEventData {
     type: 'flight' | 'train' | 'drive' | 'ferry' | 'bus' | 'taxi' | 'subway';
     baseType: 'transportation';
-    // 統合された名前フィールド（flight: flightCode, train: trainName）
     name: string;
     departure: string;
     arrival: string;
@@ -25,7 +24,6 @@ export interface StayEventData extends BaseEventData {
 export interface ActivityEventData extends BaseEventData {
     type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe';
     baseType: 'activity';
-    // 統合された名前フィールド（meal: restaurantName, activity: activityName）
     name: string;
     location?: string;
 }
@@ -134,35 +132,28 @@ const parseActivityData = (
     let name = mainText;
     let location: string | undefined = '';
 
-    // Unified parsing logic for both meal and activity
-    // If :: separator exists, use it and ignore "at" pattern
     if (mainText.includes('::')) {
         const [left, right] = mainText.split('::').map((s) => s.trim());
         location = right || '';
 
-        // Handle alias case: empty left side or left side matches original alias
         const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
         const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
         if (!left || (originalType && left.toLowerCase() === originalType.toLowerCase() && (isMealAlias || isActivityAlias))) {
-            // Use original alias type as name (capitalize first letter)
             name = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : left;
         } else {
             name = left;
         }
     } else {
-        // Only try "at" pattern if no :: separator
         const atMatch = mainText.match(/^(.+?)\s+at\s+(.+)$/);
         if (atMatch) {
             const [, activityName, place] = atMatch;
             name = activityName;
             location = place;
         } else {
-            // Handle alias case: "at Location" with empty name
             const atOnlyMatch = mainText.match(/^at\s+(.+)$/);
             const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
             const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
             if (atOnlyMatch && originalType && (isMealAlias || isActivityAlias)) {
-                // Use original alias type as name (capitalize first letter)
                 name = originalType.charAt(0).toUpperCase() + originalType.slice(1);
                 location = atOnlyMatch[1];
             }

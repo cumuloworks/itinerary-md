@@ -23,8 +23,8 @@ interface MarkdownPreviewProps {
         endDate?: string;
         numDays?: number;
     };
-    totalFormatted?: string;
-    breakdownFormatted?: { transport: string; activity: string; meal: string };
+    totalFormatted?: string | null;
+    breakdownFormatted?: { transport: string; activity: string; meal: string } | null;
     loading?: boolean;
 }
 
@@ -41,8 +41,8 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseT
     };
 
     const safeSummary = summary ?? {};
-    const safeTotalFormatted = totalFormatted ?? '';
-    const safeBreakdownFormatted = breakdownFormatted ?? { transport: '—', activity: '—', meal: '—' };
+    const safeTotalFormatted = totalFormatted ?? null;
+    const safeBreakdownFormatted = breakdownFormatted ?? null;
     const safeLoading = loading ?? false;
 
     return (

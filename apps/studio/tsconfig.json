@@ -9,9 +9,7 @@
         "baseUrl": ".",
         "paths": {
             "@itinerary-md/core": ["../../packages/core/src"],
-            "@itinerary-md/core/*": ["../../packages/core/src/*"],
-            "@itinerary-md/statistics": ["../../packages/statistics/src"],
-            "@itinerary-md/statistics/*": ["../../packages/statistics/src/*"]
+            "@itinerary-md/core/*": ["../../packages/core/src/*"]
         },
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,

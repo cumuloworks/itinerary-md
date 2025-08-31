@@ -110,7 +110,7 @@ body {
         @apply border-blue-600 bg-blue-600;
     }
 
-    .markdown-preview ul li.task-list-item input[type="checkbox"]:checked+* {
+    .markdown-preview ul li.task-list-item input[type="checkbox"]:checked + * {
         @apply text-gray-500 line-through;
     }
 
