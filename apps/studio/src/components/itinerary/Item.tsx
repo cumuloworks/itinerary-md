@@ -9,7 +9,7 @@ import { Route } from './Route';
 interface ItemProps {
     eventData: EventData;
     dateStr?: string;
-    baseTz?: string;
+    timezone?: string;
     currency?: string;
 }
 
@@ -249,8 +249,8 @@ const TimePlaceholder: React.FC = () => <span className="font-mono text-lg font-
 const TimeDisplay: React.FC<{
     parsedTime?: TimeLike;
     dateStr?: string;
-    baseTz?: string;
-}> = ({ parsedTime, dateStr, baseTz }) => {
+    timezone?: string;
+}> = ({ parsedTime, dateStr, timezone }) => {
     if (!parsedTime) {
         return <span className="font-mono text-lg font-bold leading-tight relative inline-block invisible">-----</span>;
     }
@@ -260,11 +260,11 @@ const TimeDisplay: React.FC<{
         return <span className="font-mono text-lg font-bold leading-tight inline-block whitespace-pre">{label.padStart(5, ' ')}</span>;
     }
 
-    const displayTz = baseTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const displayTz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const date = new Date(parsedTime.epochMs);
     const timeText = formatDateTime(date, displayTz);
 
-    const dayOffset = dateStr && baseTz ? getDayOffset(date, dateStr, baseTz) : 0;
+    const dayOffset = dateStr && timezone ? getDayOffset(date, dateStr, timezone) : 0;
     const plusBadge = dayOffset !== 0 ? `${dayOffset > 0 ? '+' : ''}${dayOffset}d` : '';
 
     return (
@@ -277,7 +277,7 @@ const TimeDisplay: React.FC<{
 
 import { Meta } from './Metadata';
 
-export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency }) => {
+export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, currency }) => {
     const colors = getTypeColors(eventData.type);
     const IconComponent = getTypeIcon(eventData.type);
     const mainTitle = (() => {
@@ -308,8 +308,8 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency
                 <TimePlaceholder />
             ) : (
                 <div className="flex flex-col gap-5 min-w-0 text-right">
-                    {eventData.timeRange?.start ? <TimeDisplay parsedTime={eventData.timeRange.start} dateStr={dateStr} baseTz={baseTz} /> : <TimePlaceholder />}
-                    {eventData.timeRange?.end && <TimeDisplay parsedTime={eventData.timeRange.end} dateStr={dateStr} baseTz={baseTz} />}
+                    {eventData.timeRange?.start ? <TimeDisplay parsedTime={eventData.timeRange.start} dateStr={dateStr} timezone={timezone} /> : <TimePlaceholder />}
+                    {eventData.timeRange?.end && <TimeDisplay parsedTime={eventData.timeRange.end} dateStr={dateStr} timezone={timezone} />}
                 </div>
             )}
 

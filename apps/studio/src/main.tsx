@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
@@ -15,6 +16,14 @@ const rootEl = document.getElementById('root');
 if (!rootEl) {
     throw new Error('Root element not found');
 }
+
+// Browser polyfill for Buffer (gray-matter dependency)
+declare global {
+    interface Window {
+        Buffer?: typeof Buffer;
+    }
+}
+window.Buffer = window.Buffer || Buffer;
 
 ReactDOM.createRoot(rootEl).render(
     <>

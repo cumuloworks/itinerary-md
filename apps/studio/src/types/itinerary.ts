@@ -4,7 +4,7 @@ export type StayMode = 'default' | 'header';
 
 // Topbar state management
 export type TopbarState = {
-    baseTz: string;
+    timezone: string;
     currency: string;
     viewMode: ViewMode;
     stayMode: StayMode;

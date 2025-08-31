@@ -5,10 +5,11 @@ import type { VFile } from 'vfile';
 import YAML from 'yaml';
 import { parseDateText } from '../parser/parsers/date';
 import { parseEvent, parseTimeAndType } from '../parser/parsers/event';
+//
 
-type StayMode = 'default' | 'header';
+export type StayMode = 'default' | 'header';
 
-type Options = { baseTz?: string; stayMode?: StayMode };
+type Options = { timezone?: string; stayMode?: StayMode; frontmatter?: Record<string, unknown> };
 
 type MdNode = {
     type?: string;
@@ -22,20 +23,26 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
     return function transformer(tree: Root, file?: VFile) {
         if (!tree) return tree;
 
-        let frontmatterBaseTz: string | undefined;
-        if (file?.data?.frontmatter && typeof file.data.frontmatter === 'object') {
-            const fm = file.data.frontmatter;
-            if (fm && typeof (fm as Record<string, unknown>).timezone === 'string') {
-                frontmatterBaseTz = (fm as Record<string, unknown>).timezone as string;
+        let frontmatterTimezone: string | undefined;
+        let isItinerary = true; // 既存互換: デフォルト有効
+        const normalizeFrontmatterMinimal = (raw: Record<string, unknown>): { isItinerary: boolean; timezone?: string } => {
+            const getString = (val: unknown): string | undefined => (typeof val === 'string' && val.trim() !== '' ? val.trim() : undefined);
+            const typeRaw = getString((raw as Record<string, unknown>)['type']);
+            const typeLc = typeRaw ? typeRaw.toLowerCase() : undefined;
+            const isItin = typeLc === 'itinerary-md' || typeLc === 'itmd';
+            const timezone = getString((raw as Record<string, unknown>)['timezone']);
+            return { isItinerary: isItin, timezone };
+        };
+        {
+            const fmRaw = (options?.frontmatter as unknown) ?? (file?.data?.frontmatter as unknown);
+            if (fmRaw && typeof fmRaw === 'object' && !Array.isArray(fmRaw)) {
+                const normalized = normalizeFrontmatterMinimal(fmRaw as Record<string, unknown>);
+                isItinerary = normalized.isItinerary;
+                if (normalized.timezone) frontmatterTimezone = normalized.timezone;
             }
-        } else if (file?.data?.frontmatter && typeof file.data.frontmatter === 'string') {
-            try {
-                const fm = YAML.parse(file.data.frontmatter as string);
-                if (fm && typeof fm === 'object' && typeof (fm as Record<string, unknown>).timezone === 'string') {
-                    frontmatterBaseTz = (fm as Record<string, unknown>).timezone as string;
-                }
-            } catch {}
         }
+
+        if (!isItinerary) return tree;
 
         const knownKeys = new Set(['cost', 'price', 'seat', 'room', 'guests', 'aircraft', 'vehicle', 'location', 'addr', 'phone', 'wifi', 'rating', 'reservation', 'checkin', 'checkout', 'tag', 'cuisine', 'note', 'desc', 'text']);
 
@@ -55,7 +62,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
             if (para.type === 'heading' && (para as unknown as { depth?: number }).depth === 2) {
                 const line = mdastToString(para as MdNode).trim();
-                const dateData = parseDateText(line, frontmatterBaseTz || options?.baseTz);
+                const dateData = parseDateText(line, frontmatterTimezone || options?.timezone);
                 if (dateData) {
                     prevDayHadStay = currentDayHasStay;
                     currentDayHasStay = false;
@@ -66,7 +73,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                     const prevH = (prevData.hProperties as Record<string, unknown>) || {};
                     const hProps: Record<string, unknown> = { ...prevH };
                     hProps['data-itin-date'] = JSON.stringify({ ...dateData, prevStayName: prevDayHadStay ? lastStayName || undefined : undefined });
-                    if (frontmatterBaseTz) hProps['data-frontmatter-base-tz'] = frontmatterBaseTz;
+                    // base_tzのデータ属性は出力しない
                     para.data = { ...prevData, hProperties: hProps } as MdNode['data'];
                 }
                 continue;
@@ -77,7 +84,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const paraChildren = (para as MdNode).children || [];
             const firstLineText = paraChildren.length > 0 && paraChildren[0].type === 'text' ? String(paraChildren[0].value || '').trim() : mdastToString(para as MdNode).trim();
 
-            const parsed = parseTimeAndType(firstLineText, frontmatterBaseTz);
+            const parsed = parseTimeAndType(firstLineText, frontmatterTimezone);
             if (!parsed) continue;
 
             const mainText = parsed.eventDescription;
@@ -242,7 +249,6 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                         }
                     }
 
-                    // 処理した場合のみ、該当範囲のASTノードを削除
                     if (handled) {
                         const blockStartLine = startIdx + 1;
                         const blockEndLine = endIdx;
@@ -259,7 +265,6 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                         }
                     }
                 }
-                // 単行の場合は何もせず、通常のMarkdownテキストとして残す
             }
 
             if (notes.length > 0) {
@@ -274,11 +279,10 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const prevH = (prevData.hProperties as Record<string, unknown>) || {};
             const itinMeta: Record<string, string> = { ...mergedMeta };
             const hProps: Record<string, unknown> = { ...prevH };
-            if (frontmatterBaseTz) hProps['data-frontmatter-base-tz'] = frontmatterBaseTz;
             hProps['data-itin-meta'] = JSON.stringify(itinMeta);
 
-            const parseBaseTz = currentDateTz || frontmatterBaseTz || options?.baseTz;
-            const eventData = parseEvent(rebuilt, previousEvent || undefined, parseBaseTz, currentDateStr);
+            const parseTimezone = currentDateTz || frontmatterTimezone || options?.timezone;
+            const eventData = parseEvent(rebuilt, previousEvent || undefined, parseTimezone, currentDateStr);
             if (eventData) {
                 const mergedEvent = { ...eventData, metadata: { ...eventData.metadata, ...itinMeta } } as typeof eventData;
                 if (options?.stayMode === 'header' && mergedEvent.type === 'stay') {

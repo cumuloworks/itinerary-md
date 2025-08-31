@@ -27,4 +27,4 @@ export {
     resolveTimeToken,
 } from './parser/parsers/time';
 export type { StayMode } from './remark';
-export { extractFrontmatter, parseItineraryFrontmatter, remarkItinerary } from './remark';
+export { remarkItinerary } from './remark';

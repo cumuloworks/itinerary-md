@@ -25,6 +25,8 @@
         "@radix-ui/react-toggle-group": "^1.1.11",
         "@radix-ui/react-toolbar": "^1.1.11",
         "@tailwindcss/vite": "^4.1.12",
+        "buffer": "^6.0.3",
+        "gray-matter": "^4.0.3",
         "lucide-react": "^0.542.0",
         "luxon": "^3.4.4",
         "monaco-editor": "^0.52.0",

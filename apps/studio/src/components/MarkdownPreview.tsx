@@ -1,12 +1,10 @@
 import { remarkItinerary } from '@itinerary-md/core';
+import matter from 'gray-matter';
 import React, { type FC, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 
-import remarkExtractFrontmatter from 'remark-extract-frontmatter';
-import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
-import YAML from 'yaml';
 import { Heading } from './itinerary/Heading';
 import { Item } from './itinerary/Item';
 import 'highlight.js/styles/github.css';
@@ -14,7 +12,7 @@ import Statistics from './itinerary/Statistics';
 
 interface MarkdownPreviewProps {
     content: string;
-    baseTz?: string;
+    timezone?: string;
     currency?: string;
     stayMode?: 'default' | 'header';
     title?: string;
@@ -27,8 +25,8 @@ interface MarkdownPreviewProps {
     breakdownFormatted?: { transport: string; activity: string; meal: string } | null;
 }
 
-const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title, summary, totalFormatted, breakdownFormatted }) => {
-    const displayBaseTz = baseTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, stayMode = 'default', title, summary, totalFormatted, breakdownFormatted }) => {
+    const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const getDataAttr = (rest: Record<string, unknown>, key: string): string | undefined => rest[key] as string | undefined;
     const tryParseJson = <T,>(str?: string): T | null => {
         if (!str) return null;
@@ -43,12 +41,24 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, c
     const safeTotalFormatted = totalFormatted ?? null;
     const safeBreakdownFormatted = breakdownFormatted ?? null;
 
+    const { parsedFrontmatter, parsedBody } = React.useMemo(() => {
+        try {
+            const parsed = matter(content);
+            return {
+                parsedFrontmatter: parsed.data as Record<string, unknown>,
+                parsedBody: parsed.content || '',
+            };
+        } catch {
+            return { parsedFrontmatter: {} as Record<string, unknown>, parsedBody: content };
+        }
+    }, [content]);
+
     return (
         <div className="markdown-preview h-full px-8 py-4 bg-white overflow-auto">
             {title && <h1>{title}</h1>}
             <Statistics summary={safeSummary} totalFormatted={safeTotalFormatted} breakdownFormatted={safeBreakdownFormatted} />
             <ReactMarkdown
-                remarkPlugins={[remarkFrontmatter, [remarkExtractFrontmatter, { yaml: YAML.parse, name: 'frontmatter' }], [remarkItinerary, { baseTz, stayMode }], remarkGfm]}
+                remarkPlugins={[[remarkItinerary, { timezone, stayMode, frontmatter: parsedFrontmatter }], remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{
                     h2: (props: unknown) => {
@@ -93,7 +103,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, c
                                 r.timeRange.end.dateTime = new Date(r.timeRange.end.dateTime);
                             }
                             const eventData = r as Parameters<typeof Item>[0]['eventData'];
-                            return <Item eventData={eventData} dateStr={dateStr} baseTz={displayBaseTz} currency={currency} />;
+                            return <Item eventData={eventData} dateStr={dateStr} timezone={displayTimezone} currency={currency} />;
                         }
                         return (
                             <p {...(rest as React.HTMLAttributes<HTMLParagraphElement>)} className="mb-4 leading-relaxed text-gray-800 ml-20">
@@ -103,7 +113,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, c
                     },
                 }}
             >
-                {content}
+                {parsedBody}
             </ReactMarkdown>
         </div>
     );

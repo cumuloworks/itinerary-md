@@ -1,4 +1,5 @@
 import { parseDateText } from './parsers/date';
+// frontmatter には依存しない
 import { type EventData, parseEvent } from './parsers/event';
 
 export type ItineraryEvent = {
@@ -9,7 +10,7 @@ export type ItineraryEvent = {
 };
 
 export type ParseItineraryEventsOptions = {
-    baseTz?: string;
+    timezone?: string;
     stayMode?: 'default' | 'header';
 };
 
@@ -32,7 +33,7 @@ export function parseItineraryEvents(markdown: string, options?: ParseItineraryE
 
         if (trimmedLine.startsWith('## ')) {
             const dateText = trimmedLine.slice(3).trim();
-            const dateData = parseDateText(dateText, options?.baseTz);
+            const dateData = parseDateText(dateText, options?.timezone);
             if (dateData) {
                 currentDate = dateData.date;
                 currentTimezone = dateData.timezone;
@@ -43,7 +44,7 @@ export function parseItineraryEvents(markdown: string, options?: ParseItineraryE
 
         if (!trimmedLine || !currentDate) continue;
 
-        const eventData = parseEvent(trimmedLine, previousEvent || undefined, options?.baseTz, currentDate);
+        const eventData = parseEvent(trimmedLine, previousEvent || undefined, options?.timezone, currentDate);
         if (eventData) {
             const metadata: Record<string, string> = { ...eventData.metadata };
             let j = i + 1;

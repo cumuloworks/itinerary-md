@@ -49,7 +49,7 @@ function App() {
 
     // 旅程データ解析
     const { previewContent, events, frontmatterTitle, summary } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
-        baseTz: topbar.baseTz,
+        timezone: topbar.timezone,
         stayMode: topbar.stayMode,
     });
 
@@ -59,11 +59,11 @@ function App() {
     // MarkdownPreview用にpropsを最適化（参照安定化）
     const previewProps = useMemo(
         () => ({
-            baseTz: topbar.baseTz,
+            timezone: topbar.timezone,
             currency: topbar.currency,
             stayMode: topbar.stayMode,
         }),
-        [topbar.baseTz, topbar.currency, topbar.stayMode]
+        [topbar.timezone, topbar.currency, topbar.stayMode]
     );
 
     // 最新のコンテンツ参照（クリップボード処理用）
@@ -97,8 +97,6 @@ function App() {
             notifyError('Copy failed');
         }
     }, [latestContent]);
-
-    // Hook側で完結するため、これらのハンドラーは不要になります
 
     const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
 

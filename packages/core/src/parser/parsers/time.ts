@@ -59,17 +59,17 @@ export const parseTimeRangeTokens = (timeRangeText: string): { start?: TimeToken
     return undefined;
 };
 
-export const resolveTimeToken = (token: TimeToken, baseTz: string, baseDate?: string): TimeLike => {
+export const resolveTimeToken = (token: TimeToken, timezone: string, baseDate?: string): TimeLike => {
     if (token.kind === 'ampm') return { kind: 'placeholder', value: token.value, original: token };
     const dateStr = (baseDate || DateTime.now().toFormat('yyyy-MM-dd')) as string;
-    const zone = token.tz || baseTz;
+    const zone = token.tz || timezone;
     let dt = DateTime.fromISO(`${dateStr}T${String(token.hour).padStart(2, '0')}:${String(token.minute).padStart(2, '0')}`, { zone });
     if (token.dayOffset) dt = dt.plus({ days: token.dayOffset });
     return { kind: 'resolved', epochMs: dt.toMillis(), zone, original: token };
 };
 
-export const resolveTimeRange = (rangeTokens: { start?: TimeToken; end?: TimeToken; originalText: string }, baseTz: string, baseDate?: string): TimeRangeLike => {
-    const start = rangeTokens.start ? resolveTimeToken(rangeTokens.start, baseTz, baseDate) : undefined;
-    const end = rangeTokens.end ? resolveTimeToken(rangeTokens.end, baseTz, baseDate) : undefined;
+export const resolveTimeRange = (rangeTokens: { start?: TimeToken; end?: TimeToken; originalText: string }, timezone: string, baseDate?: string): TimeRangeLike => {
+    const start = rangeTokens.start ? resolveTimeToken(rangeTokens.start, timezone, baseDate) : undefined;
+    const end = rangeTokens.end ? resolveTimeToken(rangeTokens.end, timezone, baseDate) : undefined;
     return { start, end, originalText: rangeTokens.originalText };
 };
