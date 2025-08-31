@@ -31,7 +31,6 @@ export function useCostStatistics(events: ItineraryEvent[], currency: string) {
                 if (convertedAmount == null) continue;
                 converted = convertedAmount;
             } else {
-                // レートが利用できない場合は元の値をそのまま使用（同一通貨として扱う）
                 converted = parsed.amount;
             }
 

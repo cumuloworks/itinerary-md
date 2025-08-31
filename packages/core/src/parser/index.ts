@@ -1,5 +1,4 @@
 import { parseDateText } from './parsers/date';
-// frontmatter には依存しない
 import { type EventData, parseEvent } from './parsers/event';
 
 export type ItineraryEvent = {

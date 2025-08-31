@@ -13,7 +13,6 @@ export function useAutosave(value: string, options: UseAutosaveOptions) {
     const timeoutRef = useRef<number | null>(null);
     const lastSavedRef = useRef<string | null>(null);
 
-    // 保存ロジックを名前付き関数として抽出
     const save = useCallback(() => {
         if (lastSavedRef.current === value) return;
         const ok = safeLocalStorage.set(key, value);
@@ -40,7 +39,6 @@ export function useAutosave(value: string, options: UseAutosaveOptions) {
 
         timeoutRef.current = window.setTimeout(save, Math.max(0, delay));
 
-        // タブ閉じ時に未保存の変更を保存するリスナーを追加
         const handleBeforeUnload = () => {
             saveNow();
         };
@@ -52,7 +50,6 @@ export function useAutosave(value: string, options: UseAutosaveOptions) {
                 clearTimeout(timeoutRef.current);
                 timeoutRef.current = null;
             }
-            // beforeunloadリスナーを削除
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, [save, delay, saveNow]);

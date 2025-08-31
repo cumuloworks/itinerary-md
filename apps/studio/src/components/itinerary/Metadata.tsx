@@ -44,7 +44,6 @@ export const Meta: React.FC<{
             return null;
         }
 
-        // ratesDataが利用可能でない場合、元の値をそのまま使用
         if (!ratesData) {
             const out: Record<string, string> = {};
             for (const [key, value] of entries) {

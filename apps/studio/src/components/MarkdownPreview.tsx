@@ -119,5 +119,4 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
     );
 };
 
-// メモ化してprops変更時のみ再レンダリング
 export const MarkdownPreview = memo(MarkdownPreviewComponent);
