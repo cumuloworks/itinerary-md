@@ -1,5 +1,5 @@
 import { remarkItinerary } from '@itinerary-md/core';
-import type React from 'react';
+import React, { type FC, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
@@ -28,7 +28,7 @@ interface MarkdownPreviewProps {
     loading?: boolean;
 }
 
-export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title, summary, totalFormatted, breakdownFormatted, loading }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title, summary, totalFormatted, breakdownFormatted, loading }) => {
     const displayBaseTz = baseTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const getDataAttr = (rest: Record<string, unknown>, key: string): string | undefined => rest[key] as string | undefined;
     const tryParseJson = <T,>(str?: string): T | null => {
@@ -110,3 +110,6 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseT
         </div>
     );
 };
+
+// メモ化してprops変更時のみ再レンダリング
+export const MarkdownPreview = memo(MarkdownPreviewComponent);

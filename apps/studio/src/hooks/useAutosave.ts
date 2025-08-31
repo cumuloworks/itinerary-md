@@ -1,21 +1,15 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { notifyError, notifySuccess, safeLocalStorage } from '../core/errors';
-
-type UseAutosaveOptions = {
-    key: string;
-    delay: number;
-    onSuccess?: () => void;
-    onError?: () => void;
-};
+import type { UseAutosaveOptions } from '../types/itinerary';
 
 /**
- * LocalStorageへの自動保存を管理するHook
+ * LocalStorageへの自動保存を管理するHook（通知も内部で処理）
  * @param value 保存する値
  * @param options オプション
  * @returns saveNow: 即座に保存する関数
  */
 export function useAutosave(value: string, options: UseAutosaveOptions) {
-    const { key, delay, onSuccess, onError } = options;
+    const { key, delay, onSuccess = () => notifySuccess('Saved'), onError = () => notifyError('Failed to save') } = options;
     const timeoutRef = useRef<number | null>(null);
 
     const saveNow = useCallback(() => {
@@ -26,9 +20,9 @@ export function useAutosave(value: string, options: UseAutosaveOptions) {
 
         const ok = safeLocalStorage.set(key, value);
         if (ok) {
-            onSuccess?.() ?? notifySuccess('Saved');
+            onSuccess();
         } else {
-            onError?.() ?? notifyError('Failed to save');
+            onError();
         }
     }, [key, value, onSuccess, onError]);
 
@@ -40,9 +34,9 @@ export function useAutosave(value: string, options: UseAutosaveOptions) {
         const save = () => {
             const ok = safeLocalStorage.set(key, value);
             if (ok) {
-                onSuccess?.() ?? notifySuccess('Saved');
+                onSuccess();
             } else {
-                onError?.() ?? notifyError('Failed to save');
+                onError();
             }
         };
 

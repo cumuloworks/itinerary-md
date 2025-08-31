@@ -3,6 +3,7 @@ import { ImportDialog } from './components/dialog/ImportDialog';
 import { LoadSampleDialog } from './components/dialog/LoadSampleDialog';
 import { Header } from './components/Header';
 import { MarkdownPreview } from './components/MarkdownPreview';
+import { MarkdownPreviewErrorBoundary } from './components/MarkdownPreviewErrorBoundary';
 import { MonacoEditor } from './components/MonacoEditor';
 import { TopBar } from './components/TopBar';
 import { notifyError, notifySuccess } from './core/errors';
@@ -12,7 +13,6 @@ import { useHashImport } from './hooks/useHashImport';
 import { useInitialContent } from './hooks/useInitialContent';
 import { useItinerary } from './hooks/useItinerary';
 import { useLatest } from './hooks/useLatest';
-import { useSyncTopbarSearch } from './hooks/useSyncTopbarSearch';
 import { useTopbarState } from './hooks/useTopbarState';
 import { writeTextToClipboard } from './utils/clipboard';
 import { COMMON_CURRENCIES } from './utils/currency';
@@ -27,7 +27,7 @@ function App() {
     const tzSelectId = useId();
 
     // 初期コンテンツ管理
-    const { content, setContent, pendingLoadSample, loadSample, confirmLoadSample, cancelLoadSample } = useInitialContent({
+    const { content, setContent, pendingLoadSample, loadSample, cancelLoadSample, loadSampleWithSave } = useInitialContent({
         storageKey: STORAGE_KEY,
         samplePath: '/sample.md',
     });
@@ -37,21 +37,30 @@ function App() {
         setContent(hashContent);
     });
 
-    // 自動保存
+    // 自動保存（通知も内部で処理）
     const { saveNow } = useAutosave(content, {
         key: STORAGE_KEY,
         delay: AUTOSAVE_DELAY,
     });
 
-    // Topbar状態管理
+    // Topbar状態管理（URL同期含む）
     const [topbar, updateTopbar] = useTopbarState();
-    useSyncTopbarSearch(topbar);
 
     // 旅程データ解析
     const { previewContent, events, frontmatterTitle, summary } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY);
 
     // 費用統計
     const { loading, totalFormatted, breakdownFormatted } = useCostStatistics(events, topbar.currency);
+
+    // MarkdownPreview用にpropsを最適化（参照安定化）
+    const previewProps = useMemo(
+        () => ({
+            baseTz: topbar.baseTz,
+            currency: topbar.currency,
+            stayMode: topbar.stayMode,
+        }),
+        [topbar.baseTz, topbar.currency, topbar.stayMode]
+    );
 
     // 最新のコンテンツ参照（クリップボード処理用）
     const latestContent = useLatest(content);
@@ -85,22 +94,15 @@ function App() {
         }
     }, [latestContent]);
 
-    const handleLoadSampleConfirm = useCallback(async () => {
-        await confirmLoadSample();
-        saveNow();
-    }, [confirmLoadSample, saveNow]);
-
-    const handleHashImportConfirm = useCallback(() => {
-        hashImport.confirmImport(saveNow);
-    }, [hashImport, saveNow]);
+    // Hook側で完結するため、これらのハンドラーは不要になります
 
     const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
 
     return (
         <div className="max-w-screen-2xl mx-auto h-screen overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
             <Header />
-            <ImportDialog open={hashImport.isDialogOpen} onCancel={hashImport.cancelImport} onLoad={handleHashImportConfirm} />
-            <LoadSampleDialog open={pendingLoadSample} onCancel={cancelLoadSample} onLoad={handleLoadSampleConfirm} />
+            <ImportDialog open={hashImport.isDialogOpen} onCancel={hashImport.cancelImport} onLoad={hashImport.confirmImport} />
+            <LoadSampleDialog open={pendingLoadSample} onCancel={cancelLoadSample} onLoad={loadSampleWithSave} />
             <TopBar
                 tzSelectId={tzSelectId}
                 timezoneOptions={timezoneOptions}
@@ -125,17 +127,9 @@ function App() {
                         <div className={`${topbar.viewMode === 'split' ? 'md:basis-1/2 basis-2/3' : 'flex-1'} min-w-0 min-h-0`}>
                             <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Preview</div>
                             <div className="h-[calc(100%-41px)] min-h-0">
-                                <MarkdownPreview
-                                    content={previewContent}
-                                    baseTz={topbar.baseTz}
-                                    currency={topbar.currency}
-                                    stayMode={topbar.stayMode}
-                                    title={frontmatterTitle}
-                                    summary={summary}
-                                    totalFormatted={totalFormatted}
-                                    breakdownFormatted={breakdownFormatted}
-                                    loading={loading}
-                                />
+                                <MarkdownPreviewErrorBoundary>
+                                    <MarkdownPreview content={previewContent} {...previewProps} title={frontmatterTitle} summary={summary} totalFormatted={totalFormatted} breakdownFormatted={breakdownFormatted} loading={loading} />
+                                </MarkdownPreviewErrorBoundary>
                             </div>
                         </div>
                     )}

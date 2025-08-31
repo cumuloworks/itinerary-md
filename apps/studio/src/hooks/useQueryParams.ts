@@ -1,14 +1,5 @@
 import { useMemo } from 'react';
-
-type ViewMode = 'split' | 'editor' | 'preview';
-type StayMode = 'default' | 'header';
-
-export type QueryParams = {
-    tz?: string;
-    cur?: string;
-    view?: ViewMode;
-    stay?: StayMode;
-};
+import type { QueryParams, StayMode, ViewMode } from '../types/itinerary';
 
 /**
  * URLクエリパラメータを解析して型安全な値を返すHook

@@ -1,14 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-type ViewMode = 'split' | 'editor' | 'preview';
-type StayMode = 'default' | 'header';
-
-export type TopbarState = {
-    baseTz: string;
-    currency: string;
-    viewMode: ViewMode;
-    stayMode: StayMode;
-};
+import type { StayMode, TopbarState, ViewMode } from '../types/itinerary';
 
 const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
 
@@ -72,6 +63,23 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
     const updateState = useCallback((patch: Partial<TopbarState>) => {
         setState((prevState) => ({ ...prevState, ...patch }));
     }, []);
+
+    // URL同期（統合されたuseSyncTopbarSearch）
+    useEffect(() => {
+        try {
+            const searchParams = new URLSearchParams(window.location.search);
+            searchParams.set('tz', state.baseTz);
+            searchParams.set('cur', state.currency);
+            searchParams.set('view', state.viewMode);
+            searchParams.set('stay', state.stayMode);
+
+            const newSearch = `?${searchParams.toString()}`;
+            const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
+            history.replaceState(null, '', newUrl);
+        } catch {
+            // URL更新に失敗した場合は無視
+        }
+    }, [state.baseTz, state.currency, state.viewMode, state.stayMode]);
 
     return [state, updateState];
 }

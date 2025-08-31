@@ -1,13 +1,8 @@
 import type { ItineraryEvent } from '@itinerary-md/core';
 import { useEffect, useState } from 'react';
 import { notifyError } from '../core/errors';
+import type { CostBreakdownFormatted } from '../types/itinerary';
 import { convertAmountUSDBase, getRatesUSD, parseAmountWithCurrency } from '../utils/currency';
-
-type CostBreakdownFormatted = {
-    transport: string;
-    activity: string;
-    meal: string;
-};
 
 export function useCostStatistics(events: ItineraryEvent[], currency: string) {
     const [loading, setLoading] = useState<boolean>(false);

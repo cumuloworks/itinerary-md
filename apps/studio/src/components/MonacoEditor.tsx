@@ -1,5 +1,5 @@
 import Editor from '@monaco-editor/react';
-import type React from 'react';
+import { type FC, memo } from 'react';
 
 interface MonacoEditorProps {
     value: string;
@@ -7,7 +7,7 @@ interface MonacoEditorProps {
     onSave: () => void;
 }
 
-export const MonacoEditor: React.FC<MonacoEditorProps> = ({ value, onChange, onSave }) => {
+const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave }) => {
     const handleEditorChange = (value: string | undefined) => {
         onChange(value || '');
     };
@@ -41,3 +41,6 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({ value, onChange, onS
         </div>
     );
 };
+
+// メモ化してprops変更時のみ再レンダリング
+export const MonacoEditor = memo(MonacoEditorComponent);

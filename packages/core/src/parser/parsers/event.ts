@@ -107,11 +107,37 @@ const parseTransportationData = (rest: string, baseData: BaseEventData, type: 'f
     };
 };
 
-const parseStayData = (rest: string, baseData: BaseEventData, type: 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan'): StayEventData => {
+const parseStayData = (rest: string, baseData: BaseEventData, type: 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan', originalType?: string): StayEventData => {
     const { mainText } = extractMetadata(rest);
-    const [left, right] = mainText.split('::').map((s) => s.trim());
-    const stayName = left || '';
-    const location = right || '';
+    let stayName = mainText;
+    let location: string | undefined = '';
+
+    if (mainText.includes('::')) {
+        const [left, right] = mainText.split('::').map((s) => s.trim());
+        location = right || '';
+
+        const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
+        if (!left || (originalType && left.toLowerCase() === originalType.toLowerCase() && isStayAlias)) {
+            stayName = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : left;
+        } else {
+            stayName = left;
+        }
+    } else {
+        const atMatch = mainText.match(/^(.+?)\s+at\s+(.+)$/);
+        if (atMatch) {
+            const [, name, place] = atMatch;
+            stayName = name;
+            location = place;
+        } else {
+            const atOnlyMatch = mainText.match(/^at\s+(.+)$/);
+            const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
+            if (atOnlyMatch && originalType && isStayAlias) {
+                stayName = originalType.charAt(0).toUpperCase() + originalType.slice(1);
+                location = atOnlyMatch[1];
+            }
+        }
+    }
+
     return {
         ...baseData,
         type,
@@ -205,7 +231,7 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
         case 'hotel':
         case 'hostel':
         case 'ryokan': {
-            const parsed = parseStayData(rest, baseData, type as 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan');
+            const parsed = parseStayData(rest, baseData, type as 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan', type);
             if (parsed) return parsed;
             if (context && (context.type === type || context.type === 'stay' || context.type === 'dormitory' || context.type === 'hotel' || context.type === 'hostel' || context.type === 'ryokan')) {
                 const { metadata } = extractMetadata(rest);

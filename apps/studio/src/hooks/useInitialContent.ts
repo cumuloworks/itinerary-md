@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { notifyError, notifySuccess, safeLocalStorage } from '../core/errors';
-
-type UseInitialContentOptions = {
-    storageKey: string;
-    samplePath: string;
-};
+import type { UseInitialContentOptions } from '../types/itinerary';
 
 type UseInitialContentResult = {
     content: string;
@@ -12,6 +8,7 @@ type UseInitialContentResult = {
     pendingLoadSample: boolean;
     loadSample: () => void;
     confirmLoadSample: () => Promise<void>;
+    loadSampleWithSave: () => Promise<void>;
     cancelLoadSample: () => void;
 };
 
@@ -80,6 +77,8 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
         setPendingLoadSample(false);
     }, []);
 
+    const loadSampleWithSave = confirmLoadSample;
+
     return {
         content,
         setContent,
@@ -87,5 +86,6 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
         loadSample,
         confirmLoadSample,
         cancelLoadSample,
+        loadSampleWithSave,
     };
 }

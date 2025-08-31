@@ -5,16 +5,17 @@ import { clearHash, decodeFromHashBase64, readHashPayload } from '../utils/hash'
 type UseHashImportResult = {
     isDialogOpen: boolean;
     content: string | null;
-    confirmImport: (saveFunction?: () => void) => void;
+    confirmImport: () => void;
     cancelImport: () => void;
 };
 
 /**
  * ハッシュからのインポート処理を管理するHook
  * @param onContentLoaded コンテンツがロードされた時のコールバック
+ * @param saveFunction 保存処理の関数
  * @returns ダイアログ状態と操作関数
  */
-export function useHashImport(onContentLoaded?: (content: string) => void): UseHashImportResult {
+export function useHashImport(onContentLoaded?: (content: string) => void, saveFunction?: () => void): UseHashImportResult {
     const [pendingHashContent, setPendingHashContent] = useState<string | null>(null);
 
     useEffect(() => {
@@ -27,18 +28,15 @@ export function useHashImport(onContentLoaded?: (content: string) => void): UseH
         }
     }, []);
 
-    const confirmImport = useCallback(
-        (saveFunction?: () => void) => {
-            if (pendingHashContent !== null) {
-                onContentLoaded?.(pendingHashContent);
-                saveFunction?.();
-                notifySuccess('Loaded content from the shared URL');
-            }
-            setPendingHashContent(null);
-            clearHash();
-        },
-        [pendingHashContent, onContentLoaded]
-    );
+    const confirmImport = useCallback(() => {
+        if (pendingHashContent !== null) {
+            onContentLoaded?.(pendingHashContent);
+            saveFunction?.();
+            notifySuccess('Loaded content from the shared URL');
+        }
+        setPendingHashContent(null);
+        clearHash();
+    }, [pendingHashContent, onContentLoaded, saveFunction]);
 
     const cancelImport = useCallback(() => {
         setPendingHashContent(null);
