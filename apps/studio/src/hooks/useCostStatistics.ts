@@ -22,7 +22,7 @@ export function useCostStatistics(events: ItineraryEvent[], currency: string) {
                 let meal = 0;
 
                 for (const { event } of events) {
-                    const costValue = event.metadata.cost || event.metadata.price;
+                    const costValue = event.metadata?.cost ?? event.metadata?.price;
                     if (!costValue) continue;
 
                     const parsed = parseAmountWithCurrency(costValue, currency);

@@ -19,13 +19,20 @@ export function useHashImport(onContentLoaded?: (content: string) => void, saveF
     const [pendingHashContent, setPendingHashContent] = useState<string | null>(null);
 
     useEffect(() => {
-        const raw = readHashPayload();
-        if (raw) {
+        const handle = () => {
+            const raw = readHashPayload();
+            if (!raw) return;
             const decoded = decodeFromHashBase64(raw);
             if (decoded !== null) {
                 setPendingHashContent(decoded);
+            } else {
+                setPendingHashContent(null);
+                clearHash();
             }
-        }
+        };
+        handle();
+        window.addEventListener('hashchange', handle);
+        return () => window.removeEventListener('hashchange', handle);
     }, []);
 
     const confirmImport = useCallback(() => {

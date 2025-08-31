@@ -174,6 +174,7 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                 </Toolbar.Button>
                 <Toolbar.Button
                     type="button"
+                    aria-label="Share via URL"
                     title="Share via URL"
                     onClick={onShareUrl}
                     className="inline-flex items-center justify-center px-2 h-full text-white rounded-md bg-teal-600 hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 focus-visible:ring-offset-1 focus-visible:ring-offset-white"
