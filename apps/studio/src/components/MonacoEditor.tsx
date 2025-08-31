@@ -1,5 +1,5 @@
 import Editor from '@monaco-editor/react';
-import type React from 'react';
+import { type FC, memo } from 'react';
 
 interface MonacoEditorProps {
     value: string;
@@ -7,13 +7,13 @@ interface MonacoEditorProps {
     onSave: () => void;
 }
 
-export const MonacoEditor: React.FC<MonacoEditorProps> = ({ value, onChange, onSave }) => {
+const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave }) => {
     const handleEditorChange = (value: string | undefined) => {
         onChange(value || '');
     };
 
     return (
-        <div className="h-full border border-gray-300">
+        <div className="h-full">
             <Editor
                 height="100%"
                 language="markdown"
@@ -41,3 +41,6 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({ value, onChange, onS
         </div>
     );
 };
+
+// Memoized to re-render only when props change
+export const MonacoEditor = memo(MonacoEditorComponent);

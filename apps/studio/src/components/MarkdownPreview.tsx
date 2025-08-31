@@ -1,8 +1,8 @@
 import { remarkItinerary } from '@itinerary-md/core';
-import type React from 'react';
+import React, { type FC, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
+
 import remarkExtractFrontmatter from 'remark-extract-frontmatter';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
@@ -10,6 +10,7 @@ import YAML from 'yaml';
 import { Heading } from './itinerary/Heading';
 import { Item } from './itinerary/Item';
 import 'highlight.js/styles/github.css';
+import Statistics from './itinerary/Statistics';
 
 interface MarkdownPreviewProps {
     content: string;
@@ -17,13 +18,18 @@ interface MarkdownPreviewProps {
     currency?: string;
     stayMode?: 'default' | 'header';
     title?: string;
+    summary?: {
+        startDate?: string;
+        endDate?: string;
+        numDays?: number;
+    };
+    totalFormatted?: string | null;
+    breakdownFormatted?: { transport: string; activity: string; meal: string } | null;
 }
 
-export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, currency, stayMode = 'default', title, summary, totalFormatted, breakdownFormatted }) => {
     const displayBaseTz = baseTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
-
     const getDataAttr = (rest: Record<string, unknown>, key: string): string | undefined => rest[key] as string | undefined;
-
     const tryParseJson = <T,>(str?: string): T | null => {
         if (!str) return null;
         try {
@@ -33,12 +39,17 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseT
         }
     };
 
+    const safeSummary = summary ?? {};
+    const safeTotalFormatted = totalFormatted ?? null;
+    const safeBreakdownFormatted = breakdownFormatted ?? null;
+
     return (
-        <div className="markdown-preview h-full px-8 py-4 border border-gray-300 bg-white overflow-auto">
+        <div className="markdown-preview h-full px-8 py-4 bg-white overflow-auto">
             {title && <h1>{title}</h1>}
+            <Statistics summary={safeSummary} totalFormatted={safeTotalFormatted} breakdownFormatted={safeBreakdownFormatted} />
             <ReactMarkdown
                 remarkPlugins={[remarkFrontmatter, [remarkExtractFrontmatter, { yaml: YAML.parse, name: 'frontmatter' }], [remarkItinerary, { baseTz, stayMode }], remarkGfm]}
-                rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                rehypePlugins={[rehypeHighlight]}
                 components={{
                     h2: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode }) || {};
@@ -97,3 +108,6 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, baseT
         </div>
     );
 };
+
+// メモ化してprops変更時のみ再レンダリング
+export const MarkdownPreview = memo(MarkdownPreviewComponent);

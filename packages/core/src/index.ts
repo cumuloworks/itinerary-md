@@ -1,3 +1,5 @@
+export type { ItineraryEvent, ParseItineraryEventsOptions } from './parser';
+export { parseItineraryEvents } from './parser';
 export {
     formatDateTime,
     formatDateWithTimezone,
@@ -9,10 +11,8 @@ export type {
     ActivityEventData,
     BaseEventData,
     EventData,
-    FlightEventData,
-    MealEventData,
     StayEventData,
-    TrainEventData,
+    TransportationEventData,
 } from './parser/parsers/event';
 export { parseEvent } from './parser/parsers/event';
 export type {

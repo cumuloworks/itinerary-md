@@ -1,8 +1,9 @@
 import type { LucideIcon } from 'lucide-react';
 import { Bed, Calendar, Car, Clock, MapPin, Phone, Plane, Star, Tag, Users, Wallet, Wifi } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import { convertAmountUSDBase, formatCurrency, getRatesUSD, parseAmountWithCurrency } from '../../utils/currency';
+import { useMemo } from 'react';
+import { useRatesUSD } from '../../hooks/useRatesUSD';
+import { convertAmountUSDBase, formatCurrency, parseAmountWithCurrency } from '../../utils/currency';
 
 const getMetadataConfig = (key: string) => {
     const configs: Record<string, { icon: LucideIcon; label: string; isSpecial?: boolean }> = {
@@ -35,43 +36,42 @@ export const Meta: React.FC<{
     borderColor: string;
     currency?: string;
 }> = ({ metadata, borderColor, currency }) => {
-    const entries = useMemo(() => Object.entries(metadata), [metadata]);
-    const [converted, setConverted] = useState<Record<string, string> | null>(null);
-    useEffect(() => {
-        let mounted = true;
-        const run = async () => {
-            if (!currency) {
-                setConverted(null);
-                return;
+    const entries = Object.entries(metadata);
+    const { data: ratesData } = useRatesUSD();
+
+    const converted = useMemo(() => {
+        if (!currency) {
+            return null;
+        }
+
+        // ratesDataが利用可能でない場合、元の値をそのまま使用
+        if (!ratesData) {
+            const out: Record<string, string> = {};
+            for (const [key, value] of entries) {
+                if (key !== 'cost' && key !== 'price') continue;
+                out[key] = value;
             }
-            try {
-                const { rates } = await getRatesUSD();
-                const out: Record<string, string> = {};
-                for (const [key, value] of entries) {
-                    if (key !== 'cost' && key !== 'price') continue;
-                    const parsed = parseAmountWithCurrency(value, currency);
-                    if (parsed.amount == null) continue;
-                    const from = parsed.currency || currency;
-                    const to = currency;
-                    if (from === to) {
-                        out[key] = formatCurrency(parsed.amount, to);
-                        continue;
-                    }
-                    const cv = convertAmountUSDBase(parsed.amount, from, to, rates);
-                    if (cv == null) continue;
-                    out[key] = `${formatCurrency(cv, to)} (${value})`;
-                }
-                if (mounted) setConverted(Object.keys(out).length ? out : null);
-            } catch (e) {
-                console.warn('[metadata] currency convert failed', e);
-                if (mounted) setConverted(null);
+            return Object.keys(out).length ? out : null;
+        }
+
+        const { rates } = ratesData;
+        const out: Record<string, string> = {};
+        for (const [key, value] of entries) {
+            if (key !== 'cost' && key !== 'price') continue;
+            const parsed = parseAmountWithCurrency(value, currency);
+            if (parsed.amount == null) continue;
+            const from = parsed.currency || currency;
+            const to = currency;
+            if (from === to) {
+                out[key] = formatCurrency(parsed.amount, to);
+                continue;
             }
-        };
-        run();
-        return () => {
-            mounted = false;
-        };
-    }, [currency, entries]);
+            const cv = convertAmountUSDBase(parsed.amount, from, to, rates);
+            if (cv == null) continue;
+            out[key] = `${formatCurrency(cv, to)} (${value})`;
+        }
+        return Object.keys(out).length ? out : null;
+    }, [currency, entries, ratesData]);
 
     if (entries.length === 0) return null;
     return (

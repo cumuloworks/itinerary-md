@@ -19,6 +19,20 @@
     -webkit-text-size-adjust: 100%;
 }
 
+@layer components {
+    .scrollbar-none {
+        -ms-overflow-style: none;
+        /* IE/Edge(旧) */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+        /* Chrome/Safari */
+    }
+}
+
 * {
     box-sizing: border-box;
 }

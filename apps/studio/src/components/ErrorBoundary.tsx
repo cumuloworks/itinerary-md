@@ -20,7 +20,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         if (this.state.hasError) {
             return (
                 <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-                    <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 text-center">
+                    <div className="bg-white rounded-lg max-w-md w-full p-6 text-center">
                         <div className="text-xl font-bold text-red-700">An error occurred</div>
                         <div className="text-sm text-gray-600 mt-2">Please reload the page.</div>
                         <div className="mt-4 flex items-center justify-center gap-2">

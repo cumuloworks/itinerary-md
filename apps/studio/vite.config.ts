@@ -8,7 +8,6 @@ export default defineConfig({
     resolve: {
         alias: {
             '@itinerary-md/core': fileURLToPath(new URL('../../packages/core/src', import.meta.url)),
-            '@itinerary-md/statistics': fileURLToPath(new URL('../../packages/statistics/src', import.meta.url)),
         },
     },
     server: {
