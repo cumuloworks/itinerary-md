@@ -1,18 +1,20 @@
+import { extractAirlineCode } from '@itinerary-md/core/parser';
 import { Plane } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
 
 interface AirlineLogoProps {
-    airlineCode: string;
+    flightCode: string;
     size?: number;
     fallbackIcon?: boolean;
 }
 
-export const AirlineLogo: React.FC<AirlineLogoProps> = ({ airlineCode, size = 24, fallbackIcon = true }) => {
+export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24, fallbackIcon = true }) => {
     const [imageError, setImageError] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
 
-    const logoUrl = `https://img.wway.io/pics/root/${airlineCode.toUpperCase()}@png?exar=1&rs=fit:${size}:${size}`;
+    const airlineCode = extractAirlineCode(flightCode);
+    const logoUrl = airlineCode ? `https://img.wway.io/pics/root/${airlineCode.toUpperCase()}@png?exar=1&rs=fit:${size}:${size}` : '';
 
     const handleImageError = () => {
         setImageError(true);
@@ -41,7 +43,7 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ airlineCode, size = 24
         >
             <img
                 src={logoUrl}
-                alt={`${airlineCode} logo`}
+                alt={`${airlineCode || flightCode} logo`}
                 style={{
                     maxWidth: '100%',
                     maxHeight: '100%',

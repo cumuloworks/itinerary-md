@@ -10,7 +10,6 @@ export interface BaseEventData {
 export interface FlightEventData extends BaseEventData {
     type: 'flight';
     flightCode: string;
-    airlineCode?: string;
     departure: string;
     arrival: string;
 }
@@ -31,7 +30,6 @@ export interface StayEventData extends BaseEventData {
 export interface MealEventData extends BaseEventData {
     type: 'meal';
     restaurantName: string;
-    cuisine?: string;
     location?: string;
 }
 
@@ -39,7 +37,6 @@ export interface ActivityEventData extends BaseEventData {
     type: 'activity';
     activityName: string;
     location?: string;
-    description?: string;
 }
 
 export type EventData = FlightEventData | TrainEventData | StayEventData | MealEventData | ActivityEventData;
@@ -108,14 +105,12 @@ const parseFlightData = (rest: string, baseData: Omit<BaseEventData, 'type'>): F
     const flightCode = left || '';
     const routeText = right || '';
     if (!flightCode) return null;
-    const airlineCode = extractAirlineCode(flightCode);
     const routeInfo = routeText ? parseRoute(routeText) : null;
     return {
         ...baseData,
         type: 'flight',
         metadata: { ...baseData.metadata },
         flightCode,
-        airlineCode,
         departure: routeInfo?.departure ?? '',
         arrival: routeInfo?.arrival ?? '',
     };
@@ -154,16 +149,29 @@ const parseStayData = (rest: string, baseData: Omit<BaseEventData, 'type'>): Sta
 
 const parseMealData = (rest: string, baseData: Omit<BaseEventData, 'type'>): MealEventData => {
     const { mainText } = extractMetadata(rest);
-    const [left, right] = mainText.split('::').map((s) => s.trim());
-    const restaurantName = left || '';
-    const location = right || '';
-    const cuisine: string | undefined = undefined;
+    let restaurantName = mainText;
+    let location = '';
+
+    // If :: separator exists, use it and ignore "at" pattern
+    if (mainText.includes('::')) {
+        const [left, right] = mainText.split('::').map((s) => s.trim());
+        restaurantName = left || '';
+        location = right || '';
+    } else {
+        // Only try "at" pattern if no :: separator
+        const atMatch = mainText.match(/^(.+?)\s+at\s+(.+)$/);
+        if (atMatch) {
+            const [, name, place] = atMatch;
+            restaurantName = name;
+            location = place;
+        }
+    }
+
     return {
         ...baseData,
         type: 'meal',
         metadata: { ...baseData.metadata },
         restaurantName,
-        cuisine,
         location,
     };
 };
@@ -172,7 +180,6 @@ const parseActivityData = (rest: string, baseData: Omit<BaseEventData, 'type'>):
     const { mainText } = extractMetadata(rest);
     let activityName = mainText;
     let location: string | undefined;
-    const description: string | undefined = undefined;
     const atMatch = mainText.match(/^(.+?)\s+at\s+(.+)$/);
     if (atMatch) {
         const [, activity, place] = atMatch;
@@ -185,7 +192,6 @@ const parseActivityData = (rest: string, baseData: Omit<BaseEventData, 'type'>):
         metadata: { ...baseData.metadata },
         activityName,
         location,
-        description,
     };
 };
 
@@ -206,7 +212,6 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
                     type: 'flight',
                     metadata: { ...context.metadata, ...metadata },
                     flightCode: context.flightCode,
-                    airlineCode: context.airlineCode,
                     departure: context.departure,
                     arrival: context.arrival,
                 };
@@ -257,7 +262,6 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
                     type: 'meal',
                     metadata: { ...context.metadata, ...metadata },
                     restaurantName: context.restaurantName,
-                    cuisine: context.cuisine,
                     location: context.location,
                 };
             }
@@ -275,7 +279,6 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
                     metadata: { ...context.metadata, ...metadata },
                     activityName: context.activityName,
                     location: context.location,
-                    description: context.description,
                 };
             }
             return null;

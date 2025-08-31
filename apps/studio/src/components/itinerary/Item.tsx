@@ -170,7 +170,7 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, baseTz, currency
 
             <div className={`flex-1 min-w-0 p-5 ${config.cardBg} ${config.cardBorder} border-l-4 ${config.borderColor} -ml-4.5 pl-8`}>
                 <div className="flex items-center gap-x-3 flex-wrap">
-                    {eventData.type === 'flight' && eventData.airlineCode && <AirlineLogo airlineCode={eventData.airlineCode} size={24} />}
+                    {eventData.type === 'flight' && eventData.flightCode && <AirlineLogo flightCode={eventData.flightCode} size={24} />}
                     <span className={`font-bold ${colors.text} text-lg`}>{mainTitle}</span>
                     {routeOrLocationDisplay && <div className="text-gray-700 text-sm font-medium">{routeOrLocationDisplay}</div>}
                 </div>
