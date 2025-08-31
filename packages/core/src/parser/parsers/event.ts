@@ -30,28 +30,6 @@ export interface ActivityEventData extends BaseEventData {
 
 export type EventData = TransportationEventData | StayEventData | ActivityEventData;
 
-export const parseMetadata = (meta: string): Record<string, string> => {
-    const result: Record<string, string> = {};
-    const regex = /(\w+):\s*([^,]+?)(?=\s*,\s*\w+:|$)/g;
-    let match: RegExpExecArray | null = regex.exec(meta);
-    while (match !== null) {
-        const key = match[1]?.trim();
-        const value = match[2]?.trim().replace(/['"]/g, '');
-        if (key && value) {
-            result[key] = value;
-        }
-        match = regex.exec(meta);
-    }
-    return result;
-};
-
-export const extractMetadata = (text: string): { metadata: Record<string, string>; mainText: string } => {
-    let mainText = text.replace(/\s*\{[^}]*\}/, '');
-    mainText = mainText.replace(/\s*\{[^}]*$/, '');
-    mainText = mainText.replace(/\s*\}\s*$/, '');
-    return { metadata: {}, mainText: mainText.trim() };
-};
-
 export const parseTimeAndType = (
     text: string,
     baseTz?: string,
@@ -59,16 +37,16 @@ export const parseTimeAndType = (
 ): {
     timeRange?: TimeRangeLike;
     type: string;
-    rest: string;
+    eventDescription: string;
 } | null => {
     const unified = text.match(/^(\[(?:[\d:+@A-Za-z_/-]+|)\](?:\s*-\s*\[(?:[\d:+@A-Za-z_/-]+|)\])?)\s+(\w+)\s*(.*)/);
     if (!unified) return null;
     const defaultBaseTz = baseTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const [, timeRangeText, type, rest] = unified;
+    const [, timeRangeText, type, eventDescription] = unified;
     const tokens = parseTimeRangeTokens(timeRangeText);
     const timeRange = tokens ? resolveTimeRange(tokens, defaultBaseTz, baseDate) : undefined;
 
-    return { timeRange, type, rest };
+    return { timeRange, type, eventDescription };
 };
 
 export const parseRoute = (route: string): { departure: string; arrival: string } | null => {
@@ -83,31 +61,26 @@ export const parseRoute = (route: string): { departure: string; arrival: string 
     return null;
 };
 
-const parseTransportationData = (rest: string, baseData: BaseEventData, type: 'flight' | 'train' | 'drive' | 'ferry' | 'bus' | 'taxi' | 'subway'): TransportationEventData | null => {
-    const { mainText } = extractMetadata(rest);
-    const [left, right] = mainText.split('::').map((s) => s.trim());
-    const name = left || '';
-    const routeText = right || '';
+const parseTransportationData = (eventDescription: string, baseData: BaseEventData, type: 'flight' | 'train' | 'drive' | 'ferry' | 'bus' | 'taxi' | 'subway'): TransportationEventData | null => {
+    const [name, routeText] = eventDescription.split('::').map((s) => s.trim());
     if (!name) return null;
     const routeInfo = routeText ? parseRoute(routeText) : null;
     return {
         ...baseData,
         type,
         baseType: 'transportation',
-        metadata: { ...baseData.metadata },
         name,
         departure: routeInfo?.departure ?? '',
         arrival: routeInfo?.arrival ?? '',
     };
 };
 
-const parseStayData = (rest: string, baseData: BaseEventData, type: 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan', originalType?: string): StayEventData => {
-    const { mainText } = extractMetadata(rest);
-    let stayName = mainText;
+const parseStayData = (eventDescription: string, baseData: BaseEventData, type: 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan', originalType?: string): StayEventData => {
+    let stayName = eventDescription;
     let location: string | undefined = '';
 
-    if (mainText.includes('::')) {
-        const [left, right] = mainText.split('::').map((s) => s.trim());
+    if (eventDescription.includes('::')) {
+        const [left, right] = eventDescription.split('::').map((s) => s.trim());
         location = right || '';
 
         const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
@@ -117,13 +90,13 @@ const parseStayData = (rest: string, baseData: BaseEventData, type: 'stay' | 'do
             stayName = left;
         }
     } else {
-        const atMatch = mainText.match(/^(.+?)\s+at\s+(.+)$/);
+        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
         if (atMatch) {
             const [, name, place] = atMatch;
             stayName = name;
             location = place;
         } else {
-            const atOnlyMatch = mainText.match(/^at\s+(.+)$/);
+            const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
             const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
             if (atOnlyMatch && originalType && isStayAlias) {
                 stayName = originalType.charAt(0).toUpperCase() + originalType.slice(1);
@@ -136,24 +109,22 @@ const parseStayData = (rest: string, baseData: BaseEventData, type: 'stay' | 'do
         ...baseData,
         type,
         baseType: 'stay',
-        metadata: { ...baseData.metadata },
         stayName,
         location,
     };
 };
 
 const parseActivityData = (
-    rest: string,
+    eventDescription: string,
     baseData: BaseEventData,
     type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe',
     originalType?: string
 ): ActivityEventData => {
-    const { mainText } = extractMetadata(rest);
-    let name = mainText;
+    let name = eventDescription;
     let location: string | undefined = '';
 
-    if (mainText.includes('::')) {
-        const [left, right] = mainText.split('::').map((s) => s.trim());
+    if (eventDescription.includes('::')) {
+        const [left, right] = eventDescription.split('::').map((s) => s.trim());
         location = right || '';
 
         const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
@@ -164,13 +135,13 @@ const parseActivityData = (
             name = left;
         }
     } else {
-        const atMatch = mainText.match(/^(.+?)\s+at\s+(.+)$/);
+        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
         if (atMatch) {
             const [, activityName, place] = atMatch;
             name = activityName;
             location = place;
         } else {
-            const atOnlyMatch = mainText.match(/^at\s+(.+)$/);
+            const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
             const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
             const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
             if (atOnlyMatch && originalType && (isMealAlias || isActivityAlias)) {
@@ -184,17 +155,21 @@ const parseActivityData = (
         ...baseData,
         type,
         baseType: 'activity',
-        metadata: { ...baseData.metadata },
         name,
         location,
     };
 };
 
+const createEventBase = (timeRange?: TimeRangeLike): BaseEventData => ({
+    timeRange,
+    metadata: {},
+});
+
 export const parseEvent = (text: string, context?: EventData, baseTz?: string, baseDate?: string): EventData | null => {
     const parsed = parseTimeAndType(text, baseTz, baseDate);
     if (!parsed) return null;
-    const { type, rest, timeRange } = parsed;
-    const baseData: BaseEventData = { timeRange, metadata: {} };
+    const { type, eventDescription, timeRange } = parsed;
+    const baseData = createEventBase(timeRange);
     switch (type) {
         case 'flight':
         case 'train':
@@ -203,16 +178,15 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
         case 'bus':
         case 'taxi':
         case 'subway': {
-            const parsed = parseTransportationData(rest, baseData, type);
+            const parsed = parseTransportationData(eventDescription, baseData, type);
             if (parsed) return parsed;
             if (context && context.type === type && 'name' in context && 'departure' in context && 'arrival' in context) {
-                const { metadata } = extractMetadata(rest);
                 return {
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
                     type,
                     baseType: 'transportation',
-                    metadata: { ...context.metadata, ...metadata },
+                    metadata: context.metadata,
                     name: context.name,
                     departure: context.departure,
                     arrival: context.arrival,
@@ -225,16 +199,15 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
         case 'hotel':
         case 'hostel':
         case 'ryokan': {
-            const parsed = parseStayData(rest, baseData, type as 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan', type);
+            const parsed = parseStayData(eventDescription, baseData, type as 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan', type);
             if (parsed) return parsed;
             if (context && (context.type === type || context.type === 'stay' || context.type === 'dormitory' || context.type === 'hotel' || context.type === 'hostel' || context.type === 'ryokan')) {
-                const { metadata } = extractMetadata(rest);
                 return {
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
                     type: type as 'stay' | 'dormitory' | 'hotel' | 'hostel' | 'ryokan',
                     baseType: 'stay',
-                    metadata: { ...context.metadata, ...metadata },
+                    metadata: context.metadata,
                     stayName: context.stayName,
                     location: context.location,
                 };
@@ -253,16 +226,15 @@ export const parseEvent = (text: string, context?: EventData, baseTz?: string, b
         case 'spa':
         case 'park':
         case 'cafe': {
-            const parsed = parseActivityData(rest, baseData, type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe', type);
+            const parsed = parseActivityData(eventDescription, baseData, type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe', type);
             if (parsed) return parsed;
             if (context && context.type === type && 'name' in context) {
-                const { metadata } = extractMetadata(rest);
                 return {
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
                     type: type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe',
                     baseType: 'activity',
-                    metadata: { ...context.metadata, ...metadata },
+                    metadata: context.metadata,
                     name: context.name,
                     location: context.location,
                 };

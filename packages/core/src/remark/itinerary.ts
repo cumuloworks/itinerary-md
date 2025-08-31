@@ -4,7 +4,7 @@ import type { Plugin } from 'unified';
 import type { VFile } from 'vfile';
 import YAML from 'yaml';
 import { parseDateText } from '../parser/parsers/date';
-import { extractMetadata, parseEvent, parseTimeAndType } from '../parser/parsers/event';
+import { parseEvent, parseTimeAndType } from '../parser/parsers/event';
 
 type StayMode = 'default' | 'header';
 
@@ -80,7 +80,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const parsed = parseTimeAndType(firstLineText, frontmatterBaseTz);
             if (!parsed) continue;
 
-            const { mainText } = extractMetadata(parsed.rest);
+            const mainText = parsed.eventDescription;
             const mergedMeta: Record<string, string> = {};
             const notes: string[] = [];
 
