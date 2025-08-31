@@ -2,7 +2,7 @@ import { remarkItinerary } from '@itinerary-md/core';
 import React, { type FC, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
+
 import remarkExtractFrontmatter from 'remark-extract-frontmatter';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
@@ -51,7 +51,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, baseTz, c
             <Statistics summary={safeSummary} totalFormatted={safeTotalFormatted} breakdownFormatted={safeBreakdownFormatted} loading={safeLoading} />
             <ReactMarkdown
                 remarkPlugins={[remarkFrontmatter, [remarkExtractFrontmatter, { yaml: YAML.parse, name: 'frontmatter' }], [remarkItinerary, { baseTz, stayMode }], remarkGfm]}
-                rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                rehypePlugins={[rehypeHighlight]}
                 components={{
                     h2: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode }) || {};
