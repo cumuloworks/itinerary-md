@@ -21,7 +21,6 @@ type UseItineraryResult = {
 export function useItinerary(rawContent: string, previewDelay = 300): UseItineraryResult {
     const previewContent = useDebouncedValue(rawContent, previewDelay);
 
-    // 前回成功時のパース結果をキャッシュ
     const lastSuccessfulParseRef = useRef<{
         events: ItineraryEvent[];
         frontmatterTitle?: string;
@@ -33,7 +32,6 @@ export function useItinerary(rawContent: string, previewDelay = 300): UseItinera
     });
 
     const events = useMemo(() => {
-        // コンテンツが空の場合は空配列を返す
         if (!previewContent.trim()) {
             lastSuccessfulParseRef.current.events = [];
             return [];
@@ -41,25 +39,22 @@ export function useItinerary(rawContent: string, previewDelay = 300): UseItinera
 
         try {
             const parsedEvents = parseItineraryEvents(previewContent);
-            // パース成功時はキャッシュを更新
             lastSuccessfulParseRef.current.events = parsedEvents;
             return parsedEvents;
         } catch {
-            // パース失敗時は前回成功時の結果を返す
             return lastSuccessfulParseRef.current.events;
         }
     }, [previewContent]);
 
     const frontmatterTitle = useMemo(() => {
-        // コンテンツが空の場合はundefinedを返す
         if (!previewContent.trim()) {
             lastSuccessfulParseRef.current.frontmatterTitle = undefined;
             return undefined;
         }
 
-        const frontmatterMatch = previewContent.match(/^---\s*\n([\s\S]*?)\n---/);
+        const frontmatterMatch = previewContent.match(/^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/);
+
         if (!frontmatterMatch) {
-            // frontmatterがない場合はundefinedを返す（前回の値は使わない）
             lastSuccessfulParseRef.current.frontmatterTitle = undefined;
             return undefined;
         }
@@ -67,17 +62,14 @@ export function useItinerary(rawContent: string, previewDelay = 300): UseItinera
         try {
             const frontmatter = YAML.parse(frontmatterMatch[1]);
             const title = (frontmatter?.title as string) || undefined;
-            // パース成功時はキャッシュを更新
             lastSuccessfulParseRef.current.frontmatterTitle = title;
             return title;
         } catch {
-            // YAML パース失敗時は前回成功時の値を返す
             return lastSuccessfulParseRef.current.frontmatterTitle;
         }
     }, [previewContent]);
 
     const summary = useMemo(() => {
-        // コンテンツが空の場合は空のサマリーを返す
         if (!previewContent.trim() || events.length === 0) {
             const emptySummary = {};
             lastSuccessfulParseRef.current.summary = emptySummary;
@@ -100,11 +92,9 @@ export function useItinerary(rawContent: string, previewDelay = 300): UseItinera
             }
 
             const newSummary = { startDate, endDate, numDays };
-            // 計算成功時はキャッシュを更新
             lastSuccessfulParseRef.current.summary = newSummary;
             return newSummary;
         } catch {
-            // 計算失敗時は前回成功時の値を返す
             return lastSuccessfulParseRef.current.summary;
         }
     }, [events, previewContent]);
