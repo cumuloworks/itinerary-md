@@ -13,9 +13,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({ trigger }) => {
                 <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
                 <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg max-w-lg w-[90vw] p-6 z-50">
                     <Dialog.Title className="text-lg font-semibold mb-3">About</Dialog.Title>
-                    <Dialog.Description className="text-sm text-gray-600 mb-4">
-                        <p>Itinerary MD Studio — a playground for composing travel itineraries in Markdown.</p>
-                    </Dialog.Description>
+                    <Dialog.Description className="text-sm text-gray-600 mb-4">Itinerary MD Studio — a playground for composing travel itineraries in Markdown.</Dialog.Description>
                     <div className="text-sm text-gray-600 space-y-2">
                         The cost calculation and currency conversion in this app are for reference only. Accuracy and timeliness are not guaranteed. Exchange rates are provided by
                         <a href="https://open.er-api.com" className="underline ml-1" target="_blank" rel="noreferrer">
