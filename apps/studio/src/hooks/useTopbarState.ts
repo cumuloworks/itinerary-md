@@ -88,7 +88,6 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             if (curr.get('tz') === state.timezone && curr.get('cur') === state.currency && curr.get('view') === state.viewMode && curr.get('stay') === state.stayMode) return;
 
             const searchParams = new URLSearchParams(window.location.search);
-            // tz は常に IANA として正しい値（state側）だが、URLを上書きする前に再確認
             if (isValidIanaTimeZone(state.timezone)) {
                 searchParams.set('tz', state.timezone);
             }

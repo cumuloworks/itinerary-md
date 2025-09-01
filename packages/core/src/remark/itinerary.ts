@@ -100,78 +100,72 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
             const source = String(file?.value ?? '');
             const lines = source.split(/\r?\n/);
-            const paraEndLine = (para as MdNode)?.position?.end?.line as number | undefined;
+            const nextNode = children[i + 1] as MdNode | undefined;
+            const nextCol = (nextNode?.position?.start?.column ?? 1) as number;
+            if (nextNode && nextNode.type === 'list' && nextCol === 1 && Array.isArray(nextNode.children)) {
+                const listNode = nextNode as unknown as { type: string; ordered?: boolean; children: MdNode[] };
+                const remainingItems: MdNode[] = [];
+                const liftedNodes: MdNode[] = [];
 
-            const paraLineIdx = typeof paraEndLine === 'number' ? paraEndLine : undefined;
-            if (typeof paraLineIdx === 'number' && paraLineIdx >= 1 && paraLineIdx <= lines.length) {
-                const bulletRe = /^\s+[-*]\s+/;
-                // 0-based index into source lines
-                const anchorIdx = paraLineIdx - 1; // convert from 1-based to 0-based
-                const isBullet = (idx: number) => idx >= 0 && idx < lines.length && bulletRe.test(lines[idx] || '');
+                const getFirstParagraphText = (item: MdNode): string => {
+                    const kids = Array.isArray(item.children) ? item.children : [];
+                    const firstPara = kids.find((n) => n?.type === 'paragraph') as MdNode | undefined;
+                    const raw = firstPara ? mdastToString(firstPara as MdNode) : mdastToString(item as MdNode);
+                    return (
+                        String(raw || '')
+                            .split(/\r?\n/)[0]
+                            ?.trim() || ''
+                    );
+                };
 
-                // 汎用的に、アンカー行が箇条書きであれば上方向に連続ブロックの先頭まで拡張。
-                // 箇条書きでなければ、次行以降で最初の箇条書きを探す（空行はスキップ）。
-                let startIdx = anchorIdx;
-                if (isBullet(startIdx)) {
-                    while (isBullet(startIdx - 1)) startIdx -= 1;
-                } else if (isBullet(startIdx + 1)) {
-                    startIdx = anchorIdx + 1;
-                } else {
-                    // 下方向に最初の箇条書きを探索（空行はスキップ）
-                    startIdx = -1;
-                    for (let k = anchorIdx + 1; k < lines.length; k += 1) {
-                        const ln = lines[k];
-                        if (!ln) break;
-                        if (ln.trim() === '') continue;
-                        if (isBullet(k)) {
-                            startIdx = k;
-                            while (isBullet(startIdx - 1)) startIdx -= 1;
+                let consumeCount = 0;
+                for (let idx = 0; idx < listNode.children.length; idx += 1) {
+                    const li = listNode.children[idx] as MdNode;
+                    if (idx === 0) {
+                        consumeCount = 1;
+                        continue;
+                    }
+                    const prev = listNode.children[idx - 1] as MdNode;
+                    const prevEnd = (prev?.position?.end?.line ?? 0) as number;
+                    const curStart = (li?.position?.start?.line ?? 0) as number;
+                    let hasBlank = false;
+                    for (let ln = prevEnd; ln < curStart - 1; ln += 1) {
+                        const raw = lines[ln] ?? '';
+                        if (raw.trim() === '') {
+                            hasBlank = true;
                             break;
                         }
-                        // 箇条書きでも空行でもない行に到達したら終了
-                        break;
                     }
+                    if (hasBlank) break;
+                    consumeCount += 1;
                 }
 
-                if (startIdx >= 0) {
-                    let endIdx = startIdx;
-                    while (endIdx < lines.length) {
-                        const ln = lines[endIdx];
-                        if (!ln || ln.trim() === '') break;
-                        if (!isBullet(endIdx)) break;
-                        endIdx += 1;
-                    }
-
-                    const blockLines = lines.slice(startIdx, endIdx);
-                    for (const raw of blockLines) {
-                        const metaText = raw.replace(bulletRe, '').trim();
-                        const colonIndex = metaText.indexOf(':');
-                        if (colonIndex > 0) {
-                            const key = metaText.substring(0, colonIndex).trim().toLowerCase();
-                            const value = metaText.substring(colonIndex + 1).trim();
-                            if (knownKeys.has(key)) {
-                                mergedMeta[key] = value;
-                            } else {
-                                notes.push(metaText);
-                            }
-                        } else {
-                            notes.push(metaText);
+                for (let idx = 0; idx < listNode.children.length; idx += 1) {
+                    const li = listNode.children[idx] as MdNode;
+                    const isConsumed = idx < consumeCount;
+                    const text = getFirstParagraphText(li);
+                    const colonIndex = text.indexOf(':');
+                    if (isConsumed && colonIndex > 0) {
+                        const key = text.substring(0, colonIndex).trim().toLowerCase();
+                        const value = text.substring(colonIndex + 1).trim();
+                        if (knownKeys.has(key)) {
+                            mergedMeta[key] = value;
+                            const liChildren = (li as MdNode).children;
+                            const sublists = Array.isArray(liChildren) ? liChildren.filter((n) => n?.type === 'list') : [];
+                            liftedNodes.push(...sublists);
+                            continue;
                         }
                     }
+                    remainingItems.push(li);
+                }
 
-                    const blockStartLine = startIdx + 1; // convert to 1-based for mdast positions
-                    const blockEndLine = endIdx;
-                    const j = i + 1;
-                    while (j < children.length) {
-                        const child = children[j] as MdNode;
-                        const startLine = child?.position?.start?.line;
-                        if (typeof startLine !== 'number') break;
-                        if (startLine >= blockStartLine && startLine <= blockEndLine) {
-                            children.splice(j, 1);
-                        } else {
-                            break;
-                        }
+                if (remainingItems.length > 0) {
+                    (listNode.children as MdNode[]) = remainingItems;
+                    if (liftedNodes.length > 0) {
+                        children.splice(i + 2, 0, ...liftedNodes);
                     }
+                } else {
+                    children.splice(i + 1, 1, ...liftedNodes);
                 }
             }
 
@@ -215,6 +209,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 previousEvent = mergedEvent;
                 hProps['data-itin-event'] = JSON.stringify(mergedEvent);
                 if (currentDateStr) hProps['data-itin-date-str'] = currentDateStr;
+                if (currentDateTz) hProps['data-itin-date-tz'] = currentDateTz;
             }
 
             para.data = { ...prevData, itinMeta, hProperties: hProps } as MdNode['data'];
