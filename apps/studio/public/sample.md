@@ -9,8 +9,6 @@ budget: 2500 EUR
 tags: europe, spain, culture, gastronomy
 ---
 
-# Tokyo to Barcelona: A Mediterranean Escape
-
 ## 2025-03-15 @Asia/Tokyo
 
 [06:30] breakfast Traditional Japanese breakfast at hotel
@@ -77,7 +75,7 @@ _✈️ Crossing 8 time zones westward. The `@Timezone` notation shows local tim
 - note: Free walking tour (tips appreciated)
 - meeting: Plaça de Catalunya
 
-[20:00] shopping La Boqueria Market
+[pm] shopping La Boqueria Market
 - budget: EUR 40
 - goal: Local products and souvenirs
 
@@ -99,7 +97,7 @@ _✈️ Crossing 8 time zones westward. The `@Timezone` notation shows local tim
 - price: EUR 2.40
 - destination: Park Güell
 
-[11:30] - [14:00] park Park Güell exploration
+[am] park Park Güell exploration
 - price: EUR 10
 - zone: Monumental Core
 - architect: Antoni Gaudí
@@ -174,6 +172,7 @@ Times can be specified in various formats:
 ### 3. **Event Types**
 
 #### Transportation Events
+
 ```markdown
 [time] flight|train|bus|ferry|taxi|subway|drive NAME :: DEPARTURE - ARRIVAL
 ```
@@ -184,6 +183,7 @@ Examples:
 - `[08:00] taxi Airport Express :: Hotel - Airport`
 
 #### Accommodation Events
+
 ```markdown
 [] stay|hotel|hostel|ryokan|dormitory NAME :: LOCATION
 ```
@@ -194,6 +194,7 @@ Examples:
 - `[] ryokan Traditional Inn :: Kyoto`
 
 #### Activity Events
+
 ```markdown
 [time] activity|meal|museum|shopping|spa|park|cafe DESCRIPTION [at LOCATION]
 ```
@@ -248,6 +249,10 @@ Common metadata fields:
 - `duration`: Time length
 - `distance`: Travel distance
 
+You can add any metadata field you want.
+
+Metadata fields should be right after the time notation line and should not be indented.
+
 ### 7. **Timezone Handling**
 
 When times include timezone information:
@@ -278,9 +283,11 @@ tags: tag1, tag2
 ---
 ```
 
+`type: itinerary-md` or `type: itmd` is required in the frontmatter to properly parse the document.
+
 ## Advanced Features
 
-### Multi-day Events
+### Multi-day Events (Work in Progress)
 
 For events spanning multiple days, use the `+N` notation:
 
@@ -288,7 +295,7 @@ For events spanning multiple days, use the `+N` notation:
 [22:00] - [10:00+1] ferry Overnight Ferry :: Helsinki - Stockholm
 ```
 
-### Contextual Inheritance
+### Contextual Inheritance (Work in Progress)
 
 When multiple similar events occur, subsequent events can inherit context:
 
@@ -301,7 +308,7 @@ When multiple similar events occur, subsequent events can inherit context:
 [] hotel Marriott  # Inherits location from previous day
 ```
 
-### Price Aggregation
+### Price Aggregation (Work in Progress)
 
 The parser can aggregate prices across events for budget tracking:
 
@@ -319,30 +326,3 @@ The parser can aggregate prices across events for budget tracking:
 4. **Use appropriate event types** - Helps with categorization and visualization
 5. **Leverage aliases** - Makes the document more readable
 6. **Document uncertain times** - Use `[]` or `[am]/[pm]` for flexible scheduling
-
-## Example Patterns
-
-### Morning routine
-```markdown
-[07:00] breakfast at hotel
-[08:30] activity Morning jog
-[09:30] cafe Coffee :: Local Café
-```
-
-### Day trip
-```markdown
-[08:00] - [10:00] train Express :: City A - City B
-[10:30] - [16:00] activity Full day tour
-[16:30] - [18:30] train Express :: City B - City A
-```
-
-### Evening entertainment
-```markdown
-[19:00] dinner Fine dining :: Michelin Restaurant
-[21:00] activity Theater show :: Broadway
-[23:00] activity Night walk :: Times Square
-```
-
----
-
-_This document demonstrates the complete itinerary-md syntax. For more examples and live preview, visit the itinerary-md studio._
