@@ -244,7 +244,7 @@ const getTypeIcon = (type: EventData['type']) => {
     }
 };
 
-const TimePlaceholder: React.FC = () => <span className="font-mono text-lg font-bold leading-tight relative inline-block invisible">-----</span>;
+const TimePlaceholder: React.FC = () => <span className="font-mono text-lg leading-tight relative inline-block invisible">-----</span>;
 
 const TimeDisplay: React.FC<{
     parsedTime?: TimeLike;
@@ -252,12 +252,12 @@ const TimeDisplay: React.FC<{
     timezone?: string;
 }> = ({ parsedTime, dateStr, timezone }) => {
     if (!parsedTime) {
-        return <span className="font-mono text-lg font-bold leading-tight relative inline-block invisible">-----</span>;
+        return <span className="font-mono text-lg leading-tight relative inline-block invisible">-----</span>;
     }
 
     if (parsedTime.kind === 'placeholder') {
         const label = parsedTime.value === 'am' ? 'AM' : 'PM';
-        return <span className="font-mono text-lg font-bold leading-tight inline-block whitespace-pre">{label.padStart(5, ' ')}</span>;
+        return <span className="font-mono text-lg leading-tight inline-block whitespace-pre">{label.padStart(5, ' ')}</span>;
     }
 
     const displayTz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -268,7 +268,7 @@ const TimeDisplay: React.FC<{
     const plusBadge = dayOffset !== 0 ? `${dayOffset > 0 ? '+' : ''}${dayOffset}d` : '';
 
     return (
-        <span className="font-mono text-lg font-bold text-gray-800 leading-tight relative inline-block">
+        <span className="font-mono text-lg text-gray-800 leading-tight relative inline-block">
             {timeText}
             {plusBadge && <span className="absolute -bottom-3 -right-0 text-xs font-bold text-white bg-red-500 rounded px-0.5 ">{plusBadge}</span>}
         </span>

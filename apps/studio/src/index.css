@@ -150,7 +150,7 @@ body {
     }
 
     .markdown-preview h3 {
-        @apply text-lg font-semibold text-gray-800 mb-3 mt-6 ml-20;
+        @apply text-lg font-semibold text-gray-800 mb-3 mt-6 ml-0;
     }
 
     .markdown-preview h4 {

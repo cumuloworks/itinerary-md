@@ -6,29 +6,35 @@ import { useRatesUSD } from '../../hooks/useRatesUSD';
 import { convertAmountUSDBase, formatCurrency, parseAmountWithCurrency } from '../../utils/currency';
 
 const getMetadataConfig = (key: string) => {
-    const configs: Record<string, { icon: LucideIcon; label: string; isSpecial?: boolean }> = {
-        cost: { icon: Wallet, label: '', isSpecial: true },
-        price: { icon: Wallet, label: '', isSpecial: true },
-        seat: { icon: Users, label: 'Seat' },
-        room: { icon: Bed, label: 'Room' },
-        guests: { icon: Users, label: 'Guests' },
-        aircraft: { icon: Plane, label: 'Aircraft' },
-        vehicle: { icon: Car, label: 'Vehicle' },
-        location: { icon: MapPin, label: 'Location' },
-        addr: { icon: MapPin, label: 'Address' },
-        phone: { icon: Phone, label: 'Phone' },
-        wifi: { icon: Wifi, label: 'WiFi' },
-        rating: { icon: Star, label: 'Rating' },
-        reservation: { icon: Calendar, label: 'Reservation' },
-        checkin: { icon: Clock, label: 'Check-in' },
-        checkout: { icon: Clock, label: 'Check-out' },
-        tag: { icon: Tag, label: 'Tag' },
-        cuisine: { icon: Tag, label: 'Cuisine' },
-        note: { icon: Tag, label: 'Note' },
-        desc: { icon: Tag, label: 'Description' },
-        text: { icon: Tag, label: 'Text' },
+    const iconConfigs: Record<string, { icon: LucideIcon; isSpecial?: boolean }> = {
+        cost: { icon: Wallet, isSpecial: true },
+        price: { icon: Wallet, isSpecial: true },
+        seat: { icon: Users },
+        room: { icon: Bed },
+        guests: { icon: Users },
+        aircraft: { icon: Plane },
+        vehicle: { icon: Car },
+        location: { icon: MapPin },
+        addr: { icon: MapPin },
+        phone: { icon: Phone },
+        wifi: { icon: Wifi },
+        rating: { icon: Star },
+        reservation: { icon: Calendar },
+        checkin: { icon: Clock },
+        checkout: { icon: Clock },
+        tag: { icon: Tag },
+        cuisine: { icon: Tag },
+        note: { icon: Tag },
+        desc: { icon: Tag },
+        text: { icon: Tag },
     };
-    return configs[key] || { icon: Tag, label: key };
+    const fallbackLabel = key
+        .split(/[_\-\s]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    const cfg = iconConfigs[key] || { icon: Tag };
+    return { icon: cfg.icon, label: fallbackLabel, isSpecial: cfg.isSpecial };
 };
 
 export const Meta: React.FC<{

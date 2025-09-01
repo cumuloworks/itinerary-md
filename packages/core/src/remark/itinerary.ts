@@ -45,7 +45,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
         if (!isItinerary) return tree;
 
-        const knownKeys = new Set(['cost', 'price', 'seat', 'room', 'guests', 'aircraft', 'vehicle', 'location', 'addr', 'phone', 'wifi', 'rating', 'reservation', 'checkin', 'checkout', 'tag', 'cuisine', 'note', 'desc', 'text']);
+        // Accept any metadata key in the immediate following top-level list (key: value)
 
         const root = (tree as { children?: MdNode[] }) ?? {};
         const children: MdNode[] = Array.isArray(root.children) ? root.children : [];
@@ -148,13 +148,11 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                     if (isConsumed && colonIndex > 0) {
                         const key = text.substring(0, colonIndex).trim().toLowerCase();
                         const value = text.substring(colonIndex + 1).trim();
-                        if (knownKeys.has(key)) {
-                            mergedMeta[key] = value;
-                            const liChildren = (li as MdNode).children;
-                            const sublists = Array.isArray(liChildren) ? liChildren.filter((n) => n?.type === 'list') : [];
-                            liftedNodes.push(...sublists);
-                            continue;
-                        }
+                        mergedMeta[key] = value;
+                        const liChildren = (li as MdNode).children;
+                        const sublists = Array.isArray(liChildren) ? liChildren.filter((n) => n?.type === 'list') : [];
+                        liftedNodes.push(...sublists);
+                        continue;
                     }
                     remainingItems.push(li);
                 }
