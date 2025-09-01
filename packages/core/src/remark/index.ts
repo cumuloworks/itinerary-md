@@ -1,3 +1,2 @@
-export type { ItineraryFrontmatter, StayMode } from './frontmatter';
-export { extractFrontmatter, parseItineraryFrontmatter } from './frontmatter';
+export type { StayMode } from './itinerary';
 export { remarkItinerary } from './itinerary';

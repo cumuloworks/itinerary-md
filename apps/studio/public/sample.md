@@ -1,6 +1,11 @@
 ---
+type: itmd
 title: Europe Trip (First 3 Days)
 timezone: Asia/Tokyo
+currency: USD
+description: Sample frontmatter for itinerary-md
+traveler: John Doe
+budget: 1500 USD
 ---
 
 ## 2025-09-25 @Asia/Tokyo
@@ -73,14 +78,14 @@ _Note: Mixed `@Timezone` in a range shows conversion; you may see +Nd badges whe
 [pm] activity Louvre visit at Paris
     - price: EUR 22
 
-[18:30] dinner :: Le Petit Bistro  
+[18:30] dinner :: Le Petit Bistro
     - price: EUR 35
     - note: Alias with :: syntax
 
 [19:30] dinner at Le Petit Bistro
     - price: EUR 35
     - note: Testing simplified alias syntax
-    
+
 [20:00] dinner Dinner at Le Comptoir du Relais
     - price: EUR 45
     - note: Using 'dinner' alias

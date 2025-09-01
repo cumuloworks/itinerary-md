@@ -37,9 +37,9 @@ export const formatDateTime = (
     return result;
 };
 
-export const getDayOffset = (instant: Date, baseDate: string, baseTz: string): number => {
-    const baseDateTime = DateTime.fromISO(baseDate, { zone: baseTz });
-    const target = DateTime.fromJSDate(instant).setZone(baseTz);
+export const getDayOffset = (instant: Date, baseDate: string, timezone: string): number => {
+    const baseDateTime = DateTime.fromISO(baseDate, { zone: timezone });
+    const target = DateTime.fromJSDate(instant).setZone(timezone);
     return Math.round(target.startOf('day').diff(baseDateTime.startOf('day'), 'days').days);
 };
 

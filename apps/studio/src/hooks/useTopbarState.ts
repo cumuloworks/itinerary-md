@@ -1,4 +1,6 @@
+import { isValidIanaTimeZone } from '@itinerary-md/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { notifyError } from '../core/errors';
 import type { StayMode, TopbarState, ViewMode } from '../types/itinerary';
 
 const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
@@ -14,7 +16,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
     const isInitializedRef = useRef(false);
 
     const [state, setState] = useState<TopbarState>(() => ({
-        baseTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         currency: 'USD',
         viewMode: 'split',
         stayMode: 'default',
@@ -39,7 +41,13 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             const patch: Partial<TopbarState> = {};
 
             const tz = searchParams.get('tz');
-            if (tz) patch.baseTz = tz;
+            if (tz) {
+                if (isValidIanaTimeZone(tz)) {
+                    patch.timezone = tz;
+                } else {
+                    notifyError(`URL timezone "${tz}" is invalid. Using current selection.`);
+                }
+            }
 
             const cur = searchParams.get('cur');
             if (cur) patch.currency = cur;
@@ -77,10 +85,12 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
     useEffect(() => {
         try {
             const curr = new URLSearchParams(window.location.search);
-            if (curr.get('tz') === state.baseTz && curr.get('cur') === state.currency && curr.get('view') === state.viewMode && curr.get('stay') === state.stayMode) return;
+            if (curr.get('tz') === state.timezone && curr.get('cur') === state.currency && curr.get('view') === state.viewMode && curr.get('stay') === state.stayMode) return;
 
             const searchParams = new URLSearchParams(window.location.search);
-            searchParams.set('tz', state.baseTz);
+            if (isValidIanaTimeZone(state.timezone)) {
+                searchParams.set('tz', state.timezone);
+            }
             searchParams.set('cur', state.currency);
             searchParams.set('view', state.viewMode);
             searchParams.set('stay', state.stayMode);
@@ -89,7 +99,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
             history.replaceState(null, '', newUrl);
         } catch {}
-    }, [state.baseTz, state.currency, state.viewMode, state.stayMode]);
+    }, [state.timezone, state.currency, state.viewMode, state.stayMode]);
 
     return [state, updateState];
 }

@@ -21,7 +21,6 @@ export function useRatesUSD(): UseRatesUSDResult {
     });
 
     useEffect(() => {
-        // レートがまだ利用できない場合、定期的にチェック
         if (!ratesState.ready) {
             const checkRates = () => {
                 const currentRates = getRatesUSD();
@@ -30,27 +29,21 @@ export function useRatesUSD(): UseRatesUSDResult {
                         data: currentRates,
                         ready: true,
                     });
-                    return true; // チェック終了
+                    return true;
                 }
-                return false; // チェック継続
+                return false;
             };
 
-            // 初回チェック
             if (checkRates()) {
                 return;
             }
 
-            // レートが利用できるまで定期的にチェック
             const interval = setInterval(() => {
                 if (checkRates()) {
                     clearInterval(interval);
                 }
-            }, 100); // 100ms間隔でチェック
-
-            // バックアップとしてレートの初期化を再試行
-            initializeRates().catch(() => {
-                // エラーは無視（initializeRatesが既にログ出力している）
-            });
+            }, 100);
+            initializeRates().catch(() => {});
 
             return () => clearInterval(interval);
         }

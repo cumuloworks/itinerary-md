@@ -56,7 +56,7 @@ export const fetchRatesUSD = async (): Promise<RatesUSDBase> => {
  */
 export const initializeRates = async (): Promise<void> => {
     try {
-        const cached = getCachedRatesUSD(); // TTLチェック済み
+        const cached = getCachedRatesUSD();
         if (!cached) {
             await fetchRatesUSD();
         }

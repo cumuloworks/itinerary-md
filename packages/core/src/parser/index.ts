@@ -1,5 +1,9 @@
-import { parseDateText } from './parsers/date';
-import { type EventData, parseEvent } from './parsers/event';
+import type { Root } from 'mdast';
+import { toString as mdastToString } from 'mdast-util-to-string';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
+import { remarkItinerary } from '../remark/itinerary';
+import type { EventData } from './parsers/event';
 
 export type ItineraryEvent = {
     date: string;
@@ -9,7 +13,7 @@ export type ItineraryEvent = {
 };
 
 export type ParseItineraryEventsOptions = {
-    baseTz?: string;
+    timezone?: string;
     stayMode?: 'default' | 'header';
 };
 
@@ -18,73 +22,40 @@ export type ParseItineraryEventsOptions = {
  */
 export function parseItineraryEvents(markdown: string, options?: ParseItineraryEventsOptions): ItineraryEvent[] {
     const events: ItineraryEvent[] = [];
-    const lines = markdown.split(/\r?\n/);
 
-    let currentDate: string | undefined;
-    let currentTimezone: string | undefined;
-    let previousEvent: EventData | null = null;
+    const processor = unified().use(remarkParse).use(remarkItinerary, {
+        timezone: options?.timezone,
+        stayMode: options?.stayMode,
+    });
 
-    const knownKeys = new Set(['cost', 'price', 'seat', 'room', 'guests', 'aircraft', 'vehicle', 'location', 'addr', 'phone', 'wifi', 'rating', 'reservation', 'checkin', 'checkout', 'tag', 'cuisine', 'note', 'desc', 'text']);
+    const tree = processor.parse(markdown) as Root;
+    const ran = processor.runSync(tree, { value: markdown } as unknown as { value: string }) as Root;
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmedLine = line.trim();
+    type Node = { type?: string; data?: { hProperties?: Record<string, unknown> } } & { children?: Node[] };
+    const children: Node[] = Array.isArray((ran as unknown as { children?: unknown[] }).children) ? ((ran as unknown as { children?: Node[] }).children as Node[]) : [];
 
-        if (trimmedLine.startsWith('## ')) {
-            const dateText = trimmedLine.slice(3).trim();
-            const dateData = parseDateText(dateText, options?.baseTz);
-            if (dateData) {
-                currentDate = dateData.date;
-                currentTimezone = dateData.timezone;
-                previousEvent = null;
-            }
-            continue;
-        }
+    for (let i = 0; i < children.length; i += 1) {
+        const node = children[i];
+        if (!node || node.type !== 'paragraph') continue;
+        const hProps = (node.data?.hProperties || {}) as Record<string, unknown>;
+        if (hProps['data-itin-skip'] === '1') continue;
+        const eventStr = typeof hProps['data-itin-event'] === 'string' ? (hProps['data-itin-event'] as string) : undefined;
+        if (!eventStr) continue;
 
-        if (!trimmedLine || !currentDate) continue;
+        const dateStr = typeof hProps['data-itin-date-str'] === 'string' ? (hProps['data-itin-date-str'] as string) : undefined;
+        if (!dateStr) continue;
+        const tzStr = typeof hProps['data-itin-date-tz'] === 'string' ? (hProps['data-itin-date-tz'] as string) : undefined;
 
-        const eventData = parseEvent(trimmedLine, previousEvent || undefined, options?.baseTz, currentDate);
-        if (eventData) {
-            const metadata: Record<string, string> = { ...eventData.metadata };
-            let j = i + 1;
-
-            while (j < lines.length && lines[j].trim() === '') {
-                j++;
-            }
-
-            while (j < lines.length) {
-                const metaLine = lines[j].trim();
-                if (!metaLine.startsWith('- ') && !metaLine.startsWith('* ')) {
-                    break;
-                }
-
-                const itemText = metaLine.substring(2).trim();
-                const colonIndex = itemText.indexOf(':');
-                if (colonIndex > 0) {
-                    const key = itemText.substring(0, colonIndex).trim().toLowerCase();
-                    const value = itemText.substring(colonIndex + 1).trim();
-                    if (knownKeys.has(key)) {
-                        metadata[key] = value;
-                    }
-                }
-                j++;
-            }
-
-            const finalEventData: EventData = {
-                ...eventData,
-                metadata,
-            };
-
+        try {
+            const event = JSON.parse(eventStr) as EventData;
+            const rawText = mdastToString(node as unknown as { children?: unknown[] } as never).trim();
             events.push({
-                date: currentDate,
-                timezone: currentTimezone,
-                event: finalEventData,
-                rawText: trimmedLine,
+                date: dateStr,
+                timezone: tzStr,
+                event,
+                rawText,
             });
-            previousEvent = finalEventData;
-
-            i = j - 1;
-        }
+        } catch {}
     }
 
     return events;

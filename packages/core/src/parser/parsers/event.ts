@@ -1,3 +1,4 @@
+import { isValidIanaTimeZone } from '../../time/iana';
 import type { TimeRangeLike } from './time';
 import { parseTimeRangeTokens, resolveTimeRange } from './time';
 
@@ -32,7 +33,7 @@ export type EventData = TransportationEventData | StayEventData | ActivityEventD
 
 export const parseTimeAndType = (
     text: string,
-    baseTz?: string,
+    timezone?: string,
     baseDate?: string
 ): {
     timeRange?: TimeRangeLike;
@@ -41,10 +42,10 @@ export const parseTimeAndType = (
 } | null => {
     const unified = text.match(/^(\[(?:[\d:+@A-Za-z_/-]+|)\](?:\s*-\s*\[(?:[\d:+@A-Za-z_/-]+|)\])?)\s+(\w+)\s*(.*)/);
     if (!unified) return null;
-    const defaultBaseTz = baseTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const defaultTimezone = isValidIanaTimeZone(timezone) ? timezone : Intl.DateTimeFormat().resolvedOptions().timeZone;
     const [, timeRangeText, type, eventDescription] = unified;
     const tokens = parseTimeRangeTokens(timeRangeText);
-    const timeRange = tokens ? resolveTimeRange(tokens, defaultBaseTz, baseDate) : undefined;
+    const timeRange = tokens ? resolveTimeRange(tokens, defaultTimezone, baseDate) : undefined;
 
     return { timeRange, type, eventDescription };
 };
@@ -165,8 +166,8 @@ const createEventBase = (timeRange?: TimeRangeLike): BaseEventData => ({
     metadata: {},
 });
 
-export const parseEvent = (text: string, context?: EventData, baseTz?: string, baseDate?: string): EventData | null => {
-    const parsed = parseTimeAndType(text, baseTz, baseDate);
+export const parseEvent = (text: string, context?: EventData, timezone?: string, baseDate?: string): EventData | null => {
+    const parsed = parseTimeAndType(text, timezone, baseDate);
     if (!parsed) return null;
     const { type, eventDescription, timeRange } = parsed;
     const baseData = createEventBase(timeRange);

@@ -26,50 +26,41 @@ const PREVIEW_DEBOUNCE_DELAY = 300;
 function App() {
     const tzSelectId = useId();
 
-    // 初期コンテンツ管理
     const { content, setContent, pendingLoadSample, loadSample, cancelLoadSample, confirmLoadSample } = useInitialContent({
         storageKey: STORAGE_KEY,
         samplePath: '/sample.md',
     });
 
-    // ハッシュインポート管理
     const hashImport = useHashImport(
         (hashContent: string) => setContent(hashContent),
         () => saveNow()
     );
 
-    // 自動保存（通知も内部で処理）
     const { saveNow } = useAutosave(content, {
         key: STORAGE_KEY,
         delay: AUTOSAVE_DELAY,
     });
 
-    // Topbar状態管理（URL同期含む）
     const [topbar, updateTopbar] = useTopbarState();
 
-    // 旅程データ解析
     const { previewContent, events, frontmatterTitle, summary } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
-        baseTz: topbar.baseTz,
+        timezone: topbar.timezone,
         stayMode: topbar.stayMode,
     });
 
-    // 費用統計
     const { totalFormatted, breakdownFormatted } = useCostStatistics(events, topbar.currency);
 
-    // MarkdownPreview用にpropsを最適化（参照安定化）
     const previewProps = useMemo(
         () => ({
-            baseTz: topbar.baseTz,
+            timezone: topbar.timezone,
             currency: topbar.currency,
             stayMode: topbar.stayMode,
         }),
-        [topbar.baseTz, topbar.currency, topbar.stayMode]
+        [topbar.timezone, topbar.currency, topbar.stayMode]
     );
 
-    // 最新のコンテンツ参照（クリップボード処理用）
     const latestContent = useLatest(content);
 
-    // イベントハンドラー
     const handleContentChange = useCallback(
         (newContent: string) => {
             setContent(newContent);
@@ -97,8 +88,6 @@ function App() {
             notifyError('Copy failed');
         }
     }, [latestContent]);
-
-    // Hook側で完結するため、これらのハンドラーは不要になります
 
     const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
 

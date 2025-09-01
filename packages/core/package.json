@@ -15,29 +15,23 @@
     "files": [
         "dist"
     ],
-    
     "scripts": {
         "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.build.json --noEmit",
         "prepack": "npm run build",
-        "test": "vitest --run",
+        "test": "vitest --run --passWithNoTests",
         "test:watch": "vitest"
     },
     "dependencies": {
+        "gray-matter": "^4.0.3",
+        "luxon": "^3.4.4",
         "mdast-util-to-string": "4.0.0",
-        "remark-extract-frontmatter": "^3.2.0",
-        "remark-frontmatter": "^5.0.0",
-        "remark-parse": "^11.0.0",
         "unified": "^11.0.4",
-        "yaml": "^2.8.1",
-        "luxon": "^3.4.4"
+        "remark-parse": "^11.0.0"
     },
     "devDependencies": {
-        "typescript": "^5.2.2",
         "@types/node": "^20.12.12",
-        "vitest": "^2.1.9",
-        "unified": "^11.0.4",
-        "remark-parse": "^11.0.0",
-        "remark-stringify": "^11.0.0"
+        "typescript": "^5.2.2",
+        "vitest": "^2.1.9"
     }
 }

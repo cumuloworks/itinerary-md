@@ -16,12 +16,15 @@ const getDayOfWeekFromDateString = (dateStr: string): string => {
     return names[dow];
 };
 
-export const parseDateText = (text: string, baseTz?: string): DateData | null => {
+import { isValidIanaTimeZone } from '../../time/iana';
+
+export const parseDateText = (text: string, defaultTimezone?: string): DateData | null => {
     const dateMatch = text.match(/^(\d{4}-\d{2}-\d{2})(?:\s*@([A-Za-z0-9_./+-]+))?/);
     if (!dateMatch) return null;
     const [, date, tz] = dateMatch as RegExpMatchArray & { 1: string; 2?: string };
     const dayOfWeek = getDayOfWeekFromDateString(date);
-    const timezone = tz || baseTz;
+    const timezoneRaw = tz || defaultTimezone;
+    const timezone = isValidIanaTimeZone(timezoneRaw) ? timezoneRaw : defaultTimezone;
     return { date, dayOfWeek, timezone, originalText: text };
 };
 

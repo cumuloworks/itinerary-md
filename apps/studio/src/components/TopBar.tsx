@@ -35,7 +35,7 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                         <span aria-hidden>TZ</span>
                         <span className="sr-only">Timezone</span>
                     </span>
-                    <Select.Root value={topbar.baseTz} onValueChange={(v) => onTopbarChange({ baseTz: v })}>
+                    <Select.Root value={topbar.timezone} onValueChange={(v) => onTopbarChange({ timezone: v })}>
                         <Select.Trigger id={tzSelectId} aria-labelledby={tzLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[220px] h-full">
                             <Select.Value />
                             <Select.Icon>

@@ -1,4 +1,5 @@
 import { type ItineraryEvent, parseItineraryEvents } from '@itinerary-md/core';
+import matter from 'gray-matter';
 import { useMemo, useRef } from 'react';
 import YAML from 'yaml';
 import type { ItinerarySummary } from '../types/itinerary';
@@ -18,7 +19,7 @@ type UseItineraryResult = {
  * @param previewDelay プレビュー遅延時間（デフォルト: 300ms）
  * @returns 解析された旅程データ
  */
-export function useItinerary(rawContent: string, previewDelay = 300, opts?: { baseTz?: string; stayMode?: 'default' | 'header' }): UseItineraryResult {
+export function useItinerary(rawContent: string, previewDelay = 300, opts?: { timezone?: string; stayMode?: 'default' | 'header' }): UseItineraryResult {
     const previewContent = useDebouncedValue(rawContent, previewDelay);
 
     const lastSuccessfulParseRef = useRef<{
@@ -51,17 +52,9 @@ export function useItinerary(rawContent: string, previewDelay = 300, opts?: { ba
             lastSuccessfulParseRef.current.frontmatterTitle = undefined;
             return undefined;
         }
-
-        const frontmatterMatch = previewContent.match(/^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/);
-
-        if (!frontmatterMatch) {
-            lastSuccessfulParseRef.current.frontmatterTitle = undefined;
-            return undefined;
-        }
-
         try {
-            const frontmatter = YAML.parse(frontmatterMatch[1]);
-            const title = (frontmatter?.title as string) || undefined;
+            const parsed = matter(previewContent, { language: 'yaml', engines: { yaml: (s: string) => YAML.parse(s) } });
+            const title = (parsed.data?.title as string) || undefined;
             lastSuccessfulParseRef.current.frontmatterTitle = title;
             return title;
         } catch {
