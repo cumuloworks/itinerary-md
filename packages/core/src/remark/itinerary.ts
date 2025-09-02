@@ -4,6 +4,7 @@ import type { Plugin } from 'unified';
 import type { VFile } from 'vfile';
 import { parseDateText } from '../parser/parsers/date';
 import { parseEvent, parseTimeAndType } from '../parser/parsers/event';
+import type { EventData } from '../parser/parsers/event';
 import { isValidIanaTimeZone } from '../time/iana';
 //
 
@@ -17,11 +18,195 @@ type MdNode = {
     value?: unknown;
     data?: Record<string, unknown> | undefined;
     position?: { start?: { line?: number; column?: number }; end?: { line?: number; column?: number } };
+    url?: string;
+};
+
+type TextSegment = {
+    text: string;
+    url?: string;
 };
 
 export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => {
     return function transformer(tree: Root, file?: VFile) {
         if (!tree) return tree;
+
+
+
+                const nodeToSegments = (node: MdNode): TextSegment[] => {
+            const segments: TextSegment[] = [];
+            
+            if (node.type === 'text' && typeof node.value === 'string') {
+                segments.push({ text: node.value });
+            } else if (node.type === 'link') {
+                                const linkText = mdastToString(node);
+                const url = node.url || "";
+
+                segments.push({ text: linkText, url });
+            } else if (node.children) {
+                for (const child of node.children) {
+                    segments.push(...nodeToSegments(child));
+                }
+            }
+            
+            return segments;
+        };
+
+                const segmentsToPlainText = (segments: TextSegment[]): string => {
+            return segments.map(s => s.text).join('');
+        };
+
+                const parseEventFromSegments = (
+            segments: TextSegment[],
+            context?: EventData | null,
+            timezone?: string,
+            baseDate?: string
+        ): { eventData: EventData | null; nameSegments?: TextSegment[]; departureSegments?: TextSegment[]; arrivalSegments?: TextSegment[] } | null => {
+            const plainText = segmentsToPlainText(segments);
+            const parsed = parseTimeAndType(plainText, timezone, baseDate);
+            if (!parsed) return null;
+
+                        const timeMatch = plainText.match(/^(\[(?:[\d:+@A-Za-z_/-]+|)\](?:\s*-\s*\[(?:[\d:+@A-Za-z_/-]+|)\])?)\s+(\w+)\s*/);
+            if (!timeMatch) return null;
+            
+            const timeAndTypeLength = timeMatch[0].length;
+            
+                        let currentLength = 0;
+            let descriptionStartIndex = 0;
+            
+            for (let i = 0; i < segments.length; i++) {
+                const segmentLength = segments[i].text.length;
+                if (currentLength + segmentLength >= timeAndTypeLength) {
+                                        const splitPoint = timeAndTypeLength - currentLength;
+                    if (splitPoint > 0 && splitPoint < segmentLength) {
+                                                const beforeText = segments[i].text.substring(0, splitPoint);
+                        const afterText = segments[i].text.substring(splitPoint);
+                        
+                                                const newSegments: TextSegment[] = [];
+                                                for (let j = 0; j < i; j++) {
+                            newSegments.push(segments[j]);
+                        }
+                                                if (beforeText) {
+                            newSegments.push({ text: beforeText, url: segments[i].url });
+                        }
+                                                if (afterText) {
+                            newSegments.push({ text: afterText, url: segments[i].url });
+                        }
+                                                for (let j = i + 1; j < segments.length; j++) {
+                            newSegments.push(segments[j]);
+                        }
+                        
+                        segments = newSegments;
+                        descriptionStartIndex = i + (beforeText ? 1 : 0);
+                    } else if (splitPoint === 0) {
+                        descriptionStartIndex = i;
+                    } else {
+                        descriptionStartIndex = i + 1;
+                    }
+                    break;
+                }
+                currentLength += segmentLength;
+            }
+            
+            const descriptionSegments = segments.slice(descriptionStartIndex);
+            const eventDescription = segmentsToPlainText(descriptionSegments);
+            
+                        const eventData = parseEvent(plainText, context || undefined, timezone, baseDate);
+
+            if (!eventData) return null;
+            
+                        const result: { eventData: EventData | null; nameSegments?: TextSegment[]; departureSegments?: TextSegment[]; arrivalSegments?: TextSegment[] } = { eventData };
+            
+                        const displayName = ('name' in eventData && eventData.name) ? eventData.name 
+                              : ('stayName' in eventData && eventData.stayName) ? eventData.stayName 
+                              : null;
+            
+            if (displayName) {
+
+                
+                                if (eventDescription.includes('::')) {
+                    const parts = eventDescription.split('::');
+                    const namePartText = parts[0].trim();
+                    result.nameSegments = extractSegmentsForText(descriptionSegments, namePartText);
+                    
+                    if ('departure' in eventData && 'arrival' in eventData && parts[1]) {
+                                                const routeText = parts[1].trim();
+                        const routeParts = routeText.split(' - ');
+                        if (routeParts.length >= 2) {
+                            const depText = routeParts[0].trim();
+                            const arrText = routeParts[routeParts.length - 1].trim();
+                            result.departureSegments = extractSegmentsForText(descriptionSegments, depText, namePartText.length + 4);                             result.arrivalSegments = extractSegmentsForText(descriptionSegments, arrText, namePartText.length + 4 + depText.length + 3);                         }
+                    } else if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
+                                                const locationText = parts[1].trim();
+                        result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + 4);                     }
+                } else {
+                                        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+                    const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
+                    
+                    if (atMatch) {
+                                                const namePartText = atMatch[1].trim();
+                        if (namePartText) {
+                            result.nameSegments = extractSegmentsForText(descriptionSegments, namePartText);
+                            
+                                                        if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
+                                const locationText = atMatch[2].trim();
+                                result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + 4);                             }
+                        } else {
+                            result.nameSegments = descriptionSegments;
+                        }
+                    } else if (atOnlyMatch && displayName) {
+                                                result.nameSegments = [{ text: displayName }];
+                        
+                                                if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
+                            const locationText = atOnlyMatch[1].trim();
+                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, 3);                         }
+                    } else {
+                        result.nameSegments = descriptionSegments;
+                    }
+                }
+            }
+            
+            return result;
+        };
+
+                const extractSegmentsForText = (segments: TextSegment[], targetText: string, startOffset = 0): TextSegment[] => {
+            const result: TextSegment[] = [];
+            let currentPos = 0;
+            let targetStart = -1;
+            let targetEnd = -1;
+            
+            const fullText = segmentsToPlainText(segments);
+            
+                        const searchStart = Math.max(0, startOffset);
+            const searchText = fullText.substring(searchStart);
+            const relativeIndex = searchText.indexOf(targetText);
+            
+            if (relativeIndex === -1) {
+                return [];             }
+            
+            targetStart = searchStart + relativeIndex;
+            targetEnd = targetStart + targetText.length;
+            
+                        for (const segment of segments) {
+                const segmentLength = segment.text.length;
+                const segmentEnd = currentPos + segmentLength;
+                
+                if (segmentEnd > targetStart && currentPos < targetEnd) {
+                                        const overlapStart = Math.max(0, targetStart - currentPos);
+                    const overlapEnd = Math.min(segmentLength, targetEnd - currentPos);
+                    
+                    if (overlapStart === 0 && overlapEnd === segmentLength) {
+                                                result.push(segment);
+                    } else {
+                                                const partialText = segment.text.substring(overlapStart, overlapEnd);
+                        result.push({ text: partialText, url: segment.url });
+                    }
+                }
+                
+                currentPos = segmentEnd;
+            }
+            
+            return result;
+        };
 
         let frontmatterTimezone: string | undefined;
         let isItinerary = true;
@@ -45,8 +230,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
         if (!isItinerary) return tree;
 
-        // Accept any metadata key in the immediate following top-level list (key: value)
-
+        
         const root = (tree as { children?: MdNode[] }) ?? {};
         const children: MdNode[] = Array.isArray(root.children) ? root.children : [];
 
@@ -65,6 +249,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 const line = mdastToString(para as MdNode).trim();
                 const dateData = parseDateText(line, isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone);
                 if (dateData) {
+
                     prevDayHadStay = currentDayHasStay;
                     currentDayHasStay = false;
                     previousEvent = null;
@@ -73,38 +258,42 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                     const prevData = para.data || {};
                     const prevH = (prevData.hProperties as Record<string, unknown>) || {};
                     const hProps: Record<string, unknown> = { ...prevH };
-                    hProps['data-itin-date'] = JSON.stringify({ ...dateData, prevStayName: prevDayHadStay ? lastStayName || undefined : undefined });
+                    const itmdHeading = { ...dateData, prevStayName: prevDayHadStay ? lastStayName || undefined : undefined } as Record<string, unknown>;
+                    hProps['data-itin-date'] = JSON.stringify(itmdHeading);
                     const tzInHeading = (() => {
                         const m = line.match(/@\s*([A-Za-z0-9_./+-]+)/);
                         return m?.[1];
                     })();
                     if (tzInHeading && !isValidIanaTimeZone(tzInHeading)) {
                         hProps['data-itin-warn-date-tz'] = tzInHeading;
+                        (itmdHeading as Record<string, unknown>)['warnInvalidTimezone'] = tzInHeading;
                     }
-                    para.data = { ...prevData, hProperties: hProps } as MdNode['data'];
+                    para.data = { ...prevData, hProperties: hProps, itmdHeading } as MdNode['data'];
                 }
                 continue;
             }
 
-            // Attach current date attributes to any non-heading node within the day's section
-            if (currentDateStr) {
+                        if (currentDateStr) {
                 const prevData = para.data || {};
                 const prevH = (prevData.hProperties as Record<string, unknown>) || {};
                 const hProps: Record<string, unknown> = { ...prevH };
                 if (!hProps['data-itin-date-str']) hProps['data-itin-date-str'] = currentDateStr;
                 if (currentDateTz && !hProps['data-itin-date-tz']) hProps['data-itin-date-tz'] = currentDateTz;
-                para.data = { ...prevData, hProperties: hProps } as MdNode['data'];
+                const itmdDate = { dateStr: currentDateStr, dateTz: currentDateTz } as Record<string, unknown>;
+                para.data = { ...prevData, hProperties: hProps, itmdDate } as MdNode['data'];
             }
 
             if (para.type !== 'paragraph') continue;
 
-            // Use full paragraph text to include link texts and inline nodes for parsing
-            const firstLineText = mdastToString(para as MdNode).trim();
+                        const firstLineText = mdastToString(para as MdNode).trim();
+
 
             const parsed = parseTimeAndType(firstLineText, frontmatterTimezone);
-            if (!parsed) continue;
+            if (!parsed) {
+                continue;
+            }
 
-            const mainText = parsed.eventDescription;
+
             const mergedMeta: Record<string, string> = {};
             const notes: string[] = [];
 
@@ -160,33 +349,46 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                         const value = text.substring(colonIndex + 1).trim();
                         mergedMeta[key] = value;
 
-                        // If the value part contains a markdown link, keep its URL alongside the value
-                        try {
+                                                try {
                             const liChildren = (li as MdNode).children;
                             const firstPara = Array.isArray(liChildren) ? (liChildren.find((n) => n?.type === 'paragraph') as MdNode | undefined) : undefined;
-                            const findFirstLink = (node?: MdNode): string | undefined => {
-                                if (!node) return undefined;
-                                const kids = Array.isArray(node.children) ? node.children : [];
-                                for (const child of kids) {
+                            
+                            if (firstPara?.children) {
+                                                                const segments: TextSegment[] = [];
+                                let foundColon = false;
+
+                                
+                                for (const child of firstPara.children) {
                                     if (!child) continue;
-                                    if ((child as { type?: string }).type === 'link') {
-                                        const url = (child as unknown as { url?: string }).url;
-                                        if (typeof url === 'string' && url.trim() !== '') return url;
+                                    
+                                    if (!foundColon) {
+                                                                                if (child.type === 'text' && typeof child.value === 'string') {
+                                            const colonIdx = child.value.indexOf(':');
+                                            if (colonIdx >= 0) {
+                                                foundColon = true;
+                                                                                                const afterColon = child.value.substring(colonIdx + 1);
+                                                if (afterColon) {
+                                                    segments.push({ text: afterColon });
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                                                                const childSegments = nodeToSegments(child);
+                                        segments.push(...childSegments);
                                     }
-                                    const nested = findFirstLink(child as MdNode);
-                                    if (nested) return nested;
                                 }
-                                return undefined;
-                            };
-                            const url = findFirstLink(firstPara);
-                            if (url) {
-                                mergedMeta[`${key}__url`] = url;
+                                
+
+                                
+                                                                if (segments.length > 0 && segments.some(s => s.url)) {
+                                                                        mergedMeta[`${key}__segments`] = JSON.stringify(segments);
+                                }
                             }
+                            
                             const sublists = Array.isArray(liChildren) ? liChildren.filter((n) => n?.type === 'list') : [];
                             liftedNodes.push(...sublists);
                         } catch {
-                            // no-op on link extraction failure
-                        }
+                                                    }
                         continue;
                     }
                     remainingItems.push(li);
@@ -209,79 +411,70 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 mergedMeta.note = unique.join(' / ');
             }
 
-            const rebuilt = `${parsed.timeRange?.originalText ? `${parsed.timeRange.originalText} ` : ''}${parsed.type} ${mainText}`;
             const prevData = para.data || {};
             const prevH = (prevData.hProperties as Record<string, unknown>) || {};
             const itinMeta: Record<string, string> = { ...mergedMeta };
             const hProps: Record<string, unknown> = { ...prevH };
             hProps['data-itin-meta'] = JSON.stringify(itinMeta);
+            let warnEventTz: string[] | undefined;
             if (parsed.timeRange?.originalText) {
                 const tzTokens = Array.from(parsed.timeRange.originalText.matchAll(/@([A-Za-z0-9_./+-]+)/g)).map((m) => m[1]);
                 const invalids = tzTokens.filter((z) => !isValidIanaTimeZone(z));
-                if (invalids.length > 0) {
-                    hProps['data-itin-warn-event-tz'] = JSON.stringify(Array.from(new Set(invalids)));
-                }
+                if (invalids.length > 0) warnEventTz = Array.from(new Set(invalids));
             }
 
-            // Collect link texts in this paragraph for later association (e.g., flight code, airport)
-            const collectLinks = (node?: MdNode, acc?: Record<string, string>): Record<string, string> => {
-                const out = acc || {};
-                if (!node) return out;
-                const kids = Array.isArray(node.children) ? node.children : [];
-                for (const child of kids) {
-                    if (!child) continue;
-                    if ((child as { type?: string }).type === 'link') {
-                        const url = (child as unknown as { url?: string }).url;
-                        const label = mdastToString(child as MdNode).trim();
-                        if (label && typeof url === 'string' && url.trim() !== '' && !out[label]) {
-                            out[label] = url;
-                        }
-                    }
-                    collectLinks(child as MdNode, out);
-                }
-                return out;
-            };
-            const linkMap = collectLinks(para as MdNode, {});
-
+                        const segments = nodeToSegments(para as MdNode);
             const parseTimezone = currentDateTz && isValidIanaTimeZone(currentDateTz) ? currentDateTz : isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone;
-            const eventData = parseEvent(rebuilt, previousEvent || undefined, parseTimezone, currentDateStr);
+            const parsedWithSegments = parseEventFromSegments(segments, previousEvent || undefined, parseTimezone, currentDateStr);
+            const eventData = parsedWithSegments?.eventData;
             if (eventData) {
-                // Attach URL metadata based on label matching
-                const urlEnhancedMeta: Record<string, string> = { ...itinMeta };
-                if ('name' in eventData && eventData.name && linkMap[eventData.name]) {
-                    urlEnhancedMeta['name__url'] = linkMap[eventData.name];
-                }
-                if ('departure' in eventData && eventData.departure && linkMap[eventData.departure]) {
-                    urlEnhancedMeta['departure__url'] = linkMap[eventData.departure];
-                }
-                if ('arrival' in eventData && eventData.arrival && linkMap[eventData.arrival]) {
-                    urlEnhancedMeta['arrival__url'] = linkMap[eventData.arrival];
-                }
 
-                const mergedEvent = { ...eventData, metadata: { ...eventData.metadata, ...urlEnhancedMeta } } as typeof eventData;
+                
+                                const nameSegments = parsedWithSegments?.nameSegments;
+                const departureSegments = parsedWithSegments?.departureSegments;
+                const arrivalSegments = parsedWithSegments?.arrivalSegments;
+                
+
+
+
+
+
+
+
+                const mergedEvent = { ...eventData, metadata: { ...(eventData as EventData & { metadata?: Record<string, string> }).metadata, ...itinMeta } } as EventData;
                 if (options?.stayMode === 'header' && mergedEvent.type === 'stay') {
-                    if (mergedEvent.stayName) {
+                    if ('stayName' in mergedEvent && mergedEvent.stayName) {
                         lastStayName = mergedEvent.stayName;
                         currentDayHasStay = true;
                     }
-                    hProps['data-itin-skip'] = '1';
+                    const prev = para.data || {};
+                    const prevH = (prev.hProperties as Record<string, unknown>) || {};
+                    const hProps = { ...prevH, 'data-itmd-skip': 'true' };
+                    para.data = { ...prev, itmdSkip: true, hProperties: hProps } as MdNode['data'];
                 } else {
-                    if (mergedEvent.type === 'stay' && mergedEvent.stayName) {
+                    if (mergedEvent.type === 'stay' && 'stayName' in mergedEvent && mergedEvent.stayName) {
                         lastStayName = mergedEvent.stayName;
                         currentDayHasStay = true;
                     }
                 }
                 previousEvent = mergedEvent;
-                hProps['data-itin-event'] = JSON.stringify(mergedEvent);
-                if (currentDateStr) hProps['data-itin-date-str'] = currentDateStr;
-                if (currentDateTz) hProps['data-itin-date-tz'] = currentDateTz;
+                const itmd = {
+                    eventData: mergedEvent,
+                    dateStr: currentDateStr,
+                    dateTz: currentDateTz,
+                    warnEventTz,
+                    nameSegments,
+                    departureSegments,
+                    arrivalSegments,
+                } as Record<string, unknown>;
+                                hProps['data-itmd'] = JSON.stringify(itmd);
+                para.data = { ...(para.data || {}), itmd, itinMeta, hProperties: hProps } as MdNode['data'];
+
+            } else {
+                                para.data = { ...para.data, itinMeta, hProperties: hProps } as MdNode['data'];
             }
 
-            para.data = { ...prevData, itinMeta, hProperties: hProps } as MdNode['data'];
-
-            // Preserve original paragraph children to keep Markdown structures (e.g., links)
-            // Do not overwrite para.children with a rebuilt plain text
-        }
+                                }
         return tree;
     };
 };

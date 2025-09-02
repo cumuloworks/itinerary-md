@@ -10,6 +10,11 @@ export type ItineraryEvent = {
     timezone?: string;
     event: EventData;
     rawText: string;
+    /**
+     * Rendererで常時スキップされる（例: stayMode=header の stay 行）場合に true
+     * 「過去イベント非表示」のカウントからは除外したいが、統計には含めたいケースに利用
+     */
+    skip?: boolean;
 };
 
 export type ParseItineraryEventsOptions = {
@@ -39,6 +44,26 @@ export function parseItineraryEvents(markdown: string, options?: ParseItineraryE
         if (!node || node.type !== 'paragraph') continue;
         const hProps = (node.data?.hProperties || {}) as Record<string, unknown>;
         if (hProps['data-itin-skip'] === '1') continue;
+        const itmdStr = typeof hProps['data-itmd'] === 'string' ? (hProps['data-itmd'] as string) : undefined;
+        if (itmdStr) {
+            try {
+                const itmd = JSON.parse(itmdStr) as { eventData?: EventData | null; dateStr?: string; dateTz?: string };
+                const event = itmd?.eventData ?? null;
+                const dateStrFromAttr = typeof hProps['data-itin-date-str'] === 'string' ? (hProps['data-itin-date-str'] as string) : undefined;
+                const tzStrFromAttr = typeof hProps['data-itin-date-tz'] === 'string' ? (hProps['data-itin-date-tz'] as string) : undefined;
+                const dateStr = dateStrFromAttr || itmd?.dateStr;
+                const tzStr = tzStrFromAttr || itmd?.dateTz;
+                if (!event || !dateStr) continue;
+                const rawText = mdastToString(node as unknown as { children?: unknown[] } as never).trim();
+                const skip = String(hProps['data-itmd-skip'] || '') === 'true';
+                events.push({ date: dateStr, timezone: tzStr, event, rawText, skip });
+                continue;
+            } catch {
+                // fall through to legacy key handling
+            }
+        }
+
+        // Legacy support: older remark versions used data-itin-event
         const eventStr = typeof hProps['data-itin-event'] === 'string' ? (hProps['data-itin-event'] as string) : undefined;
         if (!eventStr) continue;
 
@@ -49,12 +74,7 @@ export function parseItineraryEvents(markdown: string, options?: ParseItineraryE
         try {
             const event = JSON.parse(eventStr) as EventData;
             const rawText = mdastToString(node as unknown as { children?: unknown[] } as never).trim();
-            events.push({
-                date: dateStr,
-                timezone: tzStr,
-                event,
-                rawText,
-            });
+            events.push({ date: dateStr, timezone: tzStr, event, rawText });
         } catch {}
     }
 

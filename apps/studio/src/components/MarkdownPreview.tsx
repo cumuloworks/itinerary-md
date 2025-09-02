@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 
 import remarkGfm from 'remark-gfm';
+import { isAllowedHref, isExternalHttpUrl, isAllowedImageSrc } from '../utils/url';
 import { notifyError } from '../core/errors';
 import { Heading } from './itinerary/Heading';
 import { Item } from './itinerary/Item';
@@ -31,7 +32,6 @@ interface MarkdownPreviewProps {
     autoScroll?: boolean;
 }
 
-// Remove internal props passed by react-markdown that should not hit the DOM
 const omitInternalProps = (props: Record<string, unknown>): Record<string, unknown> => {
     const clean = { ...(props as Record<string, unknown>) } as Record<string, unknown> & {
         node?: unknown;
@@ -53,7 +53,7 @@ const WarnEffect: React.FC<{ message?: string }> = ({ message }) => {
     return null;
 };
 
-// Copy mdast position to hProperties for DOM usage without touching core plugin
+
 type MdAstNode = {
     position?: { start?: { line?: number }; end?: { line?: number } };
     data?: { hProperties?: Record<string, unknown> };
@@ -81,64 +81,18 @@ function remarkPositionData() {
     };
 }
 
-// Allow-list based URL safety checks for user-provided links/images
-const SAFE_URL_PROTOCOLS = new Set(['https:', 'mailto:', 'tel:']);
-
-function isAbsoluteUrl(href: string): boolean {
-    return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href);
-}
-
-function isExternalHttpUrl(href: string): boolean {
-    return /^https?:\/\//i.test(href);
-}
-
-function isSafeHref(hrefRaw?: unknown): boolean {
-    if (typeof hrefRaw !== 'string' || hrefRaw.trim() === '') return false;
-    const href = hrefRaw.trim();
-    if (href.startsWith('#')) return true;
-    if (href.startsWith('//')) return false;
-    if (!isAbsoluteUrl(href)) return true;
-    try {
-        const u = new URL(href);
-        return SAFE_URL_PROTOCOLS.has(u.protocol);
-    } catch {
-        return false;
-    }
-}
-
-function isSafeImageSrc(srcRaw?: unknown): boolean {
-    if (typeof srcRaw !== 'string' || srcRaw.trim() === '') return false;
-    const src = srcRaw.trim();
-    if (src.startsWith('//')) return false;
-    if (!isAbsoluteUrl(src)) return true;
-    try {
-        const u = new URL(src);
-        return u.protocol === 'https:';
-    } catch {
-        return false;
-    }
-}
-
 const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, stayMode = 'default', showPast, title, summary, totalFormatted, breakdownFormatted, activeLine, autoScroll = true }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const getDataAttr = (rest: Record<string, unknown>, key: string): string | undefined => rest[key] as string | undefined;
-    const tryParseJson = <T,>(str?: string): T | null => {
-        if (!str) return null;
-        try {
-            return JSON.parse(str) as T;
-        } catch {
-            return null;
-        }
-    };
-
-    // showPast をそのまま採用し、URL パラメータ依存は排除
-    const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
+        
+        const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
 
     const eventsCountByDate = React.useMemo(() => {
         try {
             const evts = parseItineraryEvents(content, { timezone, stayMode });
             const acc: Record<string, number> = {};
             for (const e of evts) {
+                const skipped = (e as unknown as { skip?: boolean })?.skip === true;
+                if (skipped) continue;
                 if (e.date) acc[e.date] = (acc[e.date] || 0) + 1;
             }
             return acc;
@@ -154,14 +108,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
         return day < today;
     };
 
-    const shouldHideByDateAttr = (rest: Record<string, unknown>): boolean => {
-        if (showPastEffective) return false;
-        const dateStr = getDataAttr(rest, 'data-itin-date-str');
-        const dateTz = getDataAttr(rest, 'data-itin-date-tz');
-        if (!dateStr) return false;
-        return isPastDay(dateStr, dateTz);
-    };
-
+    
     const safeSummary = summary ?? {};
     const safeTotalFormatted = totalFormatted ?? null;
     const safeBreakdownFormatted = breakdownFormatted ?? null;
@@ -187,14 +134,12 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
 
     const containerRef = React.useRef<HTMLDivElement | null>(null);
 
-    // カーソル移動時のみスクロール（autoScroll 有効時）。ターゲットが可視ならスキップ
-    React.useEffect(() => {
+        React.useEffect(() => {
         if (!autoScroll) return;
         if (!activeLine || !containerRef.current) return;
         const container = containerRef.current;
         let nodes = Array.from(container.querySelectorAll<HTMLElement>('[data-itin-line-start], [data-itin-line-end]'));
-        // Fallback: remarkのdata属性が無い場合、react-markdownのdata-sourceposを利用
-        if (nodes.length === 0) {
+                if (nodes.length === 0) {
             nodes = Array.from(container.querySelectorAll<HTMLElement>('[data-sourcepos]'));
         }
         if (nodes.length === 0) return;
@@ -204,8 +149,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             const ds = el.dataset || {};
             let start = Number(ds.itinLineStart || ds.lineStart || NaN);
             let end = Number(ds.itinLineEnd || ds.lineEnd || NaN);
-            // data-sourcepos="sL:sC-eL:eC" 形式のとき
-            if ((!Number.isFinite(start) || !Number.isFinite(end)) && typeof ds.sourcepos === 'string') {
+                        if ((!Number.isFinite(start) || !Number.isFinite(end)) && typeof ds.sourcepos === 'string') {
                 const sp = ds.sourcepos;
                 const parts = sp.split('-');
                 if (parts.length === 2) {
@@ -248,8 +192,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
         if (!boxTarget) boxTarget = target;
         const cRect = container.getBoundingClientRect();
         const tRect = boxTarget.getBoundingClientRect();
-        // 上下に少し余白を持たせた可視判定
-        const margin = 8;
+                const margin = 8;
         const visible = tRect.bottom > cRect.top + margin && tRect.top < cRect.bottom - margin;
         if (visible) return;
         const delta = tRect.top - cRect.top - container.clientHeight / 2 + tRect.height / 2;
@@ -267,7 +210,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     a: (props: unknown) => {
                         const { href, children, ...rest } = (props as { href?: string; children?: React.ReactNode } & Record<string, unknown>) || {};
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        if (!isSafeHref(href)) {
+                        if (!isAllowedHref(href)) {
                             return (
                                 <span {...(cleanRest as React.HTMLAttributes<HTMLSpanElement>)} className="text-gray-500 underline decoration-dotted cursor-not-allowed" aria-disabled="true">
                                     {children}
@@ -278,7 +221,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         const rel = external ? 'noopener noreferrer' : undefined;
                         const target = external ? '_blank' : undefined;
                         return (
-                            <a {...(cleanRest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} href={href} target={target} rel={rel}>
+                            <a {...(cleanRest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} href={href} target={target} rel={rel} className="underline">
                                 {children}
                             </a>
                         );
@@ -286,25 +229,25 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     img: (props: unknown) => {
                         const { src, alt, ...rest } = (props as { src?: string; alt?: string } & Record<string, unknown>) || {};
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        if (!isSafeImageSrc(src)) {
+                        if (!isAllowedImageSrc(src)) {
                             return <span {...(cleanRest as React.HTMLAttributes<HTMLSpanElement>)} aria-hidden="true" />;
                         }
                         return <img {...(cleanRest as React.ImgHTMLAttributes<HTMLImageElement>)} src={src} alt={typeof alt === 'string' ? alt : ''} loading="lazy" referrerPolicy="no-referrer" />;
                     },
                     h2: (props: unknown) => {
-                        const { children, ...rest } = (props as { children?: React.ReactNode }) || {};
-                        const dataItinDate = getDataAttr(rest as Record<string, unknown>, 'data-itin-date');
-                        const warnHeadingTz = getDataAttr(rest as Record<string, unknown>, 'data-itin-warn-date-tz');
+                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date'?: string }) || {};
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        const parsed = tryParseJson<{
-                            date: string;
-                            timezone?: string;
-                            originalText: string;
-                            prevStayName?: string;
-                        }>(dataItinDate);
-                        if (parsed) {
-                            if (!showPastEffective && isPastDay(parsed.date, parsed.timezone)) {
-                                const cnt = eventsCountByDate[parsed.date] || 0;
+                        const itinDateStr = (rest as { 'data-itin-date'?: string })['data-itin-date'];
+                        let itmdHeading: { date: string; timezone?: string; prevStayName?: string; warnInvalidTimezone?: string } | undefined;
+                        if (itinDateStr) {
+                            try {
+                                itmdHeading = JSON.parse(itinDateStr);
+                            } catch (e) {
+                                                            }
+                        }
+                        if (itmdHeading && typeof itmdHeading.date === 'string') {
+                            if (!showPastEffective && isPastDay(itmdHeading.date, itmdHeading.timezone)) {
+                                const cnt = eventsCountByDate[itmdHeading.date] || 0;
                                 return (
                                     <div className="flex items-center text-gray-500 text-xs mt-6 mb-4" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
                                         <span className="flex-1 border-t border-gray-200" />
@@ -315,8 +258,8 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                             }
                             return (
                                 <div className="contents" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
-                                    <WarnEffect message={warnHeadingTz ? `Heading timezone "${warnHeadingTz}" is invalid. Using fallback.` : undefined} />
-                                    <Heading date={parsed.date} timezone={parsed.timezone} prevStayName={stayMode === 'header' ? parsed.prevStayName : undefined} />
+                                    <WarnEffect message={itmdHeading.warnInvalidTimezone ? `Heading timezone "${itmdHeading.warnInvalidTimezone}" is invalid. Using fallback.` : undefined} />
+                                    <Heading date={itmdHeading.date} timezone={itmdHeading.timezone} prevStayName={stayMode === 'header' ? itmdHeading.prevStayName : undefined} />
                                 </div>
                             );
                         }
@@ -329,46 +272,69 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     p: (props: unknown) => {
                         type ParagraphRendererProps = {
                             children?: React.ReactNode;
+                            node?: unknown;
+                            'data-itmd'?: string;
+                            'data-itmd-skip'?: string;
+                            'data-itin-date-str'?: string;
+                            'data-itin-date-tz'?: string;
                         } & Record<string, unknown>;
-                        const { children, ...rest } = (props as ParagraphRendererProps) || ({} as ParagraphRendererProps);
-                        const skip = getDataAttr(rest as Record<string, unknown>, 'data-itin-skip');
-                        const eventStr = getDataAttr(rest as Record<string, unknown>, 'data-itin-event');
-                        const dateStr = getDataAttr(rest as Record<string, unknown>, 'data-itin-date-str');
-                        const dateTz = getDataAttr(rest as Record<string, unknown>, 'data-itin-date-tz');
-                        const warnEventTz = getDataAttr(rest as Record<string, unknown>, 'data-itin-warn-event-tz');
+                        const { children, node, ...rest } = (props as ParagraphRendererProps) || ({} as ParagraphRendererProps);
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        if (skip === '1') return null;
-                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
-                        const rawEvent = tryParseJson<unknown>(eventStr);
-                        if (rawEvent && typeof rawEvent === 'object') {
+
+                                                const itmdJsonStr = (rest as ParagraphRendererProps)['data-itmd'];
+                        const skipFlag = (rest as ParagraphRendererProps)['data-itmd-skip'] === 'true';
+                        const dateStr = (rest as ParagraphRendererProps)['data-itin-date-str'];
+                        const dateTz = (rest as ParagraphRendererProps)['data-itin-date-tz'];
+
+                        let itmdObj:
+                            | {
+                                  eventData?: Parameters<typeof Item>[0]['eventData'];
+                                  dateStr?: string;
+                                  dateTz?: string;
+                                  nameSegments?: Array<{ text: string; url?: string }>;
+                                  departureSegments?: Array<{ text: string; url?: string }>;
+                                  arrivalSegments?: Array<{ text: string; url?: string }>;
+                                  extraLinks?: Array<{ label: string; url: string }>;
+                                  warnEventTz?: string[];
+                              }
+                            | undefined;
+
+                        if (itmdJsonStr) {
+                            try {
+                                itmdObj = JSON.parse(itmdJsonStr);
+                            } catch (e) {
+                                                            }
+                        }
+
+                        const effectiveDateStr = itmdObj?.dateStr || dateStr;
+                        const effectiveDateTz = itmdObj?.dateTz || dateTz;
+
+                        
+                        if (skipFlag) return null;
+                        if (!showPastEffective && effectiveDateStr && isPastDay(effectiveDateStr, effectiveDateTz)) return null;
+                        if (itmdObj?.eventData) {
                             const warnMessage = (() => {
-                                if (!warnEventTz) return undefined;
-                                try {
-                                    const arr = JSON.parse(warnEventTz) as string[];
-                                    if (Array.isArray(arr) && arr.length > 0) {
-                                        return `Event timezone(s) invalid: ${arr.join(', ')}. Using fallback.`;
-                                    }
-                                } catch {}
+                                const arr = itmdObj?.warnEventTz;
+                                if (Array.isArray(arr) && arr.length > 0) {
+                                    return `Event timezone(s) invalid: ${arr.join(', ')}. Using fallback.`;
+                                }
                                 return undefined;
                             })();
-                            const r = rawEvent as {
-                                timeRange?: {
-                                    start?: { dateTime?: unknown };
-                                    end?: { dateTime?: unknown };
-                                };
-                            };
 
-                            if (r.timeRange?.start?.dateTime && typeof r.timeRange.start.dateTime === 'string') {
-                                r.timeRange.start.dateTime = new Date(r.timeRange.start.dateTime);
-                            }
-                            if (r.timeRange?.end?.dateTime && typeof r.timeRange.end.dateTime === 'string') {
-                                r.timeRange.end.dateTime = new Date(r.timeRange.end.dateTime);
-                            }
-                            const eventData = r as Parameters<typeof Item>[0]['eventData'];
+                            const eventData = itmdObj.eventData as Parameters<typeof Item>[0]['eventData'];
                             return (
                                 <div className="contents" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
                                     <WarnEffect message={warnMessage} />
-                                    <Item eventData={eventData} dateStr={dateStr} timezone={displayTimezone} currency={currency} />
+                                    <Item
+                                        eventData={eventData}
+                                        dateStr={effectiveDateStr}
+                                        timezone={displayTimezone}
+                                        currency={currency}
+                                        nameSegments={itmdObj.nameSegments}
+                                        departureSegments={itmdObj.departureSegments}
+                                        arrivalSegments={itmdObj.arrivalSegments}
+                                        extraLinks={itmdObj.extraLinks}
+                                    />
                                 </div>
                             );
                         }
@@ -379,44 +345,58 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         );
                     },
                     ul: (props: unknown) => {
-                        const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
-                        if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
+                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
+                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
+                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
+                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         return <ul {...(cleanRest as React.HTMLAttributes<HTMLUListElement>)}>{children}</ul>;
                     },
                     ol: (props: unknown) => {
-                        const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
-                        if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
+                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
+                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
+                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
+                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         return <ol {...(cleanRest as React.HTMLAttributes<HTMLOListElement>)}>{children}</ol>;
                     },
                     li: (props: unknown) => {
-                        const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
-                        if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
+                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
+                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
+                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
+                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         return <li {...(cleanRest as React.HTMLAttributes<HTMLLIElement>)}>{children}</li>;
                     },
                     blockquote: (props: unknown) => {
-                        const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
-                        if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
+                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
+                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
+                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
+                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         return <blockquote {...(cleanRest as React.HTMLAttributes<HTMLQuoteElement>)}>{children}</blockquote>;
                     },
                     table: (props: unknown) => {
-                        const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
-                        if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
+                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
+                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
+                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
+                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         return <table {...(cleanRest as React.HTMLAttributes<HTMLTableElement>)}>{children}</table>;
                     },
                     pre: (props: unknown) => {
-                        const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
-                        if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
+                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
+                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
+                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
+                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         return <pre {...(cleanRest as React.HTMLAttributes<HTMLPreElement>)}>{children}</pre>;
                     },
                     hr: (props: unknown) => {
-                        const { ...rest } = (props as Record<string, unknown>) || {};
-                        if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
+                        const { node, ...rest } = (props as { node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
+                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
+                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
+                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         return <hr {...(cleanRest as React.HTMLAttributes<HTMLHRElement>)} />;
                     },

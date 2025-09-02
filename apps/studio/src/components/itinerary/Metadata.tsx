@@ -4,6 +4,8 @@ import type React from 'react';
 import { useMemo } from 'react';
 import { useRatesUSD } from '../../hooks/useRatesUSD';
 import { convertAmountUSDBase, formatCurrency, parseAmountWithCurrency } from '../../utils/currency';
+import { isAllowedHref } from '../../utils/url';
+import { SegmentedText, type TextSegment } from './SegmentedText';
 
 const getMetadataConfig = (key: string) => {
     const iconConfigs: Record<string, { icon: LucideIcon; isSpecial?: boolean }> = {
@@ -42,7 +44,7 @@ export const Meta: React.FC<{
     borderColor: string;
     currency?: string;
 }> = ({ metadata, borderColor, currency }) => {
-    const entries = Object.entries(metadata).filter(([key]) => !key.endsWith('__url'));
+    const entries = Object.entries(metadata).filter(([key]) => !key.endsWith('__url') && !key.endsWith('__link_label') && !key.endsWith('__segments'));
     const { data: ratesData } = useRatesUSD();
 
     const converted = useMemo(() => {
@@ -92,19 +94,27 @@ export const Meta: React.FC<{
                         </div>
                     );
                 }
-                const maybeUrl = metadata[`${key}__url`];
-                const content = maybeUrl ? (
-                    <a href={maybeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
-                        {value}
-                    </a>
-                ) : (
-                    <span className="ml-1">{value}</span>
-                );
+                                const segments: TextSegment[] = (() => {
+                                        const segmentsJson = metadata[`${key}__segments`];
+                    if (segmentsJson) {
+                        try {
+                            return JSON.parse(segmentsJson);
+                        } catch {
+                                                    }
+                    }
+
+                                        const maybeUrl = metadata[`${key}__url`];
+                    if (maybeUrl && isAllowedHref(maybeUrl)) {
+                        return [{ text: value, url: maybeUrl }];
+                    }
+                    return [{ text: value }];
+                })();
+
                 return (
                     <div key={key} className="text-gray-600 text-sm flex items-center">
                         <IconComponent size={14} className="mr-1" />
                         <span className="font-medium">{config.label}:</span>
-                        {content}
+                        <SegmentedText segments={segments} className="ml-1" linkClassName="underline text-inherit" />
                     </div>
                 );
             })}

@@ -37,20 +37,17 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
                     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
                         onSave();
                     });
-                    // 初期行を通知（存在する場合のみ）
-                    const pos = editor.getPosition();
+                                        const pos = editor.getPosition();
                     if (pos?.lineNumber) {
                         cursorLineChangeRef.current?.(pos.lineNumber);
                     }
-                    // カーソル移動で通知（常に登録し、最新のコールバックを参照）
-                    editor.onDidChangeCursorPosition((e) => {
+                                        editor.onDidChangeCursorPosition((e) => {
                         const ln = e.position?.lineNumber;
                         if (typeof ln === 'number') {
                             cursorLineChangeRef.current?.(ln);
                         }
                     });
-                    // コンテンツ変更で変更行を通知（常に登録し、最新のコールバックを参照）
-                    editor.onDidChangeModelContent((e) => {
+                                        editor.onDidChangeModelContent((e) => {
                         const changed = new Set<number>();
                         for (const ch of e.changes) {
                             const start = ch.range.startLineNumber;

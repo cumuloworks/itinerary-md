@@ -80,7 +80,7 @@ const parseStayData = (eventDescription: string, baseData: BaseEventData, type: 
     let stayName = eventDescription;
     let location: string | undefined = '';
 
-    if (eventDescription.includes('::')) {
+        if (eventDescription.includes('::')) {
         const [left, right] = eventDescription.split('::').map((s) => s.trim());
         location = right || '';
 
@@ -91,17 +91,30 @@ const parseStayData = (eventDescription: string, baseData: BaseEventData, type: 
             stayName = left;
         }
     } else {
-        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+                const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+        const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
+        
         if (atMatch) {
-            const [, name, place] = atMatch;
-            stayName = name;
-            location = place;
-        } else {
-            const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
+                        const [, left, right] = atMatch;
+            const leftTrimmed = left.trim();
+            const rightTrimmed = right.trim();
+            location = rightTrimmed || '';
+
             const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
-            if (atOnlyMatch && originalType && isStayAlias) {
+            if (!leftTrimmed || (originalType && leftTrimmed.toLowerCase() === originalType.toLowerCase() && isStayAlias)) {
+                stayName = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : leftTrimmed;
+            } else {
+                stayName = leftTrimmed;
+            }
+        } else if (atOnlyMatch) {
+                        const rightTrimmed = atOnlyMatch[1].trim();
+            location = rightTrimmed || '';
+
+            const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
+            if (originalType && isStayAlias) {
                 stayName = originalType.charAt(0).toUpperCase() + originalType.slice(1);
-                location = atOnlyMatch[1];
+            } else {
+                stayName = '';
             }
         }
     }
@@ -124,7 +137,7 @@ const parseActivityData = (
     let name = eventDescription;
     let location: string | undefined = '';
 
-    if (eventDescription.includes('::')) {
+        if (eventDescription.includes('::')) {
         const [left, right] = eventDescription.split('::').map((s) => s.trim());
         location = right || '';
 
@@ -136,18 +149,32 @@ const parseActivityData = (
             name = left;
         }
     } else {
-        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+                const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+        const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
+        
         if (atMatch) {
-            const [, activityName, place] = atMatch;
-            name = activityName;
-            location = place;
-        } else {
-            const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
+                        const [, left, right] = atMatch;
+            const leftTrimmed = left.trim();
+            const rightTrimmed = right.trim();
+            location = rightTrimmed || '';
+
             const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
             const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
-            if (atOnlyMatch && originalType && (isMealAlias || isActivityAlias)) {
+            if (!leftTrimmed || (originalType && leftTrimmed.toLowerCase() === originalType.toLowerCase() && (isMealAlias || isActivityAlias))) {
+                name = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : leftTrimmed;
+            } else {
+                name = leftTrimmed;
+            }
+        } else if (atOnlyMatch) {
+                        const rightTrimmed = atOnlyMatch[1].trim();
+            location = rightTrimmed || '';
+
+            const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
+            const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
+            if (originalType && (isMealAlias || isActivityAlias)) {
                 name = originalType.charAt(0).toUpperCase() + originalType.slice(1);
-                location = atOnlyMatch[1];
+            } else {
+                name = '';
             }
         }
     }

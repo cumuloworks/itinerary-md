@@ -5,12 +5,18 @@ import { MapPin as Activity, Bed, Building, Bus, Camera, Car, Coffee, Landmark, 
 import { AirlineLogo } from './AirlineLogo';
 import { Location } from './Location';
 import { Route } from './Route';
+import { SegmentedText } from './SegmentedText';
+import { isAllowedHref } from '../../utils/url';
 
 interface ItemProps {
     eventData: EventData;
     dateStr?: string;
     timezone?: string;
     currency?: string;
+    extraLinks?: Array<{ label: string; url: string }>;
+    nameSegments?: Array<{ text: string; url?: string }>;
+    departureSegments?: Array<{ text: string; url?: string }>;
+    arrivalSegments?: Array<{ text: string; url?: string }>;
 }
 
 const getTypeColors = (type: EventData['type']) => {
@@ -277,7 +283,7 @@ const TimeDisplay: React.FC<{
 
 import { Meta } from './Metadata';
 
-export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, currency }) => {
+export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, currency, extraLinks, nameSegments, departureSegments, arrivalSegments }) => {
     const colors = getTypeColors(eventData.type);
     const IconComponent = getTypeIcon(eventData.type);
     const mainTitle = (() => {
@@ -295,10 +301,21 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
     const routeOrLocationDisplay = (() => {
         if (eventData.baseType === 'transportation' && eventData.departure && eventData.arrival) {
             const meta = eventData.metadata as Record<string, string>;
-            return <Route departure={eventData.departure} arrival={eventData.arrival} startTime={eventData.timeRange?.start} endTime={eventData.timeRange?.end} departureUrl={meta['departure__url']} arrivalUrl={meta['arrival__url']} />;
+            return (
+                <Route 
+                    departure={eventData.departure} 
+                    arrival={eventData.arrival} 
+                    startTime={eventData.timeRange?.start} 
+                    endTime={eventData.timeRange?.end} 
+                    departureUrl={meta['departure__url']} 
+                    arrivalUrl={meta['arrival__url']}
+                    departureSegments={departureSegments}
+                    arrivalSegments={arrivalSegments}
+                />
+            );
         }
         if ((eventData.baseType === 'stay' || eventData.baseType === 'activity') && eventData.location) {
-            return <Location location={eventData.location} />;
+            return <Location location={eventData.location} segments={arrivalSegments} />;
         }
         return null;
     })();
@@ -324,16 +341,39 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
                 <div className="flex items-center gap-x-3 flex-wrap">
                     {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
                     {(() => {
-                        const url = (eventData.metadata as Record<string, string>)['name__url'];
-                        return url ? (
-                            <a href={url} target="_blank" rel="noopener noreferrer" className={`font-bold ${colors.text} text-lg hover:underline`}>
-                                {mainTitle}
-                            </a>
-                        ) : (
-                            <span className={`font-bold ${colors.text} text-lg`}>{mainTitle}</span>
-                        );
+                                                const segments = nameSegments || (() => {
+                            if (!mainTitle) return undefined;
+                            const meta = eventData.metadata as Record<string, string>;
+                            const url = meta['name__url'];
+                            if (url && isAllowedHref(url)) {
+                                return [{text: mainTitle, url}];
+                            }
+                            return [{text: mainTitle}];
+                        })();
+                        
+                        if (segments) {
+                            return (
+                                <SegmentedText 
+                                    segments={segments}
+                                    className={`font-bold ${colors.text} text-lg`}
+                                    linkClassName="underline text-inherit"
+                                />
+                            );
+                        }
+                        return null;
                     })()}
                     {routeOrLocationDisplay && <div className="text-gray-700 text-sm font-medium">{routeOrLocationDisplay}</div>}
+                    {Array.isArray(extraLinks) && extraLinks.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                            {extraLinks
+                                .filter((l) => l && typeof l.url === 'string' && isAllowedHref(l.url))
+                                .map((l, idx) => (
+                                    <a key={`${l.label}-${idx}`} href={l.url} target="_blank" rel="noopener noreferrer" className="underline">
+                                        {l.label}
+                                    </a>
+                                ))}
+                        </div>
+                    )}
                 </div>
                 <Meta metadata={eventData.metadata} borderColor={colors.border} currency={currency} />
             </div>

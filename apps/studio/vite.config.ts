@@ -5,7 +5,6 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
-// Resolve versions from local package.json files
 function resolvePackageVersion(pkgUrl: URL): string {
     try {
         const json = JSON.parse(readFileSync(fileURLToPath(pkgUrl), 'utf-8')) as { version?: string };
