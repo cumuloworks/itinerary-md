@@ -22,9 +22,9 @@ export type ItinerarySummary = {
 };
 
 export type CostBreakdownFormatted = {
-    transport: string;
+    transportation: string;
     activity: string;
-    meal: string;
+    stay: string;
 };
 
 export type UseAutosaveOptions = {

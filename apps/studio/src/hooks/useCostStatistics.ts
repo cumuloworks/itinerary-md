@@ -9,9 +9,9 @@ export function useCostStatistics(events: ItineraryEvent[], currency: string) {
 
     const result = useMemo(() => {
         let total = 0;
-        let transport = 0;
+        let transportation = 0;
         let activity = 0;
-        let meal = 0;
+        let stay = 0;
 
         for (const { event } of events) {
             const costValue = event.metadata?.cost ?? event.metadata?.price;
@@ -37,14 +37,11 @@ export function useCostStatistics(events: ItineraryEvent[], currency: string) {
             total += converted;
 
             if (event.baseType === 'transportation') {
-                transport += converted;
+                transportation += converted;
             } else if (event.baseType === 'activity') {
-                const isMeal = event.type === 'meal' || event.type === 'lunch' || event.type === 'dinner' || event.type === 'breakfast' || event.type === 'brunch';
-                if (isMeal) {
-                    meal += converted;
-                } else {
-                    activity += converted;
-                }
+                activity += converted;
+            } else if (event.baseType === 'stay') {
+                stay += converted;
             }
         }
 
@@ -57,9 +54,9 @@ export function useCostStatistics(events: ItineraryEvent[], currency: string) {
         return {
             totalFormatted: formatter.format(total),
             breakdownFormatted: {
-                transport: formatter.format(transport),
+                transportation: formatter.format(transportation),
                 activity: formatter.format(activity),
-                meal: formatter.format(meal),
+                stay: formatter.format(stay),
             } as CostBreakdownFormatted,
         };
     }, [events, currency, ratesData]);

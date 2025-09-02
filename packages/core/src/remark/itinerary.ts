@@ -29,7 +29,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const getString = (val: unknown): string | undefined => (typeof val === 'string' && val.trim() !== '' ? val.trim() : undefined);
             const typeRaw = getString((raw as Record<string, unknown>)['type']);
             const typeLc = typeRaw ? typeRaw.toLowerCase() : undefined;
-            const isItin = typeLc === 'itinerary-md' || typeLc === 'itmd';
+            const isItin = typeLc === 'itinerary-md' || typeLc === 'itmd' || typeLc === 'tripmd';
             const tzRaw = getString((raw as Record<string, unknown>)['timezone']);
             const timezone = isValidIanaTimeZone(tzRaw) ? tzRaw : undefined;
             return { isItinerary: isItin, timezone };
