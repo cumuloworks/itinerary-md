@@ -5,9 +5,11 @@ interface MonacoEditorProps {
     value: string;
     onChange: (value: string) => void;
     onSave: () => void;
+    onCursorLineChange?: (line: number) => void;
+    onChangedLines?: (lines: number[]) => void;
 }
 
-const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave }) => {
+const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave, onCursorLineChange, onChangedLines }) => {
     const handleEditorChange = (value: string | undefined) => {
         onChange(value || '');
     };
@@ -24,6 +26,32 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave 
                     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
                         onSave();
                     });
+                    if (onCursorLineChange) {
+                        // 初期行を通知
+                        const pos = editor.getPosition();
+                        if (pos?.lineNumber) {
+                            onCursorLineChange(pos.lineNumber);
+                        }
+                        // カーソル移動で通知
+                        editor.onDidChangeCursorPosition((e) => {
+                            const ln = e.position?.lineNumber;
+                            if (typeof ln === 'number') {
+                                onCursorLineChange(ln);
+                            }
+                        });
+                    }
+                    if (onChangedLines) {
+                        editor.onDidChangeModelContent((e) => {
+                            const changed = new Set<number>();
+                            for (const ch of e.changes) {
+                                const start = ch.range.startLineNumber;
+                                const inserted = Math.max(0, ch.text.split(/\r?\n/).length - 1);
+                                const end = Math.max(ch.range.endLineNumber, ch.range.startLineNumber + inserted);
+                                for (let ln = start; ln <= end; ln += 1) changed.add(ln);
+                            }
+                            if (changed.size > 0) onChangedLines(Array.from(changed).sort((a, b) => a - b));
+                        });
+                    }
                 }}
                 options={{
                     minimap: { enabled: false },

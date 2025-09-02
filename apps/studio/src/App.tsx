@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { ImportDialog } from './components/dialog/ImportDialog';
 import { LoadSampleDialog } from './components/dialog/LoadSampleDialog';
 import { Header } from './components/Header';
@@ -25,6 +25,7 @@ const PREVIEW_DEBOUNCE_DELAY = 300;
 
 function App() {
     const tzSelectId = useId();
+    const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
 
     const { content, setContent, pendingLoadSample, loadSample, cancelLoadSample, confirmLoadSample } = useInitialContent({
         storageKey: STORAGE_KEY,
@@ -56,8 +57,9 @@ function App() {
             currency: topbar.currency,
             stayMode: topbar.stayMode,
             showPast: topbar.showPast,
+            autoScroll: topbar.autoScroll,
         }),
-        [topbar.timezone, topbar.currency, topbar.stayMode, topbar.showPast]
+        [topbar.timezone, topbar.currency, topbar.stayMode, topbar.showPast, topbar.autoScroll]
     );
 
     const latestContent = useLatest(content);
@@ -113,7 +115,14 @@ function App() {
                         <div className={`${topbar.viewMode === 'split' ? 'md:basis-1/2 basis-1/3' : 'flex-1'} min-w-0 min-h-0`}>
                             <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Editor</div>
                             <div className="h-[calc(100%-41px)] min-h-0">
-                                <MonacoEditor value={content} onChange={handleContentChange} onSave={saveNow} />
+                                <MonacoEditor
+                                    value={content}
+                                    onChange={handleContentChange}
+                                    onSave={saveNow}
+                                    onCursorLineChange={(ln) => {
+                                        if (topbar.autoScroll) setEditedLine(ln);
+                                    }}
+                                />
                             </div>
                         </div>
                     )}
@@ -122,7 +131,7 @@ function App() {
                             <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Preview</div>
                             <div className="h-[calc(100%-41px)] min-h-0">
                                 <MarkdownPreviewErrorBoundary>
-                                    <MarkdownPreview content={previewContent} {...previewProps} title={frontmatterTitle} summary={summary} totalFormatted={totalFormatted} breakdownFormatted={breakdownFormatted} />
+                                    <MarkdownPreview content={previewContent} {...previewProps} title={frontmatterTitle} summary={summary} totalFormatted={totalFormatted} breakdownFormatted={breakdownFormatted} activeLine={editedLine} />
                                 </MarkdownPreviewErrorBoundary>
                             </div>
                         </div>

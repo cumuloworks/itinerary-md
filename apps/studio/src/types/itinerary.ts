@@ -7,6 +7,7 @@ export type TopbarState = {
     viewMode: ViewMode;
     stayMode: StayMode;
     showPast?: boolean;
+    autoScroll?: boolean;
 };
 
 export type QueryParams = {
@@ -15,6 +16,7 @@ export type QueryParams = {
     view?: ViewMode;
     stay?: StayMode;
     past?: '1' | '0';
+    scroll?: '1' | '0';
 };
 
 export type ItinerarySummary = {

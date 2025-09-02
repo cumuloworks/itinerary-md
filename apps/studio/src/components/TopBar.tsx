@@ -164,6 +164,16 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     <span className="hidden md:block text-xs ml-1">{!topbar.showPast ? 'Hide Past: ON' : 'Hide Past: OFF'}</span>
                 </Toolbar.Button>
 
+                <Toolbar.Button
+                    type="button"
+                    aria-label={!topbar.autoScroll ? 'Enable auto scroll' : 'Disable auto scroll'}
+                    title={!topbar.autoScroll ? 'Enable auto scroll' : 'Disable auto scroll'}
+                    onClick={() => onTopbarChange({ autoScroll: !topbar.autoScroll })}
+                    className={`inline-flex items-center justify-center px-2 h-full rounded-md border ${topbar.autoScroll ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'}`}
+                >
+                    <span className="text-xs">Auto Scroll: {topbar.autoScroll ? 'ON' : 'OFF'}</span>
+                </Toolbar.Button>
+
                 <Toolbar.Separator className="w-px mr-auto" />
 
                 {/* Actions */}
