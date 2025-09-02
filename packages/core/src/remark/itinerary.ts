@@ -86,10 +86,20 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 continue;
             }
 
+            // Attach current date attributes to any non-heading node within the day's section
+            if (currentDateStr) {
+                const prevData = para.data || {};
+                const prevH = (prevData.hProperties as Record<string, unknown>) || {};
+                const hProps: Record<string, unknown> = { ...prevH };
+                if (!hProps['data-itin-date-str']) hProps['data-itin-date-str'] = currentDateStr;
+                if (currentDateTz && !hProps['data-itin-date-tz']) hProps['data-itin-date-tz'] = currentDateTz;
+                para.data = { ...prevData, hProperties: hProps } as MdNode['data'];
+            }
+
             if (para.type !== 'paragraph') continue;
 
-            const paraChildren = (para as MdNode).children || [];
-            const firstLineText = paraChildren.length > 0 && paraChildren[0].type === 'text' ? String(paraChildren[0].value || '').trim() : mdastToString(para as MdNode).trim();
+            // Use full paragraph text to include link texts and inline nodes for parsing
+            const firstLineText = mdastToString(para as MdNode).trim();
 
             const parsed = parseTimeAndType(firstLineText, frontmatterTimezone);
             if (!parsed) continue;
@@ -149,9 +159,34 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                         const key = text.substring(0, colonIndex).trim().toLowerCase();
                         const value = text.substring(colonIndex + 1).trim();
                         mergedMeta[key] = value;
-                        const liChildren = (li as MdNode).children;
-                        const sublists = Array.isArray(liChildren) ? liChildren.filter((n) => n?.type === 'list') : [];
-                        liftedNodes.push(...sublists);
+
+                        // If the value part contains a markdown link, keep its URL alongside the value
+                        try {
+                            const liChildren = (li as MdNode).children;
+                            const firstPara = Array.isArray(liChildren) ? (liChildren.find((n) => n?.type === 'paragraph') as MdNode | undefined) : undefined;
+                            const findFirstLink = (node?: MdNode): string | undefined => {
+                                if (!node) return undefined;
+                                const kids = Array.isArray(node.children) ? node.children : [];
+                                for (const child of kids) {
+                                    if (!child) continue;
+                                    if ((child as { type?: string }).type === 'link') {
+                                        const url = (child as unknown as { url?: string }).url;
+                                        if (typeof url === 'string' && url.trim() !== '') return url;
+                                    }
+                                    const nested = findFirstLink(child as MdNode);
+                                    if (nested) return nested;
+                                }
+                                return undefined;
+                            };
+                            const url = findFirstLink(firstPara);
+                            if (url) {
+                                mergedMeta[`${key}__url`] = url;
+                            }
+                            const sublists = Array.isArray(liChildren) ? liChildren.filter((n) => n?.type === 'list') : [];
+                            liftedNodes.push(...sublists);
+                        } catch {
+                            // no-op on link extraction failure
+                        }
                         continue;
                     }
                     remainingItems.push(li);
@@ -188,10 +223,42 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 }
             }
 
+            // Collect link texts in this paragraph for later association (e.g., flight code, airport)
+            const collectLinks = (node?: MdNode, acc?: Record<string, string>): Record<string, string> => {
+                const out = acc || {};
+                if (!node) return out;
+                const kids = Array.isArray(node.children) ? node.children : [];
+                for (const child of kids) {
+                    if (!child) continue;
+                    if ((child as { type?: string }).type === 'link') {
+                        const url = (child as unknown as { url?: string }).url;
+                        const label = mdastToString(child as MdNode).trim();
+                        if (label && typeof url === 'string' && url.trim() !== '' && !out[label]) {
+                            out[label] = url;
+                        }
+                    }
+                    collectLinks(child as MdNode, out);
+                }
+                return out;
+            };
+            const linkMap = collectLinks(para as MdNode, {});
+
             const parseTimezone = currentDateTz && isValidIanaTimeZone(currentDateTz) ? currentDateTz : isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone;
             const eventData = parseEvent(rebuilt, previousEvent || undefined, parseTimezone, currentDateStr);
             if (eventData) {
-                const mergedEvent = { ...eventData, metadata: { ...eventData.metadata, ...itinMeta } } as typeof eventData;
+                // Attach URL metadata based on label matching
+                const urlEnhancedMeta: Record<string, string> = { ...itinMeta };
+                if ('name' in eventData && eventData.name && linkMap[eventData.name]) {
+                    urlEnhancedMeta['name__url'] = linkMap[eventData.name];
+                }
+                if ('departure' in eventData && eventData.departure && linkMap[eventData.departure]) {
+                    urlEnhancedMeta['departure__url'] = linkMap[eventData.departure];
+                }
+                if ('arrival' in eventData && eventData.arrival && linkMap[eventData.arrival]) {
+                    urlEnhancedMeta['arrival__url'] = linkMap[eventData.arrival];
+                }
+
+                const mergedEvent = { ...eventData, metadata: { ...eventData.metadata, ...urlEnhancedMeta } } as typeof eventData;
                 if (options?.stayMode === 'header' && mergedEvent.type === 'stay') {
                     if (mergedEvent.stayName) {
                         lastStayName = mergedEvent.stayName;
@@ -212,7 +279,8 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
             para.data = { ...prevData, itinMeta, hProperties: hProps } as MdNode['data'];
 
-            para.children = [{ type: 'text', value: rebuilt }];
+            // Preserve original paragraph children to keep Markdown structures (e.g., links)
+            // Do not overwrite para.children with a rebuilt plain text
         }
         return tree;
     };

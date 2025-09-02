@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Select from '@radix-ui/react-select';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
-import { Check, ChevronDown, Clipboard, Columns, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
+import { Check, ChevronDown, Clipboard, Columns, Eye, EyeOff, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
 import * as React from 'react';
 import type { StayMode, TopbarState, ViewMode } from '../types/itinerary';
 
@@ -152,6 +152,27 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                         <PanelLeft size={14} className="hidden md:block" />
                     </ToggleGroup.Item>
                 </ToggleGroup.Root>
+
+                <Toolbar.Button
+                    type="button"
+                    aria-label={!topbar.showPast ? 'Show past days' : 'Hide past days'}
+                    title={!topbar.showPast ? 'Show past days' : 'Hide past days'}
+                    onClick={() => onTopbarChange({ showPast: !topbar.showPast })}
+                    className={`inline-flex items-center justify-center px-2 h-full rounded-md border ${!topbar.showPast ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'}`}
+                >
+                    {!topbar.showPast ? <EyeOff size={14} /> : <Eye size={14} />}
+                    <span className="hidden md:block text-xs ml-1">{!topbar.showPast ? 'Hide Past: ON' : 'Hide Past: OFF'}</span>
+                </Toolbar.Button>
+
+                <Toolbar.Button
+                    type="button"
+                    aria-label={!topbar.autoScroll ? 'Enable auto scroll' : 'Disable auto scroll'}
+                    title={!topbar.autoScroll ? 'Enable auto scroll' : 'Disable auto scroll'}
+                    onClick={() => onTopbarChange({ autoScroll: !topbar.autoScroll })}
+                    className={`inline-flex items-center justify-center px-2 h-full rounded-md border ${topbar.autoScroll ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'}`}
+                >
+                    <span className="text-xs">Auto Scroll: {topbar.autoScroll ? 'ON' : 'OFF'}</span>
+                </Toolbar.Button>
 
                 <Toolbar.Separator className="w-px mr-auto" />
 

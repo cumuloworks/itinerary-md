@@ -42,7 +42,7 @@ export const Meta: React.FC<{
     borderColor: string;
     currency?: string;
 }> = ({ metadata, borderColor, currency }) => {
-    const entries = Object.entries(metadata);
+    const entries = Object.entries(metadata).filter(([key]) => !key.endsWith('__url'));
     const { data: ratesData } = useRatesUSD();
 
     const converted = useMemo(() => {
@@ -92,11 +92,19 @@ export const Meta: React.FC<{
                         </div>
                     );
                 }
+                const maybeUrl = metadata[`${key}__url`];
+                const content = maybeUrl ? (
+                    <a href={maybeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                        {value}
+                    </a>
+                ) : (
+                    <span className="ml-1">{value}</span>
+                );
                 return (
                     <div key={key} className="text-gray-600 text-sm flex items-center">
                         <IconComponent size={14} className="mr-1" />
                         <span className="font-medium">{config.label}:</span>
-                        <span className="ml-1">{value}</span>
+                        {content}
                     </div>
                 );
             })}

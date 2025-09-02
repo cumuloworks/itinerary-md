@@ -294,7 +294,8 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
 
     const routeOrLocationDisplay = (() => {
         if (eventData.baseType === 'transportation' && eventData.departure && eventData.arrival) {
-            return <Route departure={eventData.departure} arrival={eventData.arrival} startTime={eventData.timeRange?.start} endTime={eventData.timeRange?.end} />;
+            const meta = eventData.metadata as Record<string, string>;
+            return <Route departure={eventData.departure} arrival={eventData.arrival} startTime={eventData.timeRange?.start} endTime={eventData.timeRange?.end} departureUrl={meta['departure__url']} arrivalUrl={meta['arrival__url']} />;
         }
         if ((eventData.baseType === 'stay' || eventData.baseType === 'activity') && eventData.location) {
             return <Location location={eventData.location} />;
@@ -322,7 +323,16 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
             <div className={`flex-1 min-w-0 p-5 ${colors.cardBg} ${colors.cardBorder} border-l-4 ${colors.borderColor} -ml-4.5 pl-8`}>
                 <div className="flex items-center gap-x-3 flex-wrap">
                     {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
-                    <span className={`font-bold ${colors.text} text-lg`}>{mainTitle}</span>
+                    {(() => {
+                        const url = (eventData.metadata as Record<string, string>)['name__url'];
+                        return url ? (
+                            <a href={url} target="_blank" rel="noopener noreferrer" className={`font-bold ${colors.text} text-lg hover:underline`}>
+                                {mainTitle}
+                            </a>
+                        ) : (
+                            <span className={`font-bold ${colors.text} text-lg`}>{mainTitle}</span>
+                        );
+                    })()}
                     {routeOrLocationDisplay && <div className="text-gray-700 text-sm font-medium">{routeOrLocationDisplay}</div>}
                 </div>
                 <Meta metadata={eventData.metadata} borderColor={colors.border} currency={currency} />
