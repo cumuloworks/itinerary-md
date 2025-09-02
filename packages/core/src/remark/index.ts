@@ -1,2 +1,1 @@
-export type { StayMode } from './itinerary';
-export { remarkItinerary } from './itinerary';
+export { remarkItinerary } from '../itmd/remark/itinerary';

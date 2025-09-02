@@ -1,3 +1,6 @@
+export { toItineraryEvents } from './itmd/extract';
+export type { Policy, Services } from './itmd/services';
+export type { ITMDEventNode, RichInline, TimeMarker } from './itmd/types';
 export type { ItineraryEvent, ParseItineraryEventsOptions } from './parser';
 export { parseItineraryEvents } from './parser';
 export {
@@ -26,6 +29,5 @@ export {
     resolveTimeRange,
     resolveTimeToken,
 } from './parser/parsers/time';
-export type { StayMode } from './remark';
 export { remarkItinerary } from './remark';
 export { coerceIanaTimeZone, isValidIanaTimeZone } from './time';

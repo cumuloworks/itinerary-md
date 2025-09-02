@@ -2,7 +2,7 @@ import type { Root } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import { remarkItinerary } from '../remark/itinerary';
+import { remarkItinerary } from '../remark';
 import type { EventData } from './parsers/event';
 
 export type ItineraryEvent = {
