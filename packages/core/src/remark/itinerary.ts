@@ -86,6 +86,16 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 continue;
             }
 
+            // Attach current date attributes to any non-heading node within the day's section
+            if (currentDateStr) {
+                const prevData = para.data || {};
+                const prevH = (prevData.hProperties as Record<string, unknown>) || {};
+                const hProps: Record<string, unknown> = { ...prevH };
+                if (!hProps['data-itin-date-str']) hProps['data-itin-date-str'] = currentDateStr;
+                if (currentDateTz && !hProps['data-itin-date-tz']) hProps['data-itin-date-tz'] = currentDateTz;
+                para.data = { ...prevData, hProperties: hProps } as MdNode['data'];
+            }
+
             if (para.type !== 'paragraph') continue;
 
             const paraChildren = (para as MdNode).children || [];

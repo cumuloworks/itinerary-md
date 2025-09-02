@@ -55,8 +55,9 @@ function App() {
             timezone: topbar.timezone,
             currency: topbar.currency,
             stayMode: topbar.stayMode,
+            showPast: topbar.showPast,
         }),
-        [topbar.timezone, topbar.currency, topbar.stayMode]
+        [topbar.timezone, topbar.currency, topbar.stayMode, topbar.showPast]
     );
 
     const latestContent = useLatest(content);

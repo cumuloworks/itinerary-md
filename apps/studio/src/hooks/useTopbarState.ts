@@ -20,6 +20,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
         currency: 'USD',
         viewMode: 'split',
         stayMode: 'default',
+        showPast: true,
     }));
 
     useEffect(() => {
@@ -62,6 +63,9 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
                 patch.stayMode = stay as StayMode;
             }
 
+            const past = searchParams.get('past');
+            if (past) patch.showPast = past === '1';
+
             if (Object.keys(patch).length > 0) {
                 setState((prevState) => ({ ...prevState, ...patch }));
             }
@@ -85,7 +89,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
     useEffect(() => {
         try {
             const curr = new URLSearchParams(window.location.search);
-            if (curr.get('tz') === state.timezone && curr.get('cur') === state.currency && curr.get('view') === state.viewMode && curr.get('stay') === state.stayMode) return;
+            if (curr.get('tz') === state.timezone && curr.get('cur') === state.currency && curr.get('view') === state.viewMode && curr.get('stay') === state.stayMode && curr.get('past') === (state.showPast ? '1' : '0')) return;
 
             const searchParams = new URLSearchParams(window.location.search);
             if (isValidIanaTimeZone(state.timezone)) {
@@ -94,12 +98,13 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             searchParams.set('cur', state.currency);
             searchParams.set('view', state.viewMode);
             searchParams.set('stay', state.stayMode);
+            searchParams.set('past', state.showPast ? '1' : '0');
 
             const newSearch = `?${searchParams.toString()}`;
             const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
             history.replaceState(null, '', newUrl);
         } catch {}
-    }, [state.timezone, state.currency, state.viewMode, state.stayMode]);
+    }, [state.timezone, state.currency, state.viewMode, state.stayMode, state.showPast]);
 
     return [state, updateState];
 }

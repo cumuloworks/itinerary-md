@@ -6,6 +6,7 @@ export type TopbarState = {
     currency: string;
     viewMode: ViewMode;
     stayMode: StayMode;
+    showPast?: boolean;
 };
 
 export type QueryParams = {
@@ -13,6 +14,7 @@ export type QueryParams = {
     cur?: string;
     view?: ViewMode;
     stay?: StayMode;
+    past?: '1' | '0';
 };
 
 export type ItinerarySummary = {
