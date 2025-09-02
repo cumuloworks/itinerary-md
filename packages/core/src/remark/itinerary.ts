@@ -19,7 +19,7 @@ type MdNode = {
     url?: string;
 };
 
-type TextSegment = {
+export type TextSegment = {
     text: string;
     url?: string;
 };
@@ -59,6 +59,12 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             timezone?: string,
             baseDate?: string
         ): { eventData: EventData | null; nameSegments?: TextSegment[]; departureSegments?: TextSegment[]; arrivalSegments?: TextSegment[] } | null => {
+            // Constants for separators to avoid magic numbers
+            const NAME_ROUTE_SEP = '::';
+            const ROUTE_SEP = ' - ';
+            const AT_PREFIX = 'at ';
+            const NAME_ROUTE_SEP_WITH_SPACES = NAME_ROUTE_SEP.length + 2; // "::" + surrounding spaces
+            const AT_PREFIX_LENGTH = AT_PREFIX.length;
             const plainText = segmentsToPlainText(segments);
             const parsed = parseTimeAndType(plainText, timezone, baseDate);
             if (!parsed) return null;
@@ -70,30 +76,31 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             
                         let currentLength = 0;
             let descriptionStartIndex = 0;
+            let segs = segments.slice(); // Create a local copy to avoid mutating the parameter
             
-            for (let i = 0; i < segments.length; i++) {
-                const segmentLength = segments[i].text.length;
+            for (let i = 0; i < segs.length; i++) {
+                const segmentLength = segs[i].text.length;
                 if (currentLength + segmentLength >= timeAndTypeLength) {
                                         const splitPoint = timeAndTypeLength - currentLength;
                     if (splitPoint > 0 && splitPoint < segmentLength) {
-                                                const beforeText = segments[i].text.substring(0, splitPoint);
-                        const afterText = segments[i].text.substring(splitPoint);
+                                                const beforeText = segs[i].text.substring(0, splitPoint);
+                        const afterText = segs[i].text.substring(splitPoint);
                         
                                                 const newSegments: TextSegment[] = [];
                                                 for (let j = 0; j < i; j++) {
-                            newSegments.push(segments[j]);
+                            newSegments.push(segs[j]);
                         }
                                                 if (beforeText) {
-                            newSegments.push({ text: beforeText, url: segments[i].url });
+                            newSegments.push({ text: beforeText, url: segs[i].url });
                         }
                                                 if (afterText) {
-                            newSegments.push({ text: afterText, url: segments[i].url });
+                            newSegments.push({ text: afterText, url: segs[i].url });
                         }
-                                                for (let j = i + 1; j < segments.length; j++) {
-                            newSegments.push(segments[j]);
+                                                for (let j = i + 1; j < segs.length; j++) {
+                            newSegments.push(segs[j]);
                         }
                         
-                        segments = newSegments;
+                        segs = newSegments;
                         descriptionStartIndex = i + (beforeText ? 1 : 0);
                     } else if (splitPoint === 0) {
                         descriptionStartIndex = i;
@@ -105,7 +112,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 currentLength += segmentLength;
             }
             
-            const descriptionSegments = segments.slice(descriptionStartIndex);
+            const descriptionSegments = segs.slice(descriptionStartIndex);
             const eventDescription = segmentsToPlainText(descriptionSegments);
             
                         const eventData = parseEvent(plainText, context || undefined, timezone, baseDate);
@@ -121,21 +128,22 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             if (displayName) {
 
                 
-                                if (eventDescription.includes('::')) {
-                    const parts = eventDescription.split('::');
+                                if (eventDescription.includes(NAME_ROUTE_SEP)) {
+                    const parts = eventDescription.split(NAME_ROUTE_SEP);
                     const namePartText = parts[0].trim();
                     result.nameSegments = extractSegmentsForText(descriptionSegments, namePartText);
                     
                     if ('departure' in eventData && 'arrival' in eventData && parts[1]) {
                                                 const routeText = parts[1].trim();
-                        const routeParts = routeText.split(' - ');
+                        const routeParts = routeText.split(ROUTE_SEP);
                         if (routeParts.length >= 2) {
                             const depText = routeParts[0].trim();
                             const arrText = routeParts[routeParts.length - 1].trim();
-                            result.departureSegments = extractSegmentsForText(descriptionSegments, depText, namePartText.length + 4);                             result.arrivalSegments = extractSegmentsForText(descriptionSegments, arrText, namePartText.length + 4 + depText.length + 3);                         }
+                            result.departureSegments = extractSegmentsForText(descriptionSegments, depText, namePartText.length + NAME_ROUTE_SEP_WITH_SPACES);
+                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, arrText, namePartText.length + NAME_ROUTE_SEP_WITH_SPACES + depText.length + ROUTE_SEP.length);                         }
                     } else if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
                                                 const locationText = parts[1].trim();
-                        result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + 4);                     }
+                        result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + NAME_ROUTE_SEP_WITH_SPACES);                     }
                 } else {
                                         const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
                     const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
@@ -147,7 +155,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                             
                                                         if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
                                 const locationText = atMatch[2].trim();
-                                result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + 4);                             }
+                                result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + NAME_ROUTE_SEP_WITH_SPACES);                             }
                         } else {
                             result.nameSegments = descriptionSegments;
                         }
@@ -156,7 +164,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                         
                                                 if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
                             const locationText = atOnlyMatch[1].trim();
-                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, 3);                         }
+                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, AT_PREFIX_LENGTH);                         }
                     } else {
                         result.nameSegments = descriptionSegments;
                     }

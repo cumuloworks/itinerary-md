@@ -1,12 +1,11 @@
-import type { TimeLike } from '@itinerary-md/core';
+import type { TextSegment } from '@itinerary-md/core';
 import { MapPin } from 'lucide-react';
 import type React from 'react';
 import { buildGoogleMapsSearchUrl, isAllowedHref } from '../../utils/url';
-import { SegmentedText, type TextSegment } from './SegmentedText';
+import { SegmentedText } from './SegmentedText';
 
 interface LocationProps {
     location?: string;
-    time?: TimeLike;
     url?: string;
     segments?: TextSegment[];
     className?: string;

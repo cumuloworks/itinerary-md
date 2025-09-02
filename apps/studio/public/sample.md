@@ -11,7 +11,7 @@ tags: europe, spain, culture, gastronomy
 
 ## 2025-03-15 @Asia/Tokyo
 
-[06:30] breakfast Traditional Japanese breakfast at hotel
+[06:30] breakfast Traditional Japanese breakfast at [hotel restaurant](https://example.com/hotel-restaurant)
 - price: JPY 1800
 - note: Last taste of Japan before departure
 
@@ -19,14 +19,16 @@ tags: europe, spain, culture, gastronomy
 - price: JPY 3200
 - duration: 70 minutes
 - tag: reserved
+- map: [Google Maps](https://www.google.com/maps/search/?api=1&query=Narita%20Terminal%201)
 
-[11:35@Asia/Tokyo] - [18:45@Europe/Madrid] flight IB6800 :: NRT - MAD
+[11:35@Asia/Tokyo] - [18:45@Europe/Madrid] flight [IB6800](https://www.iberia.com) :: NRT - MAD
 - seat: 23A
 - aircraft: Airbus A350-900
 - airline: Iberia
 - price: EUR 890
 - meal: included
 - tag: business-class
+- reservation: [EJ-7823](https://example.com/reservation/EJ-7823)
 
 _✈️ Crossing 8 time zones westward. The `@Timezone` notation shows local times at departure and arrival._
 
@@ -40,99 +42,13 @@ _✈️ Crossing 8 time zones westward. The `@Timezone` notation shows local tim
 - price: EUR 35
 - distance: 13km
 
-[] hotel Casa Fuster :: Gran de Gràcia 132, Barcelona
+[] hotel Casa Fuster :: [Gran de Gràcia 132, Barcelona](https://www.google.com/maps/search/?api=1&query=Gran%20de%20Gr%C3%A0cia%20132%2C%20Barcelona)
 - checkin: 00:00
 - checkout: 2025-03-18
 - room: Deluxe Suite
 - reservation: BCN-2025-EJ-7823
 - price: EUR 320/night
-
-## 2025-03-16 @Europe/Madrid
-
-[09:00] brunch at Brunch & Cake
-- location: Carrer d'Enric Granados 19
-- price: EUR 28
-- cuisine: Mediterranean fusion
-- note: Famous for their Instagram-worthy dishes
-
-[11:00] - [14:30] activity Sagrada Família guided tour
-- price: EUR 47
-- guide: English
-- includes: Tower access
-- booking: SF-2025-03-16-AM
-
-[pm] museum Picasso Museum :: Carrer Montcada 15-23
-- price: EUR 12
-- collection: 4,251 works
-- audio-guide: EUR 5
-
-[16:00] cafe Coffee break :: Nomad Coffee
-- price: EUR 8
-- specialty: Single origin Ethiopian
-
-[17:30] - [19:00] activity Walking tour of Gothic Quarter
-- price: EUR 0
-- note: Free walking tour (tips appreciated)
-- meeting: Plaça de Catalunya
-
-[pm] shopping La Boqueria Market
-- budget: EUR 40
-- goal: Local products and souvenirs
-
-[21:30] dinner Traditional tapas at Cal Pep
-- location: Plaça de les Olles 8
-- price: EUR 65
-- recommended: Seafood tapas
-- reservation: 21:30
-
-[] hotel Casa Fuster
-
-## 2025-03-17 @Europe/Madrid
-
-[08:30] breakfast at hotel
-- price: included
-- style: Continental buffet
-
-[10:00] - [11:30] subway L3 Green Line :: Diagonal - Vallcarca
-- price: EUR 2.40
-- destination: Park Güell
-
-[am] park Park Güell exploration
-- price: EUR 10
-- zone: Monumental Core
-- architect: Antoni Gaudí
-
-[14:30] lunch Paella lunch :: Can Solé
-- location: Sant Carles 4, Barceloneta
-- price: EUR 42
-- specialty: Seafood paella
-- established: 1903
-
-[16:00] - [17:30] activity Beach time at Barceloneta
-- price: EUR 0
-- activity: Swimming and sunbathing
-
-[18:00] spa Aire Ancient Baths Barcelona
-- price: EUR 95
-- package: 90-minute thermal circuit
-- includes: 6 thermal baths + relaxation area
-
-[20:30] activity Flamenco show :: Tablao Flamenco Cordobés
-- price: EUR 45
-- duration: 1 hour
-- includes: 1 drink
-
-[22:00] dinner Late dinner :: Tickets Bar
-- price: EUR 120
-- style: Molecular tapas
-- chef: Albert Adrià
-- reservation: required months ahead
-
-[23:45] - [00:30+1] activity Night walk along Las Ramblas
-- price: EUR 0
-- note: Experience Barcelona's nightlife
-
-[] hotel Casa Fuster
+- website: [Casa Fuster](https://www.hotelcasafuster.com)
 
 ---
 
@@ -284,6 +200,26 @@ tags: tag1, tag2
 ```
 
 `type: itinerary-md` or `type: itmd` is required in the frontmatter to properly parse the document.
+
+### 9. **Link Syntax**
+
+You can embed Markdown links in both event descriptions and metadata values. Links must use `https://`, a site-relative path starting with `/`, or a hash `#` anchor.
+
+Event examples:
+
+```markdown
+[11:35] flight [IB6800](https://www.iberia.com) :: NRT - MAD
+[12:00] lunch at [Cal Pep](https://www.calpep.com)
+[] hotel Casa Fuster :: [Gran de Gràcia 132, Barcelona](https://www.google.com/maps/search/?api=1&query=Gran%20de%20Gr%C3%A0cia%20132%2C%20Barcelona)
+```
+
+Metadata examples (place links after the colon):
+
+```markdown
+[16:00] museum Picasso Museum
+- website: [Official site](https://www.museupicasso.bcn.cat)
+- reservation: [ABC-123](https://booking.example.com/ABC-123)
+```
 
 ## Advanced Features
 

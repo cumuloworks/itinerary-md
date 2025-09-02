@@ -1,9 +1,9 @@
 /**
- * Check if a URL is allowed for linking (https or relative)
+ * Check if a URL is allowed for linking (https or anchor)
  */
 export function isAllowedHref(href?: string): boolean {
     if (!href) return false;
-        return href.startsWith('https://') || href.startsWith('/') || href.startsWith('#');
+    return href.startsWith('https://') || href.startsWith('#');
 }
 
 /**
@@ -18,7 +18,7 @@ export function isExternalHttpUrl(url: string): boolean {
  */
 export function isAllowedImageSrc(src?: string): boolean {
     if (!src) return false;
-        return src.startsWith('https://') || src.startsWith('data:') || src.startsWith('/');
+    return src.startsWith('https://');
 }
 
 /**

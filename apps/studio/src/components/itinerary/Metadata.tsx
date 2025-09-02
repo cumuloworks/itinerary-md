@@ -1,3 +1,4 @@
+import type { TextSegment } from '@itinerary-md/core';
 import type { LucideIcon } from 'lucide-react';
 import { Bed, Calendar, Car, Clock, MapPin, Phone, Plane, Star, Tag, Users, Wallet, Wifi } from 'lucide-react';
 import type React from 'react';
@@ -5,7 +6,7 @@ import { useMemo } from 'react';
 import { useRatesUSD } from '../../hooks/useRatesUSD';
 import { convertAmountUSDBase, formatCurrency, parseAmountWithCurrency } from '../../utils/currency';
 import { isAllowedHref } from '../../utils/url';
-import { SegmentedText, type TextSegment } from './SegmentedText';
+import { SegmentedText } from './SegmentedText';
 
 const getMetadataConfig = (key: string) => {
     const iconConfigs: Record<string, { icon: LucideIcon; isSpecial?: boolean }> = {

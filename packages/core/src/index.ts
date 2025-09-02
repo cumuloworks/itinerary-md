@@ -27,4 +27,5 @@ export {
     resolveTimeToken,
 } from './parser/parsers/time';
 export { remarkItinerary } from './remark';
+export type { TextSegment } from './remark/itinerary';
 export { coerceIanaTimeZone, isValidIanaTimeZone } from './time';

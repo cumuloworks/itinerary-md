@@ -2,6 +2,14 @@ import { isValidIanaTimeZone } from '../../time/iana';
 import type { TimeRangeLike } from './time';
 import { parseTimeRangeTokens, resolveTimeRange } from './time';
 
+// Regular expressions for parsing "at" patterns (case insensitive)
+const AT_PATTERN = /^(.+?)\s+at\s+(.+)$/i;
+const AT_ONLY_PATTERN = /^at\s+(.+)$/i;
+
+// Type aliases for event categories
+const STAY_ALIASES = ['hotel', 'hostel', 'ryokan', 'dormitory'] as const;
+const ACTIVITY_ALIASES = ['activity', 'meal', 'lunch', 'dinner', 'breakfast', 'brunch', 'museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'] as const;
+
 export interface BaseEventData {
     timeRange?: TimeRangeLike;
     metadata: Record<string, string>;
@@ -23,7 +31,7 @@ export interface StayEventData extends BaseEventData {
 }
 
 export interface ActivityEventData extends BaseEventData {
-    type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe';
+    type: typeof ACTIVITY_ALIASES[number];
     baseType: 'activity';
     name: string;
     location?: string;
@@ -80,37 +88,37 @@ const parseStayData = (eventDescription: string, baseData: BaseEventData, type: 
     let stayName = eventDescription;
     let location: string | undefined = '';
 
-        if (eventDescription.includes('::')) {
+    if (eventDescription.includes('::')) {
         const [left, right] = eventDescription.split('::').map((s) => s.trim());
         location = right || '';
 
-        const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
+        const isStayAlias = STAY_ALIASES.includes(type as typeof STAY_ALIASES[number]);
         if (!left || (originalType && left.toLowerCase() === originalType.toLowerCase() && isStayAlias)) {
             stayName = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : left;
         } else {
             stayName = left;
         }
     } else {
-                const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
-        const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
-        
+        const atMatch = eventDescription.match(AT_PATTERN);
+        const atOnlyMatch = eventDescription.match(AT_ONLY_PATTERN);
+
         if (atMatch) {
-                        const [, left, right] = atMatch;
+            const [, left, right] = atMatch;
             const leftTrimmed = left.trim();
             const rightTrimmed = right.trim();
             location = rightTrimmed || '';
 
-            const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
+            const isStayAlias = STAY_ALIASES.includes(type as typeof STAY_ALIASES[number]);
             if (!leftTrimmed || (originalType && leftTrimmed.toLowerCase() === originalType.toLowerCase() && isStayAlias)) {
                 stayName = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : leftTrimmed;
             } else {
                 stayName = leftTrimmed;
             }
         } else if (atOnlyMatch) {
-                        const rightTrimmed = atOnlyMatch[1].trim();
+            const rightTrimmed = atOnlyMatch[1].trim();
             location = rightTrimmed || '';
 
-            const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
+            const isStayAlias = STAY_ALIASES.includes(type as typeof STAY_ALIASES[number]);
             if (originalType && isStayAlias) {
                 stayName = originalType.charAt(0).toUpperCase() + originalType.slice(1);
             } else {
@@ -131,47 +139,44 @@ const parseStayData = (eventDescription: string, baseData: BaseEventData, type: 
 const parseActivityData = (
     eventDescription: string,
     baseData: BaseEventData,
-    type: 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe',
+    type: typeof ACTIVITY_ALIASES[number],
     originalType?: string
 ): ActivityEventData => {
     let name = eventDescription;
     let location: string | undefined = '';
 
-        if (eventDescription.includes('::')) {
+    if (eventDescription.includes('::')) {
         const [left, right] = eventDescription.split('::').map((s) => s.trim());
         location = right || '';
 
-        const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
-        const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
-        if (!left || (originalType && left.toLowerCase() === originalType.toLowerCase() && (isMealAlias || isActivityAlias))) {
+        const isActivityAlias = ACTIVITY_ALIASES.includes(type as typeof ACTIVITY_ALIASES[number]);
+        if (!left || (originalType && left.toLowerCase() === originalType.toLowerCase() && isActivityAlias)) {
             name = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : left;
         } else {
             name = left;
         }
     } else {
-                const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
-        const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
-        
+        const atMatch = eventDescription.match(AT_PATTERN);
+        const atOnlyMatch = eventDescription.match(AT_ONLY_PATTERN);
+
         if (atMatch) {
-                        const [, left, right] = atMatch;
+            const [, left, right] = atMatch;
             const leftTrimmed = left.trim();
             const rightTrimmed = right.trim();
             location = rightTrimmed || '';
 
-            const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
-            const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
-            if (!leftTrimmed || (originalType && leftTrimmed.toLowerCase() === originalType.toLowerCase() && (isMealAlias || isActivityAlias))) {
+            const isActivityAlias = ACTIVITY_ALIASES.includes(type as typeof ACTIVITY_ALIASES[number]);
+            if (!leftTrimmed || (originalType && leftTrimmed.toLowerCase() === originalType.toLowerCase() && isActivityAlias)) {
                 name = originalType ? originalType.charAt(0).toUpperCase() + originalType.slice(1) : leftTrimmed;
             } else {
                 name = leftTrimmed;
             }
         } else if (atOnlyMatch) {
-                        const rightTrimmed = atOnlyMatch[1].trim();
+            const rightTrimmed = atOnlyMatch[1].trim();
             location = rightTrimmed || '';
 
-            const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);
-            const isActivityAlias = ['museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'].includes(type);
-            if (originalType && (isMealAlias || isActivityAlias)) {
+            const isActivityAlias = ACTIVITY_ALIASES.includes(type as typeof ACTIVITY_ALIASES[number]);
+            if (originalType && isActivityAlias) {
                 name = originalType.charAt(0).toUpperCase() + originalType.slice(1);
             } else {
                 name = '';
@@ -254,13 +259,13 @@ export const parseEvent = (text: string, context?: EventData, timezone?: string,
         case 'spa':
         case 'park':
         case 'cafe': {
-            const parsed = parseActivityData(eventDescription, baseData, type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe', type);
+            const parsed = parseActivityData(eventDescription, baseData, type as typeof ACTIVITY_ALIASES[number], type);
             if (parsed) return parsed;
             if (context && context.type === type && 'name' in context) {
                 return {
                     ...baseData,
                     timeRange: baseData.timeRange || context.timeRange,
-                    type: type as 'meal' | 'lunch' | 'dinner' | 'breakfast' | 'brunch' | 'activity' | 'museum' | 'sightseeing' | 'shopping' | 'spa' | 'park' | 'cafe',
+                    type: type as typeof ACTIVITY_ALIASES[number],
                     baseType: 'activity',
                     metadata: context.metadata,
                     name: context.name,

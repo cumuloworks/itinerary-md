@@ -6,7 +6,7 @@ import { AirlineLogo } from './AirlineLogo';
 import { Location } from './Location';
 import { Route } from './Route';
 import { SegmentedText } from './SegmentedText';
-import { isAllowedHref } from '../../utils/url';
+import { isAllowedHref, isExternalHttpUrl } from '../../utils/url';
 
 interface ItemProps {
     eventData: EventData;
@@ -23,7 +23,7 @@ const getTypeColors = (type: EventData['type']) => {
     switch (type) {
         case 'flight':
             return {
-                text: 'text-red-600',
+                text: '!text-red-600',
                 border: 'border-red-200',
                 bgColor: 'bg-red-500',
                 borderColor: 'border-l-red-500',
@@ -32,7 +32,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'train':
             return {
-                text: 'text-green-600',
+                text: '!text-green-600',
                 border: 'border-green-200',
                 bgColor: 'bg-green-600',
                 borderColor: 'border-l-green-600',
@@ -41,7 +41,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'drive':
             return {
-                text: 'text-yellow-600',
+                text: '!text-yellow-600',
                 border: 'border-yellow-200',
                 bgColor: 'bg-yellow-600',
                 borderColor: 'border-l-yellow-600',
@@ -50,7 +50,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'ferry':
             return {
-                text: 'text-cyan-600',
+                text: '!text-cyan-600',
                 border: 'border-cyan-200',
                 bgColor: 'bg-cyan-600',
                 borderColor: 'border-l-cyan-600',
@@ -59,7 +59,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'bus':
             return {
-                text: 'text-orange-600',
+                text: '!text-orange-600',
                 border: 'border-orange-200',
                 bgColor: 'bg-orange-600',
                 borderColor: 'border-l-orange-600',
@@ -68,7 +68,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'taxi':
             return {
-                text: 'text-lime-600',
+                text: '!text-lime-600',
                 border: 'border-lime-200',
                 bgColor: 'bg-lime-600',
                 borderColor: 'border-l-lime-600',
@@ -77,7 +77,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'subway':
             return {
-                text: 'text-teal-600',
+                text: '!text-teal-600',
                 border: 'border-teal-200',
                 bgColor: 'bg-teal-600',
                 borderColor: 'border-l-teal-600',
@@ -87,7 +87,7 @@ const getTypeColors = (type: EventData['type']) => {
         case 'stay':
         case 'hotel':
             return {
-                text: 'text-purple-600',
+                text: '!text-purple-600',
                 border: 'border-purple-200',
                 bgColor: 'bg-purple-600',
                 borderColor: 'border-l-purple-600',
@@ -97,7 +97,7 @@ const getTypeColors = (type: EventData['type']) => {
         case 'dormitory':
         case 'hostel':
             return {
-                text: 'text-indigo-600',
+                text: '!text-indigo-600',
                 border: 'border-indigo-200',
                 bgColor: 'bg-indigo-600',
                 borderColor: 'border-l-indigo-600',
@@ -106,7 +106,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'ryokan':
             return {
-                text: 'text-red-700',
+                text: '!text-red-700',
                 border: 'border-red-300',
                 bgColor: 'bg-red-700',
                 borderColor: 'border-l-red-700',
@@ -119,7 +119,7 @@ const getTypeColors = (type: EventData['type']) => {
         case 'breakfast':
         case 'brunch':
             return {
-                text: 'text-orange-600',
+                text: '!text-orange-600',
                 border: 'border-orange-200',
                 bgColor: 'bg-orange-600',
                 borderColor: 'border-l-orange-600',
@@ -128,7 +128,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'activity':
             return {
-                text: 'text-blue-600',
+                text: '!text-blue-600',
                 border: 'border-blue-200',
                 bgColor: 'bg-blue-600',
                 borderColor: 'border-l-blue-600',
@@ -137,7 +137,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'museum':
             return {
-                text: 'text-indigo-600',
+                text: '!text-indigo-600',
                 border: 'border-indigo-200',
                 bgColor: 'bg-indigo-600',
                 borderColor: 'border-l-indigo-600',
@@ -146,7 +146,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'sightseeing':
             return {
-                text: 'text-pink-600',
+                text: '!text-pink-600',
                 border: 'border-pink-200',
                 bgColor: 'bg-pink-600',
                 borderColor: 'border-l-pink-600',
@@ -155,7 +155,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'shopping':
             return {
-                text: 'text-violet-600',
+                text: '!text-violet-600',
                 border: 'border-violet-200',
                 bgColor: 'bg-violet-600',
                 borderColor: 'border-l-violet-600',
@@ -164,7 +164,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'spa':
             return {
-                text: 'text-emerald-600',
+                text: '!text-emerald-600',
                 border: 'border-emerald-200',
                 bgColor: 'bg-emerald-600',
                 borderColor: 'border-l-emerald-600',
@@ -173,7 +173,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'park':
             return {
-                text: 'text-green-700',
+                text: '!text-green-700',
                 border: 'border-green-300',
                 bgColor: 'bg-green-700',
                 borderColor: 'border-l-green-700',
@@ -182,7 +182,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         case 'cafe':
             return {
-                text: 'text-amber-600',
+                text: '!text-amber-600',
                 border: 'border-amber-200',
                 bgColor: 'bg-amber-600',
                 borderColor: 'border-l-amber-600',
@@ -191,7 +191,7 @@ const getTypeColors = (type: EventData['type']) => {
             };
         default:
             return {
-                text: 'text-gray-600',
+                text: '!text-gray-600',
                 border: 'border-gray-200',
                 bgColor: 'bg-gray-600',
                 borderColor: 'border-l-gray-600',
@@ -302,15 +302,13 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
         if (eventData.baseType === 'transportation' && eventData.departure && eventData.arrival) {
             const meta = eventData.metadata as Record<string, string>;
             return (
-                <Route 
+                                <Route 
                     departure={eventData.departure} 
                     arrival={eventData.arrival} 
-                    startTime={eventData.timeRange?.start} 
-                    endTime={eventData.timeRange?.end} 
                     departureUrl={meta['departure__url']} 
                     arrivalUrl={meta['arrival__url']}
                     departureSegments={departureSegments}
-                    arrivalSegments={arrivalSegments}
+                    arrivalSegments={arrivalSegments} 
                 />
             );
         }
@@ -367,11 +365,20 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
                         <div className="flex items-center gap-2 text-sm">
                             {extraLinks
                                 .filter((l) => l && typeof l.url === 'string' && isAllowedHref(l.url))
-                                .map((l, idx) => (
-                                    <a key={`${l.label}-${idx}`} href={l.url} target="_blank" rel="noopener noreferrer" className="underline">
-                                        {l.label}
-                                    </a>
-                                ))}
+                                .map((l, idx) => {
+                                    const isExternal = isExternalHttpUrl(l.url);
+                                    return (
+                                        <a 
+                                            key={`${l.label}-${idx}`} 
+                                            href={l.url} 
+                                            target={isExternal ? "_blank" : undefined} 
+                                            rel={isExternal ? "noopener noreferrer" : undefined}
+                                            className="underline"
+                                        >
+                                            {l.label}
+                                        </a>
+                                    );
+                                })}
                         </div>
                     )}
                 </div>
