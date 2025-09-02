@@ -6,7 +6,9 @@ const HeaderComponent: React.FC = () => {
     return (
         <header className="mb-4 px-8">
             <div className="flex items-center justify-between">
-                <h1 className="text-4xl leading-tight text-blue-600">Itinerary MD Studio</h1>
+                <h1 className="text-4xl leading-tight text-blue-600">
+                    <span className="font-semibold">TripMD</span> Studio
+                </h1>
                 <div className="flex items-center gap-2 p-2">
                     <AboutDialog
                         trigger={

@@ -92,7 +92,7 @@ function App() {
     const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
 
     return (
-        <div className="max-w-screen-2xl mx-auto h-screen overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
+        <div className="max-w-screen-2xl mx-auto h-svh overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
             <Header />
             <ImportDialog open={hashImport.isDialogOpen} onCancel={hashImport.cancelImport} onLoad={hashImport.confirmImport} />
             <LoadSampleDialog open={pendingLoadSample} onCancel={cancelLoadSample} onLoad={confirmLoadSample} />
