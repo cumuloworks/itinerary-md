@@ -30,6 +30,21 @@ interface MarkdownPreviewProps {
     activeLine?: number;
 }
 
+// Remove internal props passed by react-markdown that should not hit the DOM
+const omitInternalProps = (props: Record<string, unknown>): Record<string, unknown> => {
+    const clean = { ...(props as Record<string, unknown>) } as Record<string, unknown> & {
+        node?: unknown;
+        sourcePosition?: unknown;
+        index?: unknown;
+        siblingCount?: unknown;
+    };
+    delete (clean as { node?: unknown }).node;
+    delete (clean as { sourcePosition?: unknown }).sourcePosition;
+    delete (clean as { index?: unknown }).index;
+    delete (clean as { siblingCount?: unknown }).siblingCount;
+    return clean as Record<string, unknown>;
+};
+
 const WarnEffect: React.FC<{ message?: string }> = ({ message }) => {
     React.useEffect(() => {
         if (message) notifyError(message);
@@ -115,6 +130,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         const { children, ...rest } = (props as { children?: React.ReactNode }) || {};
                         const dataItinDate = getDataAttr(rest as Record<string, unknown>, 'data-itin-date');
                         const warnHeadingTz = getDataAttr(rest as Record<string, unknown>, 'data-itin-warn-date-tz');
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         const parsed = tryParseJson<{
                             date: string;
                             timezone?: string;
@@ -125,7 +141,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                             if (!showPastEffective && isPastDay(parsed.date, parsed.timezone)) {
                                 const cnt = eventsCountByDate[parsed.date] || 0;
                                 return (
-                                    <div className="flex items-center text-gray-500 text-xs mt-6 mb-4" {...(rest as React.HTMLAttributes<HTMLDivElement>)}>
+                                    <div className="flex items-center text-gray-500 text-xs mt-6 mb-4" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
                                         <span className="flex-1 border-t border-gray-200" />
                                         <span className="px-2">{cnt} past events hidden</span>
                                         <span className="flex-1 border-t border-gray-200" />
@@ -133,14 +149,14 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                                 );
                             }
                             return (
-                                <div className="contents" {...(rest as React.HTMLAttributes<HTMLDivElement>)}>
+                                <div className="contents" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
                                     <WarnEffect message={warnHeadingTz ? `Heading timezone "${warnHeadingTz}" is invalid. Using fallback.` : undefined} />
                                     <Heading date={parsed.date} timezone={parsed.timezone} prevStayName={stayMode === 'header' ? parsed.prevStayName : undefined} />
                                 </div>
                             );
                         }
                         return (
-                            <h2 {...(rest as React.HTMLAttributes<HTMLHeadingElement>)} className="text-2xl font-semibold text-blue-700 border-b-2 border-blue-200 pb-3 mt-8 mb-6">
+                            <h2 {...(cleanRest as React.HTMLAttributes<HTMLHeadingElement>)} className="text-2xl font-semibold text-blue-700 border-b-2 border-blue-200 pb-3 mt-8 mb-6">
                                 {children}
                             </h2>
                         );
@@ -155,6 +171,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         const dateStr = getDataAttr(rest as Record<string, unknown>, 'data-itin-date-str');
                         const dateTz = getDataAttr(rest as Record<string, unknown>, 'data-itin-date-tz');
                         const warnEventTz = getDataAttr(rest as Record<string, unknown>, 'data-itin-warn-event-tz');
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
                         if (skip === '1') return null;
                         if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
                         const rawEvent = tryParseJson<unknown>(eventStr);
@@ -184,14 +201,14 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                             }
                             const eventData = r as Parameters<typeof Item>[0]['eventData'];
                             return (
-                                <div className="contents" {...(rest as React.HTMLAttributes<HTMLDivElement>)}>
+                                <div className="contents" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
                                     <WarnEffect message={warnMessage} />
                                     <Item eventData={eventData} dateStr={dateStr} timezone={displayTimezone} currency={currency} />
                                 </div>
                             );
                         }
                         return (
-                            <p {...(rest as React.HTMLAttributes<HTMLParagraphElement>)} className="mb-4 leading-relaxed text-gray-800 ml-20">
+                            <p {...(cleanRest as React.HTMLAttributes<HTMLParagraphElement>)} className="mb-4 leading-relaxed text-gray-800 ml-20">
                                 {children}
                             </p>
                         );
@@ -199,37 +216,44 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     ul: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
                         if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
-                        return <ul {...(rest as React.HTMLAttributes<HTMLUListElement>)}>{children}</ul>;
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        return <ul {...(cleanRest as React.HTMLAttributes<HTMLUListElement>)}>{children}</ul>;
                     },
                     ol: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
                         if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
-                        return <ol {...(rest as React.HTMLAttributes<HTMLOListElement>)}>{children}</ol>;
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        return <ol {...(cleanRest as React.HTMLAttributes<HTMLOListElement>)}>{children}</ol>;
                     },
                     li: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
                         if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
-                        return <li {...(rest as React.HTMLAttributes<HTMLLIElement>)}>{children}</li>;
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        return <li {...(cleanRest as React.HTMLAttributes<HTMLLIElement>)}>{children}</li>;
                     },
                     blockquote: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
                         if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
-                        return <blockquote {...(rest as React.HTMLAttributes<HTMLQuoteElement>)}>{children}</blockquote>;
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        return <blockquote {...(cleanRest as React.HTMLAttributes<HTMLQuoteElement>)}>{children}</blockquote>;
                     },
                     table: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
                         if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
-                        return <table {...(rest as React.HTMLAttributes<HTMLTableElement>)}>{children}</table>;
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        return <table {...(cleanRest as React.HTMLAttributes<HTMLTableElement>)}>{children}</table>;
                     },
                     pre: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode } & Record<string, unknown>) || {};
                         if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
-                        return <pre {...(rest as React.HTMLAttributes<HTMLPreElement>)}>{children}</pre>;
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        return <pre {...(cleanRest as React.HTMLAttributes<HTMLPreElement>)}>{children}</pre>;
                     },
                     hr: (props: unknown) => {
                         const { ...rest } = (props as Record<string, unknown>) || {};
                         if (shouldHideByDateAttr(rest as Record<string, unknown>)) return null;
-                        return <hr {...(rest as React.HTMLAttributes<HTMLHRElement>)} />;
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        return <hr {...(cleanRest as React.HTMLAttributes<HTMLHRElement>)} />;
                     },
                 }}
             >
