@@ -23,7 +23,7 @@ interface MarkdownPreviewProps {
         numDays?: number;
     };
     totalFormatted?: string | null;
-    breakdownFormatted?: { transport: string; activity: string; meal: string } | null;
+    breakdownFormatted?: { transportation: string; activity: string; stay: string } | null;
 }
 
 const WarnEffect: React.FC<{ message?: string }> = ({ message }) => {

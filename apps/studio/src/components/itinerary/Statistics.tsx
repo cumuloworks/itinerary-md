@@ -1,4 +1,4 @@
-import { ArrowDown, Plane, Ticket, TrainFront, Utensils } from 'lucide-react';
+import { ArrowDown, BedDouble, Plane, Ticket } from 'lucide-react';
 
 interface StatisticsProps {
     summary: {
@@ -7,7 +7,7 @@ interface StatisticsProps {
         numDays?: number;
     };
     totalFormatted: string | null;
-    breakdownFormatted: { transport: string; activity: string; meal: string } | null;
+    breakdownFormatted: { transportation: string; activity: string; stay: string } | null;
 }
 
 export const Statistics: React.FC<StatisticsProps> = ({ summary, totalFormatted, breakdownFormatted }) => {
@@ -19,20 +19,19 @@ export const Statistics: React.FC<StatisticsProps> = ({ summary, totalFormatted,
                 </div>
                 <div className="w-full px-4 mt-2">
                     <div className="flex justify-center gap-x-10 text-center">
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center flex-1">
                             <div className="flex items-center gap-1">
-                                <Plane size={18} className="text-gray-600" />
-                                <TrainFront size={18} className="text-gray-600" />
+                                <Plane size={20} className="text-gray-600" />
                             </div>
-                            <div className="text-sm font-semibold text-gray-800">{breakdownFormatted?.transport ?? '—'}</div>
+                            <div className="text-sm font-semibold text-gray-800">{breakdownFormatted?.transportation ?? '—'}</div>
                         </div>
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center flex-1">
                             <Ticket size={20} className="text-gray-600" />
                             <div className="text-sm font-semibold text-gray-800">{breakdownFormatted?.activity ?? '—'}</div>
                         </div>
-                        <div className="flex flex-col items-center">
-                            <Utensils size={20} className="text-gray-600" />
-                            <div className="text-sm font-semibold text-gray-800">{breakdownFormatted?.meal ?? '—'}</div>
+                        <div className="flex flex-col items-center flex-1">
+                            <BedDouble size={20} className="text-gray-600" />
+                            <div className="text-sm font-semibold text-gray-800">{breakdownFormatted?.stay ?? '—'}</div>
                         </div>
                     </div>
                 </div>
