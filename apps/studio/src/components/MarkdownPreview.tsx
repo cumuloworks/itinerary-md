@@ -54,10 +54,16 @@ const WarnEffect: React.FC<{ message?: string }> = ({ message }) => {
 };
 
 // Copy mdast position to hProperties for DOM usage without touching core plugin
+type MdAstNode = {
+    position?: { start?: { line?: number }; end?: { line?: number } };
+    data?: { hProperties?: Record<string, unknown> };
+    children?: MdAstNode[];
+};
+
 function remarkPositionData() {
     return function transformer(tree: unknown) {
-        const visit = (node: any) => {
-            if (node && node.position && (node.position.start?.line || node.position.end?.line)) {
+        const visit = (node: MdAstNode | undefined) => {
+            if (node?.position && (node.position.start?.line || node.position.end?.line)) {
                 node.data ||= {};
                 node.data.hProperties ||= {};
                 if (node.position.start?.line && node.data.hProperties['data-itin-line-start'] == null) {
@@ -67,12 +73,50 @@ function remarkPositionData() {
                     node.data.hProperties['data-itin-line-end'] = String(node.position.end.line);
                 }
             }
-            const children = Array.isArray(node?.children) ? node.children : [];
+            const children: MdAstNode[] = Array.isArray(node?.children) ? (node?.children as MdAstNode[]) : [];
             for (const child of children) visit(child);
         };
-        visit(tree as any);
+        visit(tree as MdAstNode);
         return tree as unknown;
     };
+}
+
+// Allow-list based URL safety checks for user-provided links/images
+const SAFE_URL_PROTOCOLS = new Set(['https:', 'mailto:', 'tel:']);
+
+function isAbsoluteUrl(href: string): boolean {
+    return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href);
+}
+
+function isExternalHttpUrl(href: string): boolean {
+    return /^https?:\/\//i.test(href);
+}
+
+function isSafeHref(hrefRaw?: unknown): boolean {
+    if (typeof hrefRaw !== 'string' || hrefRaw.trim() === '') return false;
+    const href = hrefRaw.trim();
+    if (href.startsWith('#')) return true;
+    if (href.startsWith('//')) return false;
+    if (!isAbsoluteUrl(href)) return true;
+    try {
+        const u = new URL(href);
+        return SAFE_URL_PROTOCOLS.has(u.protocol);
+    } catch {
+        return false;
+    }
+}
+
+function isSafeImageSrc(srcRaw?: unknown): boolean {
+    if (typeof srcRaw !== 'string' || srcRaw.trim() === '') return false;
+    const src = srcRaw.trim();
+    if (src.startsWith('//')) return false;
+    if (!isAbsoluteUrl(src)) return true;
+    try {
+        const u = new URL(src);
+        return u.protocol === 'https:';
+    } catch {
+        return false;
+    }
 }
 
 const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, stayMode = 'default', showPast, title, summary, totalFormatted, breakdownFormatted, activeLine, autoScroll = true }) => {
@@ -220,6 +264,33 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 remarkPlugins={[[remarkItinerary, { timezone, stayMode, frontmatter: parsedFrontmatter }], remarkGfm, remarkPositionData]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{
+                    a: (props: unknown) => {
+                        const { href, children, ...rest } = (props as { href?: string; children?: React.ReactNode } & Record<string, unknown>) || {};
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        if (!isSafeHref(href)) {
+                            return (
+                                <span {...(cleanRest as React.HTMLAttributes<HTMLSpanElement>)} className="text-gray-500 underline decoration-dotted cursor-not-allowed" aria-disabled="true">
+                                    {children}
+                                </span>
+                            );
+                        }
+                        const external = typeof href === 'string' && isExternalHttpUrl(href);
+                        const rel = external ? 'noopener noreferrer' : undefined;
+                        const target = external ? '_blank' : undefined;
+                        return (
+                            <a {...(cleanRest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} href={href} target={target} rel={rel}>
+                                {children}
+                            </a>
+                        );
+                    },
+                    img: (props: unknown) => {
+                        const { src, alt, ...rest } = (props as { src?: string; alt?: string } & Record<string, unknown>) || {};
+                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
+                        if (!isSafeImageSrc(src)) {
+                            return <span {...(cleanRest as React.HTMLAttributes<HTMLSpanElement>)} aria-hidden="true" />;
+                        }
+                        return <img {...(cleanRest as React.ImgHTMLAttributes<HTMLImageElement>)} src={src} alt={typeof alt === 'string' ? alt : ''} loading="lazy" referrerPolicy="no-referrer" />;
+                    },
                     h2: (props: unknown) => {
                         const { children, ...rest } = (props as { children?: React.ReactNode }) || {};
                         const dataItinDate = getDataAttr(rest as Record<string, unknown>, 'data-itin-date');
