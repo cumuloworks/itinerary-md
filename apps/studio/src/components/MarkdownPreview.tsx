@@ -5,8 +5,8 @@ import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 
 import remarkGfm from 'remark-gfm';
-import { isAllowedHref, isExternalHttpUrl, isAllowedImageSrc } from '../utils/url';
 import { notifyError } from '../core/errors';
+import { isAllowedHref, isAllowedImageSrc, isExternalHttpUrl } from '../utils/url';
 import { Heading } from './itinerary/Heading';
 import { Item } from './itinerary/Item';
 import 'highlight.js/styles/github.css';
@@ -53,7 +53,6 @@ const WarnEffect: React.FC<{ message?: string }> = ({ message }) => {
     return null;
 };
 
-
 type MdAstNode = {
     position?: { start?: { line?: number }; end?: { line?: number } };
     data?: { hProperties?: Record<string, unknown> };
@@ -83,8 +82,8 @@ function remarkPositionData() {
 
 const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, stayMode = 'default', showPast, title, summary, totalFormatted, breakdownFormatted, activeLine, autoScroll = true }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-        
-        const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
+
+    const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
 
     const eventsCountByDate = React.useMemo(() => {
         try {
@@ -108,7 +107,6 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
         return day < today;
     };
 
-    
     const safeSummary = summary ?? {};
     const safeTotalFormatted = totalFormatted ?? null;
     const safeBreakdownFormatted = breakdownFormatted ?? null;
@@ -134,12 +132,12 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
 
     const containerRef = React.useRef<HTMLDivElement | null>(null);
 
-        React.useEffect(() => {
+    React.useEffect(() => {
         if (!autoScroll) return;
         if (!activeLine || !containerRef.current) return;
         const container = containerRef.current;
         let nodes = Array.from(container.querySelectorAll<HTMLElement>('[data-itin-line-start], [data-itin-line-end]'));
-                if (nodes.length === 0) {
+        if (nodes.length === 0) {
             nodes = Array.from(container.querySelectorAll<HTMLElement>('[data-sourcepos]'));
         }
         if (nodes.length === 0) return;
@@ -149,7 +147,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             const ds = el.dataset || {};
             let start = Number(ds.itinLineStart || ds.lineStart || NaN);
             let end = Number(ds.itinLineEnd || ds.lineEnd || NaN);
-                        if ((!Number.isFinite(start) || !Number.isFinite(end)) && typeof ds.sourcepos === 'string') {
+            if ((!Number.isFinite(start) || !Number.isFinite(end)) && typeof ds.sourcepos === 'string') {
                 const sp = ds.sourcepos;
                 const parts = sp.split('-');
                 if (parts.length === 2) {
@@ -192,7 +190,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
         if (!boxTarget) boxTarget = target;
         const cRect = container.getBoundingClientRect();
         const tRect = boxTarget.getBoundingClientRect();
-                const margin = 8;
+        const margin = 8;
         const visible = tRect.bottom > cRect.top + margin && tRect.top < cRect.bottom - margin;
         if (visible) return;
         const delta = tRect.top - cRect.top - container.clientHeight / 2 + tRect.height / 2;
@@ -204,7 +202,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             {title && <h1>{title}</h1>}
             <Statistics summary={safeSummary} totalFormatted={safeTotalFormatted} breakdownFormatted={safeBreakdownFormatted} />
             <ReactMarkdown
-                remarkPlugins={[[remarkItinerary, { timezone, stayMode, frontmatter: parsedFrontmatter }], remarkGfm, remarkPositionData]}
+                remarkPlugins={[[remarkItinerary, { timezone, stayMode, frontmatter: parsedFrontmatter, debug: true }], remarkGfm, remarkPositionData]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{
                     a: (props: unknown) => {
@@ -242,8 +240,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         if (itinDateStr) {
                             try {
                                 itmdHeading = JSON.parse(itinDateStr);
-                            } catch (e) {
-                                                            }
+                            } catch (e) {}
                         }
                         if (itmdHeading && typeof itmdHeading.date === 'string') {
                             if (!showPastEffective && isPastDay(itmdHeading.date, itmdHeading.timezone)) {
@@ -281,7 +278,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         const { children, node, ...rest } = (props as ParagraphRendererProps) || ({} as ParagraphRendererProps);
                         const cleanRest = omitInternalProps(rest as Record<string, unknown>);
 
-                                                const itmdJsonStr = (rest as ParagraphRendererProps)['data-itmd'];
+                        const itmdJsonStr = (rest as ParagraphRendererProps)['data-itmd'];
                         const skipFlag = (rest as ParagraphRendererProps)['data-itmd-skip'] === 'true';
                         const dateStr = (rest as ParagraphRendererProps)['data-itin-date-str'];
                         const dateTz = (rest as ParagraphRendererProps)['data-itin-date-tz'];
@@ -302,14 +299,12 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         if (itmdJsonStr) {
                             try {
                                 itmdObj = JSON.parse(itmdJsonStr);
-                            } catch (e) {
-                                                            }
+                            } catch (e) {}
                         }
 
                         const effectiveDateStr = itmdObj?.dateStr || dateStr;
                         const effectiveDateTz = itmdObj?.dateTz || dateTz;
 
-                        
                         if (skipFlag) return null;
                         if (!showPastEffective && effectiveDateStr && isPastDay(effectiveDateStr, effectiveDateTz)) return null;
                         if (itmdObj?.eventData) {

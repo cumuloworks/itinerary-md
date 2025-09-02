@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import type { VFile } from 'vfile';
 
 export interface TzService {
@@ -44,9 +45,10 @@ export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile):
     const iso: IsoService = {
         toISO: (dateISO, hh, mm, tz) => {
             if (!dateISO || hh == null || mm == null) return null;
-            const pad = (n: number) => String(n).padStart(2, '0');
-            const tzPart = tz ? `[${tz}]` : '';
-            return `${dateISO}T${pad(hh)}:${pad(mm)}:00${tzPart}`;
+            const zone = tz || undefined;
+            const dt = DateTime.fromISO(`${dateISO}T00:00`, { zone }).set({ hour: hh, minute: mm, second: 0, millisecond: 0 });
+            if (!dt.isValid) return null;
+            return dt.toISO({ suppressMilliseconds: true, suppressSeconds: true, includeOffset: true }) as string;
         },
     };
 

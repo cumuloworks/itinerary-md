@@ -9,4 +9,20 @@ describe('lexLine', () => {
         const out = lexLine('[08:00] flight ABC :: A - B', {}, sv);
         expect(out.raw).toContain('flight');
     });
+
+    it('shadow と map が提供され、ASCII では恒等', () => {
+        const line = '[08:00] flight ABC :: A - B';
+        const t = lexLine(line, {}, sv);
+        expect(t.shadow).toBe(line);
+        expect(t.map(5)).toBe(5);
+    });
+
+    it('括弧/リンク/コード外のみで ::, at, routeDash を検出', () => {
+        const line = '[08:00] lunch at Cafe :: X - Y [link: http://a-b.com] (`code - span`)';
+        const t = lexLine(line, {}, sv);
+        const kinds = t.seps.map((s) => s.kind);
+        expect(kinds.includes('doublecolon')).toBe(true);
+        expect(kinds.includes('at')).toBe(true);
+        expect(kinds.includes('routeDash')).toBe(true);
+    });
 });

@@ -5,21 +5,42 @@ export type RichInline = PhrasingContent[];
 
 export type TimeMarker = 'am' | 'pm';
 
+export type TimePoint = {
+    hh: number;
+    mm: number;
+    tz?: string | null;
+    dayOffset?: number | null;
+};
+
+export type EventTime =
+    | { kind: 'none' }
+    | { kind: 'marker'; marker: TimeMarker }
+    | { kind: 'point'; start: TimePoint; startISO?: string | null }
+    | { kind: 'range'; start: TimePoint; end: TimePoint; startISO?: string | null; endISO?: string | null };
+
 export interface ITMDEventNode extends Parent {
     type: 'itmdEvent';
-    time?: {
-        start?: { hh: number | null; mm: number | null; tz?: string | null } | null;
-        end?: { hh: number | null; mm: number | null; tz?: string | null } | null;
-        startISO?: string | null;
-        endISO?: string | null;
-        marker?: TimeMarker | null;
-    };
+    time?: EventTime;
     eventType: string;
     title?: RichInline | null;
-    destination?: {
-        dest?: RichInline | null;
-        arr?: RichInline | null;
-    } | null;
+    destination?:
+        | (
+              | {
+                    kind: 'single';
+                    at: RichInline;
+                }
+              | {
+                    kind: 'dashPair';
+                    from: RichInline;
+                    to: RichInline;
+                }
+              | {
+                    kind: 'fromTo';
+                    from: RichInline;
+                    to: RichInline;
+                }
+          )
+        | null;
     meta?: Record<string, string | number | boolean | null | RichInline> | null;
     warnings?: string[];
     children: Parent['children'];
