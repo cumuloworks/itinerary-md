@@ -1,6 +1,6 @@
-import { Hotel } from 'lucide-react';
 import { DateTime } from 'luxon';
 import type React from 'react';
+import { Location } from './Location';
 
 interface HeadingProps {
     date: string;
@@ -30,12 +30,11 @@ export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStayName }
                 {timezone && <span className="whitespace-nowrap ml-3 text-xs text-gray-500 font-normal">({timezone})</span>}
             </span>
             {prevStayName && (
-                <span className="flex items-center text-gray-700 text-base gap-2">
-                    <span className="rounded-full flex items-center justify-center p-1.5 aspect-square bg-purple-500">
-                        <Hotel size={18} className="text-white" />
-                    </span>
-                    <span className="font-semibold text-sm">{prevStayName}</span>
-                </span>
+                <Location
+                    location={prevStayName}
+                    className="text-gray-700 text-sm font-medium"
+                    linkClassName="underline text-inherit"
+                />
             )}
         </h2>
     );

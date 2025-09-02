@@ -4,7 +4,7 @@ import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import { Check, ChevronDown, Clipboard, Columns, Eye, EyeOff, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
 import * as React from 'react';
-import type { StayMode, TopbarState, ViewMode } from '../types/itinerary';
+import type { TopbarState, ViewMode } from '../types/itinerary';
 
 interface TopBarProps {
     tzSelectId: string;
@@ -21,7 +21,7 @@ interface TopBarProps {
 const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, className }) => {
     const tzLabelId = React.useId();
     const currencyLabelId = React.useId();
-    const stayLabelId = React.useId();
+    
 
     return (
         <div className="px-0 md:px-8 w-full">
@@ -97,39 +97,7 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     </Select.Root>
                 </div>
 
-                {/* Stay display */}
-                <div className="flex items-center gap-2 h-full">
-                    <span id={stayLabelId} className="text-xs text-gray-600 whitespace-nowrap">
-                        <span aria-hidden>Stay</span>
-                        <span className="sr-only">Stay mode</span>
-                    </span>
-                    <Select.Root value={topbar.stayMode} onValueChange={(v) => onTopbarChange({ stayMode: v as StayMode })}>
-                        <Select.Trigger aria-labelledby={stayLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[140px] h-full">
-                            <Select.Value />
-                            <Select.Icon>
-                                <ChevronDown size={12} />
-                            </Select.Icon>
-                        </Select.Trigger>
-                        <Select.Portal>
-                            <Select.Content position="popper" sideOffset={4} className="z-50 overflow-auto rounded-md border border-gray-200 bg-white ">
-                                <Select.Viewport className="p-1 max-h-[240px] min-w-[var(--radix-select-trigger-width)] w-max max-w-[90vw]">
-                                    <Select.Item value="default" className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100">
-                                        <Select.ItemText>Default</Select.ItemText>
-                                        <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
-                                            <Check size={12} />
-                                        </Select.ItemIndicator>
-                                    </Select.Item>
-                                    <Select.Item value="header" className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100">
-                                        <Select.ItemText>Header</Select.ItemText>
-                                        <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
-                                            <Check size={12} />
-                                        </Select.ItemIndicator>
-                                    </Select.Item>
-                                </Select.Viewport>
-                            </Select.Content>
-                        </Select.Portal>
-                    </Select.Root>
-                </div>
+                
 
                 {/* View mode */}
                 <ToggleGroup.Root

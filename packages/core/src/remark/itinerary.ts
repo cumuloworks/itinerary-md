@@ -8,9 +8,7 @@ import type { EventData } from '../parser/parsers/event';
 import { isValidIanaTimeZone } from '../time/iana';
 //
 
-export type StayMode = 'default' | 'header';
-
-type Options = { timezone?: string; stayMode?: StayMode; frontmatter?: Record<string, unknown> };
+type Options = { timezone?: string; frontmatter?: Record<string, unknown> };
 
 type MdNode = {
     type?: string;
@@ -442,18 +440,11 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
 
                 const mergedEvent = { ...eventData, metadata: { ...(eventData as EventData & { metadata?: Record<string, string> }).metadata, ...itinMeta } } as EventData;
-                if (options?.stayMode === 'header' && mergedEvent.type === 'stay') {
-                    if ('stayName' in mergedEvent && mergedEvent.stayName) {
-                        lastStayName = mergedEvent.stayName;
-                        currentDayHasStay = true;
-                    }
-                    const prev = para.data || {};
-                    const prevH = (prev.hProperties as Record<string, unknown>) || {};
-                    const hProps = { ...prevH, 'data-itmd-skip': 'true' };
-                    para.data = { ...prev, itmdSkip: true, hProperties: hProps } as MdNode['data'];
-                } else {
-                    if (mergedEvent.type === 'stay' && 'stayName' in mergedEvent && mergedEvent.stayName) {
-                        lastStayName = mergedEvent.stayName;
+                if (mergedEvent.baseType === 'stay') {
+                    const prevLocation = (mergedEvent as { location?: string }).location;
+                    const loc = typeof prevLocation === 'string' ? prevLocation.trim() : '';
+                    if (loc) {
+                        lastStayName = loc;
                         currentDayHasStay = true;
                     }
                 }

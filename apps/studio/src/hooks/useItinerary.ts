@@ -19,7 +19,7 @@ type UseItineraryResult = {
  * @param previewDelay プレビュー遅延時間（デフォルト: 300ms）
  * @returns 解析された旅程データ
  */
-export function useItinerary(rawContent: string, previewDelay = 300, opts?: { timezone?: string; stayMode?: 'default' | 'header' }): UseItineraryResult {
+export function useItinerary(rawContent: string, previewDelay = 300, opts?: { timezone?: string }): UseItineraryResult {
     const previewContent = useDebouncedValue(rawContent, previewDelay);
 
     const lastSuccessfulParseRef = useRef<{

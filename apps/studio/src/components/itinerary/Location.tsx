@@ -9,9 +9,11 @@ interface LocationProps {
     time?: TimeLike;
     url?: string;
     segments?: TextSegment[];
+    className?: string;
+    linkClassName?: string;
 }
 
-export const Location: React.FC<LocationProps> = ({ location, url, segments }) => {
+export const Location: React.FC<LocationProps> = ({ location, url, segments, className, linkClassName }) => {
     if (!location && (!segments || segments.length === 0)) return null;
 
         const finalSegments: TextSegment[] = (() => {
@@ -40,24 +42,24 @@ export const Location: React.FC<LocationProps> = ({ location, url, segments }) =
         const googleMapsSegments: TextSegment[] = [{ text: fullText, url: googleMapsUrl }];
         
         return (
-            <span className="flex items-center">
+            <span className={`flex items-center ${className || ''}`}>
                 <MapPin size={14} className="mr-1 text-gray-500" />
                 <SegmentedText 
                     segments={googleMapsSegments} 
                     className="" 
-                    linkClassName="underline"
+                    linkClassName={linkClassName || 'underline'}
                 />
             </span>
         );
     }
 
         return (
-        <span className="flex items-center">
+        <span className={`flex items-center ${className || ''}`}>
             <MapPin size={14} className="mr-1 text-gray-500" />
             <SegmentedText 
                 segments={finalSegments} 
                 className="" 
-                linkClassName="underline"
+                linkClassName={linkClassName || 'underline'}
             />
         </span>
     );

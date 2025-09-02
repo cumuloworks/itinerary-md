@@ -46,7 +46,6 @@ function App() {
 
     const { previewContent, events, frontmatterTitle, summary } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
         timezone: topbar.timezone,
-        stayMode: topbar.stayMode,
     });
 
     const { totalFormatted, breakdownFormatted } = useCostStatistics(events, topbar.currency);
@@ -55,11 +54,10 @@ function App() {
         () => ({
             timezone: topbar.timezone,
             currency: topbar.currency,
-            stayMode: topbar.stayMode,
             showPast: topbar.showPast,
             autoScroll: topbar.autoScroll,
         }),
-        [topbar.timezone, topbar.currency, topbar.stayMode, topbar.showPast, topbar.autoScroll]
+        [topbar.timezone, topbar.currency, topbar.showPast, topbar.autoScroll]
     );
 
     const latestContent = useLatest(content);
