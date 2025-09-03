@@ -7,7 +7,7 @@ const AT_PATTERN = /^(.+?)\s+at\s+(.+)$/i;
 const AT_ONLY_PATTERN = /^at\s+(.+)$/i;
 
 // Type aliases for event categories
-const STAY_ALIASES = ['hotel', 'hostel', 'ryokan', 'dormitory'] as const;
+const STAY_ALIASES = ['stay', 'hotel', 'hostel', 'ryokan', 'dormitory'] as const;
 const ACTIVITY_ALIASES = ['activity', 'meal', 'lunch', 'dinner', 'breakfast', 'brunch', 'museum', 'sightseeing', 'shopping', 'spa', 'park', 'cafe'] as const;
 
 export interface BaseEventData {

@@ -286,34 +286,14 @@ import { Meta } from './Metadata';
 export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, currency, extraLinks, nameSegments, departureSegments, arrivalSegments }) => {
     const colors = getTypeColors(eventData.type);
     const IconComponent = getTypeIcon(eventData.type);
-    const mainTitle = (() => {
-        switch (eventData.baseType) {
-            case 'transportation':
-            case 'activity':
-                return eventData.name;
-            case 'stay':
-                return eventData.stayName;
-            default:
-                return '';
-        }
-    })();
+    // mainTitle はnameSegmentsから取得されるため不要
 
     const routeOrLocationDisplay = (() => {
-        if (eventData.baseType === 'transportation' && eventData.departure && eventData.arrival) {
-            const meta = eventData.metadata as Record<string, string>;
-            return (
-                                <Route 
-                    departure={eventData.departure} 
-                    arrival={eventData.arrival} 
-                    departureUrl={meta['departure__url']} 
-                    arrivalUrl={meta['arrival__url']}
-                    departureSegments={departureSegments}
-                    arrivalSegments={arrivalSegments} 
-                />
-            );
+        if (eventData.baseType === 'transportation' && (departureSegments?.length || arrivalSegments?.length)) {
+            return <Route departureSegments={departureSegments} arrivalSegments={arrivalSegments} />;
         }
-        if ((eventData.baseType === 'stay' || eventData.baseType === 'activity') && eventData.location) {
-            return <Location location={eventData.location} segments={arrivalSegments} />;
+        if ((eventData.baseType === 'stay' || eventData.baseType === 'activity') && arrivalSegments?.length) {
+            return <Location segments={arrivalSegments} />;
         }
         return null;
     })();
@@ -338,28 +318,7 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
             <div className={`flex-1 min-w-0 p-5 ${colors.cardBg} ${colors.cardBorder} border-l-4 ${colors.borderColor} -ml-4.5 pl-8`}>
                 <div className="flex items-center gap-x-3 flex-wrap">
                     {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
-                    {(() => {
-                                                const segments = nameSegments || (() => {
-                            if (!mainTitle) return undefined;
-                            const meta = eventData.metadata as Record<string, string>;
-                            const url = meta['name__url'];
-                            if (url && isAllowedHref(url)) {
-                                return [{text: mainTitle, url}];
-                            }
-                            return [{text: mainTitle}];
-                        })();
-                        
-                        if (segments) {
-                            return (
-                                <SegmentedText 
-                                    segments={segments}
-                                    className={`font-bold ${colors.text} text-lg`}
-                                    linkClassName="underline text-inherit"
-                                />
-                            );
-                        }
-                        return null;
-                    })()}
+                    {nameSegments && nameSegments.length > 0 && <SegmentedText segments={nameSegments} className={`font-bold ${colors.text} text-lg`} linkClassName="underline text-inherit" />}
                     {routeOrLocationDisplay && <div className="text-gray-700 text-sm font-medium">{routeOrLocationDisplay}</div>}
                     {Array.isArray(extraLinks) && extraLinks.length > 0 && (
                         <div className="flex items-center gap-2 text-sm">
@@ -368,13 +327,7 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
                                 .map((l, idx) => {
                                     const isExternal = isExternalHttpUrl(l.url);
                                     return (
-                                        <a 
-                                            key={`${l.label}-${idx}`} 
-                                            href={l.url} 
-                                            target={isExternal ? "_blank" : undefined} 
-                                            rel={isExternal ? "noopener noreferrer" : undefined}
-                                            className="underline"
-                                        >
+                                        <a key={`${l.label}-${idx}`} href={l.url} target={isExternal ? '_blank' : undefined} rel={isExternal ? 'noopener noreferrer' : undefined} className="underline">
                                             {l.label}
                                         </a>
                                     );

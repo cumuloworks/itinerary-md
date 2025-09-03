@@ -1,34 +1,22 @@
 import type { TextSegment } from '@itinerary-md/core';
 import type React from 'react';
 import { Location } from './Location';
-import { isAllowedHref } from '../../utils/url';
+// isAllowedHref は不要（セグメントはremarkプラグインで処理済み）
 
 //
 
 interface RouteProps {
-    departure?: string;
-    arrival?: string;
-    departureUrl?: string;
-    arrivalUrl?: string;
     departureSegments?: TextSegment[];
     arrivalSegments?: TextSegment[];
 }
 
 export const Route: React.FC<RouteProps> = ({ 
-    departure, 
-    arrival, 
-    departureUrl, 
-    arrivalUrl,
     departureSegments,
     arrivalSegments 
 }) => {
-        const depSegments = departureSegments || (departure ? 
-        (departureUrl && isAllowedHref(departureUrl)) ? [{text: departure, url: departureUrl}] : [{text: departure}] 
-        : undefined);
-    
-    const arrSegments = arrivalSegments || (arrival ? 
-        (arrivalUrl && isAllowedHref(arrivalUrl)) ? [{text: arrival, url: arrivalUrl}] : [{text: arrival}]
-        : undefined);
+    // セグメントはremarkプラグインで作成されるため、fallbackロジックを削除
+    const depSegments = departureSegments || [];
+    const arrSegments = arrivalSegments || [];
     
     return (
         <span className="flex items-center gap-2">

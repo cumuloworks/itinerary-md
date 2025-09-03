@@ -18,16 +18,24 @@ export const SegmentedText: React.FC<SegmentedTextProps> = ({ segments, fallback
     // 全セグメントがリンクかチェック
     const allSegmentsAreLinks = segments.every(seg => seg.url && isAllowedHref(seg.url));
     
-    if (segments.length === 1) {
-        const seg = segments[0];
+    const counts: Record<string, number> = {};
+    
+    // セグメント要素を統一的に作成
+    const segmentElements = segments.map((seg) => {
+        const base = `${seg.text}|${seg.url ?? ''}`;
+        counts[base] = (counts[base] || 0) + 1;
+        const key = `${base}#${counts[base]}`;
+
         if (seg.url && isAllowedHref(seg.url)) {
             const isExternal = isExternalHttpUrl(seg.url);
-            // 単一セグメント（全体がリンク）の場合は、text-inheritではなく色クラスを直接適用
+            // 全体がリンクの場合は色クラスを直接適用、一部がリンクの場合はtext-inheritを使用
             const finalClassName = allSegmentsAreLinks 
-                ? `${className} ${linkClassName.replace('text-inherit', '').trim()}` 
-                : `${className} ${linkClassName}`;
+                ? `${className} ${linkClassName.replace('text-inherit', '').trim()}`
+                : linkClassName;
+                
             return (
                 <a 
+                    key={key} 
                     href={seg.url} 
                     target={isExternal ? "_blank" : undefined} 
                     rel={isExternal ? "noopener noreferrer" : undefined}
@@ -37,66 +45,14 @@ export const SegmentedText: React.FC<SegmentedTextProps> = ({ segments, fallback
                 </a>
             );
         }
-        return <span className={className}>{seg.text}</span>;
-    }
-
-    const counts: Record<string, number> = {};
+        // リンクでないセグメント
+        return allSegmentsAreLinks 
+            ? <span key={key} className={className}>{seg.text}</span>
+            : <span key={key}>{seg.text}</span>;
+    });
     
-    // 全体がリンクの場合は外側のspanを省略
-    if (allSegmentsAreLinks) {
-        return (
-            <>
-                {segments.map((seg) => {
-                    const base = `${seg.text}|${seg.url ?? ''}`;
-                    counts[base] = (counts[base] || 0) + 1;
-                    const key = `${base}#${counts[base]}`;
-
-                    if (seg.url && isAllowedHref(seg.url)) {
-                        const isExternal = isExternalHttpUrl(seg.url);
-                        // 全体がリンクの場合は、色クラスを直接適用
-                        const finalClassName = `${className} ${linkClassName.replace('text-inherit', '').trim()}`;
-                        return (
-                            <a 
-                                key={key} 
-                                href={seg.url} 
-                                target={isExternal ? "_blank" : undefined} 
-                                rel={isExternal ? "noopener noreferrer" : undefined}
-                                className={finalClassName}
-                            >
-                                {seg.text}
-                            </a>
-                        );
-                    }
-                    return <span key={key} className={className}>{seg.text}</span>;
-                })}
-            </>
-        );
-    }
-    
-    // 一部がリンクの場合は従来通り
-    return (
-        <span className={className}>
-            {segments.map((seg) => {
-                const base = `${seg.text}|${seg.url ?? ''}`;
-                counts[base] = (counts[base] || 0) + 1;
-                const key = `${base}#${counts[base]}`;
-
-                if (seg.url && isAllowedHref(seg.url)) {
-                    const isExternal = isExternalHttpUrl(seg.url);
-                    return (
-                        <a 
-                            key={key} 
-                            href={seg.url} 
-                            target={isExternal ? "_blank" : undefined} 
-                            rel={isExternal ? "noopener noreferrer" : undefined}
-                            className={linkClassName}
-                        >
-                            {seg.text}
-                        </a>
-                    );
-                }
-                return <span key={key}>{seg.text}</span>;
-            })}
-        </span>
-    );
+    // 全体がリンクの場合は外側のspanを省略、一部がリンクの場合は外側にspanを追加
+    return allSegmentsAreLinks 
+        ? <>{segmentElements}</>
+        : <span className={className}>{segmentElements}</span>;
 };

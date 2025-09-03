@@ -28,16 +28,14 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
     return function transformer(tree: Root, file?: VFile) {
         if (!tree) return tree;
 
-
-
-                const nodeToSegments = (node: MdNode): TextSegment[] => {
+        const nodeToSegments = (node: MdNode): TextSegment[] => {
             const segments: TextSegment[] = [];
-            
+
             if (node.type === 'text' && typeof node.value === 'string') {
                 segments.push({ text: node.value });
             } else if (node.type === 'link') {
-                                const linkText = mdastToString(node);
-                const url = node.url || "";
+                const linkText = mdastToString(node);
+                const url = node.url || '';
 
                 segments.push({ text: linkText, url });
             } else if (node.children) {
@@ -45,15 +43,75 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                     segments.push(...nodeToSegments(child));
                 }
             }
-            
+
             return segments;
         };
 
-                const segmentsToPlainText = (segments: TextSegment[]): string => {
-            return segments.map(s => s.text).join('');
+        const segmentsToPlainText = (segments: TextSegment[]): string => {
+            return segments.map((s) => s.text).join('');
         };
 
-                const parseEventFromSegments = (
+        // セグメント抽出処理を共通化
+        const extractEventSegments = (descriptionSegments: TextSegment[], eventDescription: string, eventData: EventData, displayName: string | null, namePartText: string, locationText?: string, depText?: string, arrText?: string) => {
+            const result: { nameSegments?: TextSegment[]; departureSegments?: TextSegment[]; arrivalSegments?: TextSegment[] } = {};
+
+            // イベントタイプのリスト（省略記法判定用）
+            const EVENT_TYPES = [
+                // Transportation
+                'flight',
+                'train',
+                'drive',
+                'ferry',
+                'bus',
+                'taxi',
+                'subway',
+                // Stay
+                'stay',
+                'hotel',
+                'hostel',
+                'ryokan',
+                'dormitory',
+                // Activity
+                'activity',
+                'meal',
+                'lunch',
+                'dinner',
+                'breakfast',
+                'brunch',
+                'museum',
+                'sightseeing',
+                'shopping',
+                'spa',
+                'park',
+                'cafe',
+            ];
+
+            // 省略記法の処理
+            const isEventTypeOnly = namePartText && EVENT_TYPES.includes(namePartText.toLowerCase());
+            if (displayName && (!namePartText || namePartText.length === 0)) {
+                // 左辺が空（例: ":: Location"）のときは表示名をそのまま採用
+                result.nameSegments = [{ text: displayName }];
+            } else if (displayName && namePartText && (isEventTypeOnly || (namePartText.length < displayName.length && displayName.includes(namePartText)))) {
+                result.nameSegments = extractSegmentsForText(descriptionSegments, displayName);
+            } else if (namePartText) {
+                result.nameSegments = extractSegmentsForText(descriptionSegments, namePartText);
+            }
+
+            // departure/arrival セグメント処理
+            if (depText && arrText) {
+                const depIdx = eventDescription.indexOf(depText);
+                const arrIdx = eventDescription.lastIndexOf(arrText);
+                result.departureSegments = extractSegmentsForText(descriptionSegments, depText, Math.max(0, depIdx));
+                result.arrivalSegments = extractSegmentsForText(descriptionSegments, arrText, Math.max(0, arrIdx));
+            } else if (locationText && (('location' in eventData && eventData.location) || eventData.baseType === 'stay')) {
+                const locationIdx = eventDescription.indexOf(locationText);
+                result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, Math.max(0, locationIdx));
+            }
+
+            return result;
+        };
+
+        const parseEventFromSegments = (
             segments: TextSegment[],
             context?: EventData | null,
             timezone?: string,
@@ -63,43 +121,42 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const NAME_ROUTE_SEP = '::';
             const ROUTE_SEP = ' - ';
             const AT_PREFIX = 'at ';
-            const NAME_ROUTE_SEP_WITH_SPACES = NAME_ROUTE_SEP.length + 2; // "::" + surrounding spaces
             const AT_PREFIX_LENGTH = AT_PREFIX.length;
             const plainText = segmentsToPlainText(segments);
             const parsed = parseTimeAndType(plainText, timezone, baseDate);
             if (!parsed) return null;
 
-                        const timeMatch = plainText.match(/^(\[(?:[\d:+@A-Za-z_/-]+|)\](?:\s*-\s*\[(?:[\d:+@A-Za-z_/-]+|)\])?)\s+(\w+)\s*/);
+            const timeMatch = plainText.match(/^(\[(?:[\d:+@A-Za-z_/-]+|)\](?:\s*-\s*\[(?:[\d:+@A-Za-z_/-]+|)\])?)\s+(\w+)\s*/);
             if (!timeMatch) return null;
-            
+
             const timeAndTypeLength = timeMatch[0].length;
-            
-                        let currentLength = 0;
+
+            let currentLength = 0;
             let descriptionStartIndex = 0;
             let segs = segments.slice(); // Create a local copy to avoid mutating the parameter
-            
+
             for (let i = 0; i < segs.length; i++) {
                 const segmentLength = segs[i].text.length;
                 if (currentLength + segmentLength >= timeAndTypeLength) {
-                                        const splitPoint = timeAndTypeLength - currentLength;
+                    const splitPoint = timeAndTypeLength - currentLength;
                     if (splitPoint > 0 && splitPoint < segmentLength) {
-                                                const beforeText = segs[i].text.substring(0, splitPoint);
+                        const beforeText = segs[i].text.substring(0, splitPoint);
                         const afterText = segs[i].text.substring(splitPoint);
-                        
-                                                const newSegments: TextSegment[] = [];
-                                                for (let j = 0; j < i; j++) {
+
+                        const newSegments: TextSegment[] = [];
+                        for (let j = 0; j < i; j++) {
                             newSegments.push(segs[j]);
                         }
-                                                if (beforeText) {
+                        if (beforeText) {
                             newSegments.push({ text: beforeText, url: segs[i].url });
                         }
-                                                if (afterText) {
+                        if (afterText) {
                             newSegments.push({ text: afterText, url: segs[i].url });
                         }
-                                                for (let j = i + 1; j < segs.length; j++) {
+                        for (let j = i + 1; j < segs.length; j++) {
                             newSegments.push(segs[j]);
                         }
-                        
+
                         segs = newSegments;
                         descriptionStartIndex = i + (beforeText ? 1 : 0);
                     } else if (splitPoint === 0) {
@@ -111,106 +168,120 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 }
                 currentLength += segmentLength;
             }
-            
+
             const descriptionSegments = segs.slice(descriptionStartIndex);
             const eventDescription = segmentsToPlainText(descriptionSegments);
-            
-                        const eventData = parseEvent(plainText, context || undefined, timezone, baseDate);
+
+            const eventData = parseEvent(plainText, context || undefined, timezone, baseDate);
 
             if (!eventData) return null;
-            
-                        const result: { eventData: EventData | null; nameSegments?: TextSegment[]; departureSegments?: TextSegment[]; arrivalSegments?: TextSegment[] } = { eventData };
-            
-                        const displayName = ('name' in eventData && eventData.name) ? eventData.name 
-                              : ('stayName' in eventData && eventData.stayName) ? eventData.stayName 
-                              : null;
-            
-            if (displayName) {
 
-                
-                                if (eventDescription.includes(NAME_ROUTE_SEP)) {
+            const result: { eventData: EventData | null; nameSegments?: TextSegment[]; departureSegments?: TextSegment[]; arrivalSegments?: TextSegment[] } = { eventData };
+
+            const displayName = 'name' in eventData && eventData.name ? eventData.name : 'stayName' in eventData && eventData.stayName ? eventData.stayName : null;
+
+            if (displayName) {
+                if (eventDescription.includes(NAME_ROUTE_SEP)) {
+                    // "::" 構文処理
                     const parts = eventDescription.split(NAME_ROUTE_SEP);
                     const namePartText = parts[0].trim();
-                    result.nameSegments = extractSegmentsForText(descriptionSegments, namePartText);
-                    
+
                     if ('departure' in eventData && 'arrival' in eventData && parts[1]) {
-                                                const routeText = parts[1].trim();
+                        // Transportation イベント（departure - arrival）
+                        const routeText = parts[1].trim();
                         const routeParts = routeText.split(ROUTE_SEP);
                         if (routeParts.length >= 2) {
                             const depText = routeParts[0].trim();
                             const arrText = routeParts[routeParts.length - 1].trim();
-                            result.departureSegments = extractSegmentsForText(descriptionSegments, depText, namePartText.length + NAME_ROUTE_SEP_WITH_SPACES);
-                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, arrText, namePartText.length + NAME_ROUTE_SEP_WITH_SPACES + depText.length + ROUTE_SEP.length);                         }
-                    } else if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
-                                                const locationText = parts[1].trim();
-                        result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + NAME_ROUTE_SEP_WITH_SPACES);                     }
+                            const segments = extractEventSegments(descriptionSegments, eventDescription, eventData, displayName, namePartText, undefined, depText, arrText);
+                            Object.assign(result, segments);
+                        }
+                    } else if (('location' in eventData && eventData.location) || eventData.baseType === 'stay' || eventData.baseType === 'activity') {
+                        // Location/Stay/Activity イベント
+                        const locationText = parts[1].trim();
+                        const segments = extractEventSegments(descriptionSegments, eventDescription, eventData, displayName, namePartText, locationText);
+                        Object.assign(result, segments);
+                    } else {
+                        // 名前のみ
+                        const segments = extractEventSegments(descriptionSegments, eventDescription, eventData, displayName, namePartText);
+                        Object.assign(result, segments);
+                    }
                 } else {
-                                        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+                    // "at" 構文処理
+                    const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
                     const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
-                    
+
                     if (atMatch) {
-                                                const namePartText = atMatch[1].trim();
-                        if (namePartText) {
-                            result.nameSegments = extractSegmentsForText(descriptionSegments, namePartText);
-                            
-                                                        if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
-                                const locationText = atMatch[2].trim();
-                                result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + NAME_ROUTE_SEP_WITH_SPACES);                             }
+                        // "name at location" パターン
+                        const namePartText = atMatch[1].trim();
+                        if (namePartText && (('location' in eventData && eventData.location) || eventData.baseType === 'stay' || eventData.baseType === 'activity')) {
+                            const locationText = atMatch[2].trim();
+                            const segments = extractEventSegments(descriptionSegments, eventDescription, eventData, displayName, namePartText, locationText);
+                            Object.assign(result, segments);
+                        } else if (namePartText) {
+                            const segments = extractEventSegments(descriptionSegments, eventDescription, eventData, displayName, namePartText);
+                            Object.assign(result, segments);
                         } else {
                             result.nameSegments = descriptionSegments;
                         }
                     } else if (atOnlyMatch && displayName) {
-                                                result.nameSegments = [{ text: displayName }];
-                        
-                                                if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
-                            const locationText = atOnlyMatch[1].trim();
-                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, AT_PREFIX_LENGTH);                         }
+                        // "at location" のみパターン
+                        const locationText = atOnlyMatch[1].trim();
+                        if (('location' in eventData && eventData.location) || eventData.baseType === 'stay' || eventData.baseType === 'activity') {
+                            result.nameSegments = [{ text: displayName }];
+                            const locationIdx = eventDescription.indexOf(locationText, AT_PREFIX_LENGTH);
+                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, Math.max(0, locationIdx));
+                        } else {
+                            result.nameSegments = [{ text: displayName }];
+                        }
                     } else {
+                        // どのパターンにも一致しない場合
                         result.nameSegments = descriptionSegments;
                     }
                 }
             }
-            
+
             return result;
         };
 
-                const extractSegmentsForText = (segments: TextSegment[], targetText: string, startOffset = 0): TextSegment[] => {
+        const extractSegmentsForText = (segments: TextSegment[], targetText: string, startOffset = 0): TextSegment[] => {
             const result: TextSegment[] = [];
             let currentPos = 0;
             let targetStart = -1;
             let targetEnd = -1;
-            
+
             const fullText = segmentsToPlainText(segments);
-            
-                        const searchStart = Math.max(0, startOffset);
+
+            const searchStart = Math.max(0, startOffset);
             const searchText = fullText.substring(searchStart);
             const relativeIndex = searchText.indexOf(targetText);
-            
+
             if (relativeIndex === -1) {
-                return [];             }
-            
+                return [];
+            }
+
             targetStart = searchStart + relativeIndex;
             targetEnd = targetStart + targetText.length;
-            
-                        for (const segment of segments) {
+
+            for (const segment of segments) {
                 const segmentLength = segment.text.length;
                 const segmentEnd = currentPos + segmentLength;
-                
+
                 if (segmentEnd > targetStart && currentPos < targetEnd) {
-                                        const overlapStart = Math.max(0, targetStart - currentPos);
+                    const overlapStart = Math.max(0, targetStart - currentPos);
                     const overlapEnd = Math.min(segmentLength, targetEnd - currentPos);
-                    
+
                     if (overlapStart === 0 && overlapEnd === segmentLength) {
-                                                result.push(segment);
+                        result.push(segment);
                     } else {
-                                                const partialText = segment.text.substring(overlapStart, overlapEnd);
+                        const partialText = segment.text.substring(overlapStart, overlapEnd);
                         result.push({ text: partialText, url: segment.url });
                     }
                 }
-                
+
                 currentPos = segmentEnd;
             }
-            
+
             return result;
         };
 
@@ -236,7 +307,6 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
         if (!isItinerary) return tree;
 
-        
         const root = (tree as { children?: MdNode[] }) ?? {};
         const children: MdNode[] = Array.isArray(root.children) ? root.children : [];
 
@@ -255,7 +325,6 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 const line = mdastToString(para as MdNode).trim();
                 const dateData = parseDateText(line, isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone);
                 if (dateData) {
-
                     prevDayHadStay = currentDayHasStay;
                     currentDayHasStay = false;
                     previousEvent = null;
@@ -279,7 +348,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 continue;
             }
 
-                        if (currentDateStr) {
+            if (currentDateStr) {
                 const prevData = para.data || {};
                 const prevH = (prevData.hProperties as Record<string, unknown>) || {};
                 const hProps: Record<string, unknown> = { ...prevH };
@@ -291,14 +360,12 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
             if (para.type !== 'paragraph') continue;
 
-                        const firstLineText = mdastToString(para as MdNode).trim();
-
+            const firstLineText = mdastToString(para as MdNode).trim();
 
             const parsed = parseTimeAndType(firstLineText, frontmatterTimezone);
             if (!parsed) {
                 continue;
             }
-
 
             const mergedMeta: Record<string, string> = {};
             const notes: string[] = [];
@@ -355,46 +422,42 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                         const value = text.substring(colonIndex + 1).trim();
                         mergedMeta[key] = value;
 
-                                                try {
+                        try {
                             const liChildren = (li as MdNode).children;
                             const firstPara = Array.isArray(liChildren) ? (liChildren.find((n) => n?.type === 'paragraph') as MdNode | undefined) : undefined;
-                            
+
                             if (firstPara?.children) {
-                                                                const segments: TextSegment[] = [];
+                                const segments: TextSegment[] = [];
                                 let foundColon = false;
 
-                                
                                 for (const child of firstPara.children) {
                                     if (!child) continue;
-                                    
+
                                     if (!foundColon) {
-                                                                                if (child.type === 'text' && typeof child.value === 'string') {
+                                        if (child.type === 'text' && typeof child.value === 'string') {
                                             const colonIdx = child.value.indexOf(':');
                                             if (colonIdx >= 0) {
                                                 foundColon = true;
-                                                                                                const afterColon = child.value.substring(colonIdx + 1);
+                                                const afterColon = child.value.substring(colonIdx + 1);
                                                 if (afterColon) {
                                                     segments.push({ text: afterColon });
                                                 }
                                             }
                                         }
                                     } else {
-                                                                                const childSegments = nodeToSegments(child);
+                                        const childSegments = nodeToSegments(child);
                                         segments.push(...childSegments);
                                     }
                                 }
-                                
 
-                                
-                                                                if (segments.length > 0 && segments.some(s => s.url)) {
-                                                                        mergedMeta[`${key}__segments`] = JSON.stringify(segments);
+                                if (segments.length > 0 && segments.some((s) => s.url)) {
+                                    mergedMeta[`${key}__segments`] = JSON.stringify(segments);
                                 }
                             }
-                            
+
                             const sublists = Array.isArray(liChildren) ? liChildren.filter((n) => n?.type === 'list') : [];
                             liftedNodes.push(...sublists);
-                        } catch {
-                                                    }
+                        } catch {}
                         continue;
                     }
                     remainingItems.push(li);
@@ -429,28 +492,21 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 if (invalids.length > 0) warnEventTz = Array.from(new Set(invalids));
             }
 
-                        const segments = nodeToSegments(para as MdNode);
+            const segments = nodeToSegments(para as MdNode);
             const parseTimezone = currentDateTz && isValidIanaTimeZone(currentDateTz) ? currentDateTz : isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone;
             const parsedWithSegments = parseEventFromSegments(segments, previousEvent || undefined, parseTimezone, currentDateStr);
             const eventData = parsedWithSegments?.eventData;
             if (eventData) {
-
-                
-                                const nameSegments = parsedWithSegments?.nameSegments;
+                const nameSegments = parsedWithSegments?.nameSegments;
                 const departureSegments = parsedWithSegments?.departureSegments;
                 const arrivalSegments = parsedWithSegments?.arrivalSegments;
-                
-
-
-
-
-
-
 
                 const mergedEvent = { ...eventData, metadata: { ...(eventData as EventData & { metadata?: Record<string, string> }).metadata, ...itinMeta } } as EventData;
                 if (mergedEvent.baseType === 'stay') {
-                    const prevLocation = (mergedEvent as { location?: string }).location;
-                    const loc = typeof prevLocation === 'string' ? prevLocation.trim() : '';
+                    const stayEvent = mergedEvent as { stayName?: string; location?: string };
+                    // stayNameを優先し、無い場合にlocationにフォールバック
+                    const stayValue = stayEvent.stayName || stayEvent.location;
+                    const loc = typeof stayValue === 'string' ? stayValue.trim() : '';
                     if (loc) {
                         lastStayName = loc;
                         currentDayHasStay = true;
@@ -466,14 +522,12 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                     departureSegments,
                     arrivalSegments,
                 } as Record<string, unknown>;
-                                hProps['data-itmd'] = JSON.stringify(itmd);
+                hProps['data-itmd'] = JSON.stringify(itmd);
                 para.data = { ...(para.data || {}), itmd, itinMeta, hProperties: hProps } as MdNode['data'];
-
             } else {
-                                para.data = { ...para.data, itinMeta, hProperties: hProps } as MdNode['data'];
+                para.data = { ...para.data, itinMeta, hProperties: hProps } as MdNode['data'];
             }
-
-                                }
+        }
         return tree;
     };
 };
