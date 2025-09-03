@@ -24,6 +24,7 @@ export interface ITMDEventNode extends Parent {
     type: 'itmdEvent';
     time?: EventTime;
     eventType: string;
+    baseType?: 'transportation' | 'stay' | 'activity';
     title?: RichInline | null;
     destination?:
         | (

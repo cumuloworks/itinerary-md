@@ -5,6 +5,10 @@ import type { EventTime } from '../types';
 import { sliceInlineNodes } from '../utils/mdast-inline';
 import type { LexTokens } from './lex';
 
+// Minimal paragraph helper to avoid any-casts when calling mdastToString
+type ParagraphNode = { type: 'paragraph'; children: PhrasingContent[] };
+const toParagraph = (children: PhrasingContent[]): ParagraphNode => ({ type: 'paragraph', children });
+
 export type ParsedHeader = {
     eventType?: string;
     title?: PhrasingContent[] | null;
@@ -72,38 +76,15 @@ function parseHead(headRaw: string): { eventType?: string; title: PhrasingConten
     return { eventType, title };
 }
 
-function parseDest(destRaw: string | null, sep: 'doublecolon' | 'at' | null): ParsedHeader['destination'] {
-    if (!destRaw) return null;
-    const s = destRaw.trim();
-    const idx = s.lastIndexOf(' - ');
-    if (idx >= 0) {
-        const fromText = s.slice(0, idx).trim();
-        const toText = s.slice(idx + 3).trim();
-        return {
-            kind: 'dashPair',
-            from: [{ type: 'text', value: fromText } as unknown as PhrasingContent],
-            to: [{ type: 'text', value: toText } as unknown as PhrasingContent],
-        };
-    }
-    if (sep === 'doublecolon' || sep === 'at') {
-        return {
-            kind: 'single',
-            at: [{ type: 'text', value: s } as unknown as PhrasingContent],
-        };
-    }
-    return null;
-}
-
 export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv: Services): ParsedHeader {
     const line = tokens.raw.trim();
     const ts = parseTimeSpan(line);
-    const afterTime = line.slice(ts.consumed);
     const { headRaw, destRaw, sep } = splitHeadAndDestUsingSeps(line, tokens, ts.consumed);
     const head = parseHead(headRaw);
 
     // mdast インラインから部分インラインを切り出す簡易ヘルパ（部分一致は text ノードで代替）
     const hasInline = Array.isArray(mdInline) && mdInline.length > 0;
-    const inlineFullText = hasInline ? mdastToString({ type: 'paragraph', children: mdInline } as unknown as { type: string; children: PhrasingContent[] }) : tokens.raw.trim();
+    const inlineFullText = hasInline ? mdastToString(toParagraph(mdInline)) : tokens.raw.trim();
     const sliceInline = (start: number, end: number): PhrasingContent[] => {
         if (end <= start) return [];
         if (hasInline) return sliceInlineNodes(mdInline, start, end);
@@ -130,7 +111,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
     let titleInline: PhrasingContent[] | null = null;
     if (headTitleStartInline < headEndInline) {
         titleInline = sliceInline(headTitleStartInline, headEndInline);
-        if (mdastToString({ type: 'paragraph', children: titleInline } as any).trim() === '') titleInline = null;
+        if (mdastToString(toParagraph(titleInline)).trim() === '') titleInline = null;
     }
 
     let destination: ParsedHeader['destination'] = null;
@@ -171,8 +152,8 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             const toEnd = destEndInline;
             destination = {
                 kind: 'fromTo',
-                from: sliceInline(fromStart, fromEnd).filter((n) => mdastToString({ type: 'paragraph', children: [n] } as any).trim() !== ''),
-                to: sliceInline(toStart, toEnd).filter((n) => mdastToString({ type: 'paragraph', children: [n] } as any).trim() !== ''),
+                from: sliceInline(fromStart, fromEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== ''),
+                to: sliceInline(toStart, toEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== ''),
             } as ParsedHeader['destination'];
             positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
         } else if (idx >= 0) {
@@ -206,7 +187,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             const endAbs = absStart + headRaw.length;
             // title は from の手前まで
             const ttl = sliceInline(headTitleStartInline, absStart + relFromIdx);
-            titleInline = mdastToString({ type: 'paragraph', children: ttl } as any).trim() === '' ? titleInline : ttl;
+            titleInline = mdastToString(toParagraph(ttl)).trim() === '' ? titleInline : ttl;
             destination = {
                 kind: 'fromTo',
                 from: sliceInline(fromLabelStart, absStart + toIdxAbsRel),
@@ -219,7 +200,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
     // タイトル最終決定: no-sep かつ dashPair のときは title=null（ルート解釈）。
     // それ以外では、mdInline から抽出できなければ text ベースの head.title をフォールバックに使う。
     const title = ((): PhrasingContent[] | null => {
-        if (destination && (destination as any).kind === 'dashPair' && sep === null) return null;
+        if (destination?.kind === 'dashPair' && sep === null) return null;
         if (titleInline && titleInline.length > 0) return titleInline;
         return head.title ?? null;
     })();

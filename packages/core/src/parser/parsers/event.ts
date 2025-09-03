@@ -80,7 +80,7 @@ const parseStayData = (eventDescription: string, baseData: BaseEventData, type: 
     let stayName = eventDescription;
     let location: string | undefined = '';
 
-        if (eventDescription.includes('::')) {
+    if (eventDescription.includes('::')) {
         const [left, right] = eventDescription.split('::').map((s) => s.trim());
         location = right || '';
 
@@ -91,11 +91,11 @@ const parseStayData = (eventDescription: string, baseData: BaseEventData, type: 
             stayName = left;
         }
     } else {
-                const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
         const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
-        
+
         if (atMatch) {
-                        const [, left, right] = atMatch;
+            const [, left, right] = atMatch;
             const leftTrimmed = left.trim();
             const rightTrimmed = right.trim();
             location = rightTrimmed || '';
@@ -107,7 +107,7 @@ const parseStayData = (eventDescription: string, baseData: BaseEventData, type: 
                 stayName = leftTrimmed;
             }
         } else if (atOnlyMatch) {
-                        const rightTrimmed = atOnlyMatch[1].trim();
+            const rightTrimmed = atOnlyMatch[1].trim();
             location = rightTrimmed || '';
 
             const isStayAlias = ['hotel', 'hostel', 'ryokan', 'dormitory'].includes(type);
@@ -137,7 +137,7 @@ const parseActivityData = (
     let name = eventDescription;
     let location: string | undefined = '';
 
-        if (eventDescription.includes('::')) {
+    if (eventDescription.includes('::')) {
         const [left, right] = eventDescription.split('::').map((s) => s.trim());
         location = right || '';
 
@@ -149,11 +149,11 @@ const parseActivityData = (
             name = left;
         }
     } else {
-                const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
         const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
-        
+
         if (atMatch) {
-                        const [, left, right] = atMatch;
+            const [, left, right] = atMatch;
             const leftTrimmed = left.trim();
             const rightTrimmed = right.trim();
             location = rightTrimmed || '';
@@ -166,7 +166,7 @@ const parseActivityData = (
                 name = leftTrimmed;
             }
         } else if (atOnlyMatch) {
-                        const rightTrimmed = atOnlyMatch[1].trim();
+            const rightTrimmed = atOnlyMatch[1].trim();
             location = rightTrimmed || '';
 
             const isMealAlias = ['lunch', 'dinner', 'breakfast', 'brunch'].includes(type);

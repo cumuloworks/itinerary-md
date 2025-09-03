@@ -3,8 +3,8 @@ import { toString as mdastToString } from 'mdast-util-to-string';
 import type { Plugin } from 'unified';
 import type { VFile } from 'vfile';
 import { parseDateText } from '../parser/parsers/date';
-import { parseEvent, parseTimeAndType } from '../parser/parsers/event';
 import type { EventData } from '../parser/parsers/event';
+import { parseEvent, parseTimeAndType } from '../parser/parsers/event';
 import { isValidIanaTimeZone } from '../time/iana';
 //
 
@@ -30,16 +30,14 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
     return function transformer(tree: Root, file?: VFile) {
         if (!tree) return tree;
 
-
-
-                const nodeToSegments = (node: MdNode): TextSegment[] => {
+        const nodeToSegments = (node: MdNode): TextSegment[] => {
             const segments: TextSegment[] = [];
-            
+
             if (node.type === 'text' && typeof node.value === 'string') {
                 segments.push({ text: node.value });
             } else if (node.type === 'link') {
-                                const linkText = mdastToString(node);
-                const url = node.url || "";
+                const linkText = mdastToString(node);
+                const url = node.url || '';
 
                 segments.push({ text: linkText, url });
             } else if (node.children) {
@@ -47,15 +45,15 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                     segments.push(...nodeToSegments(child));
                 }
             }
-            
+
             return segments;
         };
 
-                const segmentsToPlainText = (segments: TextSegment[]): string => {
-            return segments.map(s => s.text).join('');
+        const segmentsToPlainText = (segments: TextSegment[]): string => {
+            return segments.map((s) => s.text).join('');
         };
 
-                const parseEventFromSegments = (
+        const parseEventFromSegments = (
             segments: TextSegment[],
             context?: EventData | null,
             timezone?: string,
@@ -65,36 +63,36 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
             const parsed = parseTimeAndType(plainText, timezone, baseDate);
             if (!parsed) return null;
 
-                        const timeMatch = plainText.match(/^(\[(?:[\d:+@A-Za-z_/-]+|)\](?:\s*-\s*\[(?:[\d:+@A-Za-z_/-]+|)\])?)\s+(\w+)\s*/);
+            const timeMatch = plainText.match(/^(\[(?:[\d:+@A-Za-z_/-]+|)\](?:\s*-\s*\[(?:[\d:+@A-Za-z_/-]+|)\])?)\s+(\w+)\s*/);
             if (!timeMatch) return null;
-            
+
             const timeAndTypeLength = timeMatch[0].length;
-            
-                        let currentLength = 0;
+
+            let currentLength = 0;
             let descriptionStartIndex = 0;
-            
+
             for (let i = 0; i < segments.length; i++) {
                 const segmentLength = segments[i].text.length;
                 if (currentLength + segmentLength >= timeAndTypeLength) {
-                                        const splitPoint = timeAndTypeLength - currentLength;
+                    const splitPoint = timeAndTypeLength - currentLength;
                     if (splitPoint > 0 && splitPoint < segmentLength) {
-                                                const beforeText = segments[i].text.substring(0, splitPoint);
+                        const beforeText = segments[i].text.substring(0, splitPoint);
                         const afterText = segments[i].text.substring(splitPoint);
-                        
-                                                const newSegments: TextSegment[] = [];
-                                                for (let j = 0; j < i; j++) {
+
+                        const newSegments: TextSegment[] = [];
+                        for (let j = 0; j < i; j++) {
                             newSegments.push(segments[j]);
                         }
-                                                if (beforeText) {
+                        if (beforeText) {
                             newSegments.push({ text: beforeText, url: segments[i].url });
                         }
-                                                if (afterText) {
+                        if (afterText) {
                             newSegments.push({ text: afterText, url: segments[i].url });
                         }
-                                                for (let j = i + 1; j < segments.length; j++) {
+                        for (let j = i + 1; j < segments.length; j++) {
                             newSegments.push(segments[j]);
                         }
-                        
+
                         segments = newSegments;
                         descriptionStartIndex = i + (beforeText ? 1 : 0);
                     } else if (splitPoint === 0) {
@@ -106,105 +104,107 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 }
                 currentLength += segmentLength;
             }
-            
+
             const descriptionSegments = segments.slice(descriptionStartIndex);
             const eventDescription = segmentsToPlainText(descriptionSegments);
-            
-                        const eventData = parseEvent(plainText, context || undefined, timezone, baseDate);
+
+            const eventData = parseEvent(plainText, context || undefined, timezone, baseDate);
 
             if (!eventData) return null;
-            
-                        const result: { eventData: EventData | null; nameSegments?: TextSegment[]; departureSegments?: TextSegment[]; arrivalSegments?: TextSegment[] } = { eventData };
-            
-                        const displayName = ('name' in eventData && eventData.name) ? eventData.name 
-                              : ('stayName' in eventData && eventData.stayName) ? eventData.stayName 
-                              : null;
-            
-            if (displayName) {
 
-                
-                                if (eventDescription.includes('::')) {
+            const result: { eventData: EventData | null; nameSegments?: TextSegment[]; departureSegments?: TextSegment[]; arrivalSegments?: TextSegment[] } = { eventData };
+
+            const displayName = 'name' in eventData && eventData.name ? eventData.name : 'stayName' in eventData && eventData.stayName ? eventData.stayName : null;
+
+            if (displayName) {
+                if (eventDescription.includes('::')) {
                     const parts = eventDescription.split('::');
                     const namePartText = parts[0].trim();
                     result.nameSegments = extractSegmentsForText(descriptionSegments, namePartText);
-                    
+
                     if ('departure' in eventData && 'arrival' in eventData && parts[1]) {
-                                                const routeText = parts[1].trim();
+                        const routeText = parts[1].trim();
                         const routeParts = routeText.split(' - ');
                         if (routeParts.length >= 2) {
                             const depText = routeParts[0].trim();
                             const arrText = routeParts[routeParts.length - 1].trim();
-                            result.departureSegments = extractSegmentsForText(descriptionSegments, depText, namePartText.length + 4);                             result.arrivalSegments = extractSegmentsForText(descriptionSegments, arrText, namePartText.length + 4 + depText.length + 3);                         }
+                            result.departureSegments = extractSegmentsForText(descriptionSegments, depText, namePartText.length + 4);
+                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, arrText, namePartText.length + 4 + depText.length + 3);
+                        }
                     } else if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
-                                                const locationText = parts[1].trim();
-                        result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + 4);                     }
+                        const locationText = parts[1].trim();
+                        result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + 4);
+                    }
                 } else {
-                                        const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
+                    const atMatch = eventDescription.match(/^(.+?)\s+at\s+(.+)$/);
                     const atOnlyMatch = eventDescription.match(/^at\s+(.+)$/);
-                    
+
                     if (atMatch) {
-                                                const namePartText = atMatch[1].trim();
+                        const namePartText = atMatch[1].trim();
                         if (namePartText) {
                             result.nameSegments = extractSegmentsForText(descriptionSegments, namePartText);
-                            
-                                                        if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
+
+                            if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
                                 const locationText = atMatch[2].trim();
-                                result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + 4);                             }
+                                result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, namePartText.length + 4);
+                            }
                         } else {
                             result.nameSegments = descriptionSegments;
                         }
                     } else if (atOnlyMatch && displayName) {
-                                                result.nameSegments = [{ text: displayName }];
-                        
-                                                if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
+                        result.nameSegments = [{ text: displayName }];
+
+                        if (('location' in eventData && eventData.location) || eventData.baseType === 'stay') {
                             const locationText = atOnlyMatch[1].trim();
-                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, 3);                         }
+                            result.arrivalSegments = extractSegmentsForText(descriptionSegments, locationText, 3);
+                        }
                     } else {
                         result.nameSegments = descriptionSegments;
                     }
                 }
             }
-            
+
             return result;
         };
 
-                const extractSegmentsForText = (segments: TextSegment[], targetText: string, startOffset = 0): TextSegment[] => {
+        const extractSegmentsForText = (segments: TextSegment[], targetText: string, startOffset = 0): TextSegment[] => {
             const result: TextSegment[] = [];
             let currentPos = 0;
             let targetStart = -1;
             let targetEnd = -1;
-            
+
             const fullText = segmentsToPlainText(segments);
-            
-                        const searchStart = Math.max(0, startOffset);
+
+            const searchStart = Math.max(0, startOffset);
             const searchText = fullText.substring(searchStart);
             const relativeIndex = searchText.indexOf(targetText);
-            
+
             if (relativeIndex === -1) {
-                return [];             }
-            
+                return [];
+            }
+
             targetStart = searchStart + relativeIndex;
             targetEnd = targetStart + targetText.length;
-            
-                        for (const segment of segments) {
+
+            for (const segment of segments) {
                 const segmentLength = segment.text.length;
                 const segmentEnd = currentPos + segmentLength;
-                
+
                 if (segmentEnd > targetStart && currentPos < targetEnd) {
-                                        const overlapStart = Math.max(0, targetStart - currentPos);
+                    const overlapStart = Math.max(0, targetStart - currentPos);
                     const overlapEnd = Math.min(segmentLength, targetEnd - currentPos);
-                    
+
                     if (overlapStart === 0 && overlapEnd === segmentLength) {
-                                                result.push(segment);
+                        result.push(segment);
                     } else {
-                                                const partialText = segment.text.substring(overlapStart, overlapEnd);
+                        const partialText = segment.text.substring(overlapStart, overlapEnd);
                         result.push({ text: partialText, url: segment.url });
                     }
                 }
-                
+
                 currentPos = segmentEnd;
             }
-            
+
             return result;
         };
 
@@ -230,7 +230,6 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
         if (!isItinerary) return tree;
 
-        
         const root = (tree as { children?: MdNode[] }) ?? {};
         const children: MdNode[] = Array.isArray(root.children) ? root.children : [];
 
@@ -249,7 +248,6 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 const line = mdastToString(para as MdNode).trim();
                 const dateData = parseDateText(line, isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone);
                 if (dateData) {
-
                     prevDayHadStay = currentDayHasStay;
                     currentDayHasStay = false;
                     previousEvent = null;
@@ -273,7 +271,7 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 continue;
             }
 
-                        if (currentDateStr) {
+            if (currentDateStr) {
                 const prevData = para.data || {};
                 const prevH = (prevData.hProperties as Record<string, unknown>) || {};
                 const hProps: Record<string, unknown> = { ...prevH };
@@ -285,14 +283,12 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
 
             if (para.type !== 'paragraph') continue;
 
-                        const firstLineText = mdastToString(para as MdNode).trim();
-
+            const firstLineText = mdastToString(para as MdNode).trim();
 
             const parsed = parseTimeAndType(firstLineText, frontmatterTimezone);
             if (!parsed) {
                 continue;
             }
-
 
             const mergedMeta: Record<string, string> = {};
             const notes: string[] = [];
@@ -349,46 +345,42 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                         const value = text.substring(colonIndex + 1).trim();
                         mergedMeta[key] = value;
 
-                                                try {
+                        try {
                             const liChildren = (li as MdNode).children;
                             const firstPara = Array.isArray(liChildren) ? (liChildren.find((n) => n?.type === 'paragraph') as MdNode | undefined) : undefined;
-                            
+
                             if (firstPara?.children) {
-                                                                const segments: TextSegment[] = [];
+                                const segments: TextSegment[] = [];
                                 let foundColon = false;
 
-                                
                                 for (const child of firstPara.children) {
                                     if (!child) continue;
-                                    
+
                                     if (!foundColon) {
-                                                                                if (child.type === 'text' && typeof child.value === 'string') {
+                                        if (child.type === 'text' && typeof child.value === 'string') {
                                             const colonIdx = child.value.indexOf(':');
                                             if (colonIdx >= 0) {
                                                 foundColon = true;
-                                                                                                const afterColon = child.value.substring(colonIdx + 1);
+                                                const afterColon = child.value.substring(colonIdx + 1);
                                                 if (afterColon) {
                                                     segments.push({ text: afterColon });
                                                 }
                                             }
                                         }
                                     } else {
-                                                                                const childSegments = nodeToSegments(child);
+                                        const childSegments = nodeToSegments(child);
                                         segments.push(...childSegments);
                                     }
                                 }
-                                
 
-                                
-                                                                if (segments.length > 0 && segments.some(s => s.url)) {
-                                                                        mergedMeta[`${key}__segments`] = JSON.stringify(segments);
+                                if (segments.length > 0 && segments.some((s) => s.url)) {
+                                    mergedMeta[`${key}__segments`] = JSON.stringify(segments);
                                 }
                             }
-                            
+
                             const sublists = Array.isArray(liChildren) ? liChildren.filter((n) => n?.type === 'list') : [];
                             liftedNodes.push(...sublists);
-                        } catch {
-                                                    }
+                        } catch {}
                         continue;
                     }
                     remainingItems.push(li);
@@ -423,23 +415,14 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                 if (invalids.length > 0) warnEventTz = Array.from(new Set(invalids));
             }
 
-                        const segments = nodeToSegments(para as MdNode);
+            const segments = nodeToSegments(para as MdNode);
             const parseTimezone = currentDateTz && isValidIanaTimeZone(currentDateTz) ? currentDateTz : isValidIanaTimeZone(frontmatterTimezone) ? frontmatterTimezone : options?.timezone;
             const parsedWithSegments = parseEventFromSegments(segments, previousEvent || undefined, parseTimezone, currentDateStr);
             const eventData = parsedWithSegments?.eventData;
             if (eventData) {
-
-                
-                                const nameSegments = parsedWithSegments?.nameSegments;
+                const nameSegments = parsedWithSegments?.nameSegments;
                 const departureSegments = parsedWithSegments?.departureSegments;
                 const arrivalSegments = parsedWithSegments?.arrivalSegments;
-                
-
-
-
-
-
-
 
                 const mergedEvent = { ...eventData, metadata: { ...(eventData as EventData & { metadata?: Record<string, string> }).metadata, ...itinMeta } } as EventData;
                 if (options?.stayMode === 'header' && mergedEvent.type === 'stay') {
@@ -467,14 +450,12 @@ export const remarkItinerary: Plugin<[Options?], Root> = (options?: Options) => 
                     departureSegments,
                     arrivalSegments,
                 } as Record<string, unknown>;
-                                hProps['data-itmd'] = JSON.stringify(itmd);
+                hProps['data-itmd'] = JSON.stringify(itmd);
                 para.data = { ...(para.data || {}), itmd, itinMeta, hProperties: hProps } as MdNode['data'];
-
             } else {
-                                para.data = { ...para.data, itinMeta, hProperties: hProps } as MdNode['data'];
+                para.data = { ...para.data, itinMeta, hProperties: hProps } as MdNode['data'];
             }
-
-                                }
+        }
         return tree;
     };
 };
