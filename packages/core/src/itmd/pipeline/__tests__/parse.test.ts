@@ -31,6 +31,51 @@ describe('parseHeader', () => {
         expect(mdastToString({ type: 'paragraph', children: d.to ?? [] } as any)).toBe('MAD');
     });
 
+    it('リンク保持: single(::) の at にリンクが残る', () => {
+        const line = '[08:00] lunch :: Visit Cafe';
+        const tokens = lexLine(line, {}, sv);
+        const mdInline = [
+            { type: 'text', value: '[08:00] lunch :: Visit ' },
+            { type: 'link', url: 'https://cafe.example', title: null, children: [{ type: 'text', value: 'Cafe' }] },
+        ] as any;
+        const header = parseHeader(tokens, mdInline, sv);
+        expect(header.destination?.kind).toBe('single');
+        const at = (header.destination as any).at as any[];
+        expect(at.some((n) => n.type === 'link' && n.url === 'https://cafe.example')).toBe(true);
+    });
+
+    it('リンク保持: dashPair の from/to にリンクが残る', () => {
+        const line = '[08:00] flight :: NRT - MAD';
+        const tokens = lexLine(line, {}, sv);
+        const mdInline = [
+            { type: 'text', value: '[08:00] flight :: ' },
+            { type: 'link', url: 'https://a.example', title: null, children: [{ type: 'text', value: 'NRT' }] },
+            { type: 'text', value: ' - ' },
+            { type: 'link', url: 'https://b.example', title: null, children: [{ type: 'text', value: 'MAD' }] },
+        ] as any;
+        const header = parseHeader(tokens, mdInline, sv);
+        expect(header.destination?.kind).toBe('dashPair');
+        const d = header.destination as Extract<typeof header.destination, { kind: 'dashPair' }>;
+        expect((d.from as any[]).some((n) => n.type === 'link' && n.url === 'https://a.example')).toBe(true);
+        expect((d.to as any[]).some((n) => n.type === 'link' && n.url === 'https://b.example')).toBe(true);
+    });
+
+    it('リンク保持: fromTo の from/to にリンクが残る', () => {
+        const line = '[am] flight JL from Tokyo to London';
+        const tokens = lexLine(line, {}, sv);
+        const mdInline = [
+            { type: 'text', value: '[am] flight JL from ' },
+            { type: 'link', url: 'https://tokyo.example', title: null, children: [{ type: 'text', value: 'Tokyo' }] },
+            { type: 'text', value: ' to ' },
+            { type: 'link', url: 'https://london.example', title: null, children: [{ type: 'text', value: 'London' }] },
+        ] as any;
+        const header = parseHeader(tokens, mdInline, sv);
+        expect(header.destination?.kind).toBe('fromTo');
+        const d = header.destination as Extract<typeof header.destination, { kind: 'fromTo' }>;
+        expect((d.from as any[]).some((n) => n.type === 'link' && n.url === 'https://tokyo.example')).toBe(true);
+        expect((d.to as any[]).some((n) => n.type === 'link' && n.url === 'https://london.example')).toBe(true);
+    });
+
     it('destination: from ... to ... による fromTo（リンク保持）', () => {
         const line = '[am@Asia/Tokyo] - [18:45@Europe/London] flight JL043 [公式サイト](https://www.jal.co.jp/) from [Tokyo Haneda (HND)](https://haneda-airport.jp/) to [London Heathrow (LHR)](https://www.heathrow.com/)';
         const tokens = lexLine(line, {}, sv);

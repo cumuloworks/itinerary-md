@@ -10,6 +10,11 @@ export type ParsedHeader = {
     title?: PhrasingContent[] | null;
     destination?: ({ kind: 'single'; at: PhrasingContent[] } | { kind: 'dashPair'; from: PhrasingContent[]; to: PhrasingContent[] } | { kind: 'fromTo'; from: PhrasingContent[]; to: PhrasingContent[] }) | null;
     time?: EventTime | null;
+    positions?: {
+        title?: { start: number; end: number };
+        destination?: { from?: { start: number; end: number }; to?: { start: number; end: number }; at?: { start: number; end: number } };
+        time?: { start?: { start: number; end: number }; end?: { start: number; end: number }; marker?: { start: number; end: number } };
+    };
 };
 
 function parseTimeToken(raw: string): { hh: number | null; mm: number | null; tz?: string | null; dayOffset?: number | null } | null {
@@ -129,6 +134,25 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
     }
 
     let destination: ParsedHeader['destination'] = null;
+    const positions: NonNullable<ParsedHeader['positions']> = {};
+    // time positions（角括弧内の中身範囲を absolute offset で保持）
+    const tm = inlineFullText.match(/^\[(.*?)\](?:\s*-\s*\[(.*?)\])?/);
+    if (tm) {
+        const matchStr = tm[0];
+        const firstOpen = matchStr.indexOf('[');
+        const firstStart = firstOpen + 1;
+        const firstEnd = firstStart + (tm[1] ? tm[1].length : 0);
+        if (tm[1]) positions.time = { ...(positions.time || {}), start: { start: firstStart, end: firstEnd } };
+        if (tm[2]) {
+            const lastOpen = matchStr.lastIndexOf('[');
+            const secondStart = lastOpen + 1;
+            const secondEnd = secondStart + tm[2].length;
+            positions.time = { ...(positions.time || {}), start: positions.time?.start, end: { start: secondStart, end: secondEnd } };
+        }
+        if (tm[1] === 'am' || tm[1] === 'pm') {
+            positions.time = { ...(positions.time || {}), marker: { start: firstStart, end: firstEnd } };
+        }
+    }
     if (destRaw) {
         // 先に headEnd 以降での一致を探し、見つからなければ全文から検索
         let destStartInline = inlineFullText.indexOf(destRaw, headEndInline);
@@ -150,6 +174,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
                 from: sliceInline(fromStart, fromEnd).filter((n) => mdastToString({ type: 'paragraph', children: [n] } as any).trim() !== ''),
                 to: sliceInline(toStart, toEnd).filter((n) => mdastToString({ type: 'paragraph', children: [n] } as any).trim() !== ''),
             } as ParsedHeader['destination'];
+            positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
         } else if (idx >= 0) {
             const fromStart = destStartInline;
             const fromEnd = destStartInline + idx;
@@ -160,11 +185,13 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
                 from: sliceInline(fromStart, fromEnd),
                 to: sliceInline(toStart, toEnd),
             } as ParsedHeader['destination'];
+            positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
         } else if (sep === 'doublecolon' || sep === 'at') {
             destination = {
                 kind: 'single',
                 at: sliceInline(destStartInline, destEndInline),
             } as ParsedHeader['destination'];
+            positions.destination = { at: { start: destStartInline, end: destEndInline } };
         }
     } else if (sep === null && headRaw.includes(' - ')) {
         // no sep, but has route-like "A - B" → treat as dashPair and drop title
@@ -181,6 +208,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
                 from: sliceInline(fromStart, fromEnd),
                 to: sliceInline(toStart, toEnd),
             } as ParsedHeader['destination'];
+            positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
         }
     } else if (sep === null) {
         // from ... to ... 構文（ヘッダ内）
@@ -201,6 +229,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
                 from: sliceInline(fromLabelStart, absStart + toIdxAbsRel),
                 to: sliceInline(toLabelStart, endAbs),
             } as ParsedHeader['destination'];
+            positions.destination = { from: { start: fromLabelStart, end: absStart + toIdxAbsRel }, to: { start: toLabelStart, end: endAbs } };
         }
     }
 
@@ -211,5 +240,6 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         if (titleInline && titleInline.length > 0) return titleInline;
         return head.title ?? null;
     })();
-    return { eventType: head.eventType, title, time: ts.time, destination };
+    if (titleInline) positions.title = { start: headTitleStartInline, end: headEndInline };
+    return { eventType: head.eventType, title, time: ts.time, destination, positions };
 }

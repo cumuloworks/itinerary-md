@@ -53,6 +53,7 @@ export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile):
     };
 
     const unicode: UnicodeService = {
+        // 現状は恒等（安全なセパレータ検出は lex 側の深さ管理で担保する）
         makeShadow: (s: string) => ({ shadow: s, map: (i: number) => i }),
     };
 

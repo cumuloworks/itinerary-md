@@ -18,6 +18,8 @@ export type EventTime =
     | { kind: 'point'; start: TimePoint; startISO?: string | null }
     | { kind: 'range'; start: TimePoint; end: TimePoint; startISO?: string | null; endISO?: string | null };
 
+export type TextSlicePosition = { start: number; end: number };
+
 export interface ITMDEventNode extends Parent {
     type: 'itmdEvent';
     time?: EventTime;
@@ -45,6 +47,11 @@ export interface ITMDEventNode extends Parent {
     warnings?: string[];
     children: Parent['children'];
     position?: Position;
+    positions?: {
+        title?: TextSlicePosition;
+        destination?: { from?: TextSlicePosition; to?: TextSlicePosition; at?: TextSlicePosition };
+        time?: { start?: TextSlicePosition; end?: TextSlicePosition; marker?: TextSlicePosition };
+    };
     version: '1';
 }
 
