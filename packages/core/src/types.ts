@@ -56,4 +56,12 @@ export interface ITMDEventNode extends Parent {
     version: '1';
 }
 
+export interface ITMDHeadingNode extends Parent {
+    type: 'itmdHeading';
+    dateISO: string;
+    timezone?: string;
+    children: Parent['children'];
+    position?: Position;
+}
+
 export type { Root };

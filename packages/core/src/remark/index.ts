@@ -1,1 +1,1 @@
-export { remarkItinerary } from '../itmd/remark/itinerary';
+export { remarkItinerary } from './itinerary';

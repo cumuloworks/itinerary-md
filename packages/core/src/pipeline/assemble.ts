@@ -1,8 +1,9 @@
 import type { Parent, PhrasingContent, Root } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import type { Position } from 'unist';
-import { parseDateText } from '../../parser/parsers/date';
 import type { Services } from '../services';
+import { isValidIanaTimeZone } from '../time/iana';
+import type { ITMDHeadingNode } from '../types';
 import { sliceInlineNodes } from '../utils/mdast-inline';
 import { buildEventNode } from './build';
 import { lexLine } from './lex';
@@ -25,10 +26,40 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 .map((n) => (typeof (n as unknown as { value?: unknown }).value === 'string' ? (n as unknown as { value: string }).value : ''))
                 .join('')
                 .trim();
-            const d = parseDateText(text, sv.policy.tzFallback ?? undefined);
-            currentDateISO = d?.date || currentDateISO;
-            currentDateTz = d?.timezone || currentDateTz;
+            const d = ((): { date?: string; timezone?: string } | null => {
+                const m = text.match(/^(\d{4}-\d{2}-\d{2})(?:\s*@([A-Za-z0-9_./+-]+))?/);
+                if (!m) return null;
+                const date = m[1];
+                const tzRaw = m[2];
+                const tz = tzRaw && isValidIanaTimeZone(tzRaw) ? tzRaw : (sv.policy.tzFallback ?? undefined);
+                return { date, timezone: tz };
+            })();
+            currentDateISO = (d?.date as string | undefined) || currentDateISO;
+            currentDateTz = (d?.timezone as string | undefined) || currentDateTz;
+            // replace heading node with synthetic itmdHeading node for renderer
+            if (d?.date) {
+                const headingNode: ITMDHeadingNode = {
+                    type: 'itmdHeading',
+                    dateISO: d.date,
+                    timezone: d.timezone,
+                    children: [],
+                    position: (h as unknown as { position?: Position }).position,
+                } as ITMDHeadingNode;
+                children[i] = headingNode as unknown as Parent['children'][number];
+            } else {
+                // non-date H2 resets current date context
+                currentDateISO = undefined;
+                currentDateTz = undefined;
+            }
             continue;
+        }
+        // annotate non-heading nodes with current date context if available
+        if (currentDateISO && node && (node as { type?: string }).type !== 'heading') {
+            const dataPrev = ((node as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
+            (node as unknown as { data?: Record<string, unknown> }).data = {
+                ...dataPrev,
+                itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },
+            } as Record<string, unknown>;
         }
         if (node?.type !== 'paragraph') continue;
 
@@ -101,6 +132,14 @@ export function assembleEvents(root: Root, sv: Services): Root {
         const built = buildEventNode(header, childrenOut as any, combinedPos, sv);
         if (Object.keys(meta).length > 0) (built as any).meta = meta;
         built.warnings = [...(built.warnings ?? []), ...warnings];
+        // also annotate built event node with date context for consumers that rely on data
+        if (currentDateISO) {
+            const prev = ((built as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
+            (built as unknown as { data?: Record<string, unknown> }).data = {
+                ...prev,
+                itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },
+            } as Record<string, unknown>;
+        }
         children[i] = built as unknown as Parent['children'][number];
     }
 
