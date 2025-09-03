@@ -24,6 +24,7 @@ export function buildEventNode(header: NormalizedHeader, absorbed: Node[], pos: 
         destination: header.destination ?? null,
         time: header.time ?? undefined,
         positions: header.positions,
+        body: null,
         // meta は assemble 側で list から抽出時にのみ設定する
         warnings: [],
         children: absorbed as Parent['children'],

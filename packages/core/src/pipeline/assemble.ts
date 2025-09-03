@@ -61,78 +61,105 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },
             } as Record<string, unknown>;
         }
-        if (node?.type !== 'paragraph') continue;
+        if (node?.type !== 'blockquote') continue;
 
-        const para = node as unknown as Parent & { type: 'paragraph' };
-        const inline = (para.children ?? []) as unknown[] as PhrasingContent[];
+        const bq = node as unknown as Parent & { type: 'blockquote' };
+        const blockChildren = Array.isArray(bq.children) ? (bq.children as unknown as Parent['children']) : ([] as Parent['children']);
+        const firstPara = blockChildren.find((n) => (n as unknown as { type?: string }).type === 'paragraph') as (Parent & { type: 'paragraph' }) | undefined;
+        if (!firstPara) continue;
 
-        const paraText = mdastToString(para as unknown as any);
+        const inline = (firstPara.children ?? []) as unknown[] as PhrasingContent[];
+        const paraText = mdastToString(firstPara as unknown as any);
         const nlIdx = paraText.indexOf('\n');
         const firstLineText = nlIdx >= 0 ? paraText.slice(0, nlIdx) : paraText;
-        const restText = nlIdx >= 0 ? paraText.slice(nlIdx + 1) : '';
-        const hasSecondLineText = restText.trim().length > 0;
         if (!firstLineText.trimStart().startsWith('[')) continue;
 
-        const inlineFirstLine = sliceInlineNodes(inline, 0, nlIdx >= 0 ? nlIdx : firstLineText.length);
-
-        const tokens = lexLine(firstLineText, {}, sv);
-        const parsed = parseHeader(tokens, inlineFirstLine, sv);
+        // 先頭段落全体をヘッダとして解釈（改行を含む）
+        const tokens = lexLine(paraText, {}, sv);
+        const parsed = parseHeader(tokens, inline, sv);
         const normalized = normalizeHeader(parsed, { baseTz: currentDateTz ?? sv.policy.tzFallback ?? undefined, dateISO: currentDateISO }, sv);
         const { header, warnings } = validateHeader(normalized, sv);
-        // 直後が list のときのみ、連続する list を吸収（paragraph は吸収しない）
-        const absorbed: Parent['children'] = [];
-        const firstNext = children[i + 1] as unknown as { type?: string } | undefined;
-        if (!hasSecondLineText && firstNext && firstNext.type === 'list') {
-            const j = i + 1;
-            while (j < children.length) {
-                const nx = children[j] as unknown as { type?: string } | undefined;
-                if (!nx || nx.type !== 'list') break;
-                absorbed.push(children[j] as never);
-                children.splice(j, 1);
-                // splice したので j は据え置きで次を再評価
-            }
+
+        // イベントタイプが無い場合は ITMD へ変換しない（例: "> []" 単独は非変換）
+        if (!header.eventType || String(header.eventType).trim() === '') {
+            continue;
         }
 
-        // meta 抽出: list の先頭段落から "key: value" を収集（1段のみ）。値は RichInline を保持
-        const meta: Record<string, PhrasingContent[]> = {};
-        for (const nodeAbs of absorbed) {
-            if (!nodeAbs || (nodeAbs as unknown as { type?: string }).type !== 'list') continue;
-            const list = nodeAbs as unknown as Parent & { type: 'list' };
-            const items = Array.isArray(list.children) ? list.children : [];
-            for (const it of items) {
-                const li = it as unknown as Parent & { type?: string };
-                const kids = Array.isArray(li.children) ? li.children : [];
-                const para0 = kids.find((n) => (n as unknown as { type?: string })?.type === 'paragraph') as (Parent & { type: 'paragraph' }) | undefined;
-                const inline = (para0?.children ?? []) as unknown as PhrasingContent[];
-                const raw = para0 ? mdastToString(para0 as unknown as any) : mdastToString(li as unknown as any);
-                const text = String(raw || '').trim();
-                const idx = text.indexOf(':');
-                if (idx > 0) {
-                    const keyRaw = text.slice(0, idx).trim().toLowerCase();
-                    const key = keyRaw.replace(/^[-\s]+/, '');
-                    let valStart = idx + 1;
-                    if (text[valStart] === ' ') valStart += 1;
-                    const valueNodes = inline.length > 0 ? sliceInlineNodes(inline, valStart, text.length) : ([{ type: 'text', value: text.slice(valStart) }] as any);
-                    if (key) meta[key] = valueNodes as any;
+        // body 構築: 先頭段落以外の段落は inline として、list は key:value を meta として、それ以外やコロン無しは inline として順序保持
+        const bodySegs: Array<
+            { kind: 'inline'; content: PhrasingContent[] } | { kind: 'meta'; entries: Array<{ key: string; value: PhrasingContent[] }> } | { kind: 'list'; items: PhrasingContent[][]; ordered?: boolean; start?: number | null }
+        > = [];
+        for (const nodeAbs of blockChildren) {
+            if (nodeAbs === firstPara) continue; // ヘッダ段落は除外
+            const t = (nodeAbs as unknown as { type?: string }).type;
+            if (t === 'paragraph') {
+                const inlinePara = ((nodeAbs as unknown as Parent & { type: 'paragraph' }).children ?? []) as unknown as PhrasingContent[];
+                bodySegs.push({ kind: 'inline', content: inlinePara });
+                continue;
+            }
+            if (t === 'list') {
+                // リスト内の meta(キー:値) と 非KV を、出現順でグルーピングして bodySegs に積む
+                type GroupState = null | { kind: 'meta'; entries: Array<{ key: string; value: PhrasingContent[] }> } | { kind: 'list'; items: PhrasingContent[][]; ordered?: boolean; start?: number | null };
+                let group: GroupState = null;
+                const flush = () => {
+                    if (!group) return;
+                    if (group.kind === 'meta' && group.entries.length > 0) bodySegs.push({ kind: 'meta', entries: group.entries });
+                    if (group.kind === 'list' && group.items.length > 0) bodySegs.push({ kind: 'list', items: group.items, ordered: group.ordered, start: group.start });
+                    group = null;
+                };
+                const list = nodeAbs as unknown as Parent & { type: 'list'; ordered?: boolean; start?: number | null };
+                const listOrdered = !!(list as unknown as { ordered?: boolean }).ordered;
+                const listStart = (list as unknown as { start?: number }).start ?? null;
+                const items = Array.isArray(list.children) ? list.children : [];
+                for (const it of items) {
+                    const li = it as unknown as Parent & { type?: string };
+                    const kids = Array.isArray(li.children) ? li.children : [];
+                    const para0 = kids.find((n) => (n as unknown as { type?: string })?.type === 'paragraph') as (Parent & { type: 'paragraph' }) | undefined;
+                    const inlineLi = (para0?.children ?? []) as unknown as PhrasingContent[];
+                    const raw = para0 ? mdastToString(para0 as unknown as any) : mdastToString(li as unknown as any);
+                    const text = String(raw || '').trim();
+                    const idx = text.indexOf(':');
+                    const isKv = idx > 0;
+                    if (isKv) {
+                        const keyRaw = text.slice(0, idx).trim().toLowerCase();
+                        const key = keyRaw.replace(/^[-\s]+/, '');
+                        let valStart = idx + 1;
+                        if (text[valStart] === ' ') valStart += 1;
+                        const valueNodes = inlineLi.length > 0 ? sliceInlineNodes(inlineLi, valStart, text.length) : ([{ type: 'text', value: text.slice(valStart) }] as any);
+                        if (key) {
+                            if (!group || group.kind !== 'meta') {
+                                flush();
+                                group = { kind: 'meta', entries: [] } as GroupState;
+                            }
+                            (group as Extract<GroupState, { kind: 'meta' }>).entries.push({ key, value: valueNodes as unknown as PhrasingContent[] });
+                        }
+                    } else {
+                        const inlineNodes = inlineLi.length > 0 ? inlineLi : ([{ type: 'text', value: text }] as any);
+                        // 先頭の "- " をテキスト先頭から除去（テスト互換）。RichInline内リンク等は保持
+                        if (Array.isArray(inlineNodes) && inlineNodes.length > 0) {
+                            const first = inlineNodes[0] as unknown as { type?: string; value?: string };
+                            if (first && first.type === 'text' && typeof first.value === 'string' && first.value.startsWith('- ')) {
+                                (first as { value: string }).value = first.value.slice(2);
+                            }
+                        }
+                        if (!group || group.kind !== 'list') {
+                            flush();
+                            group = { kind: 'list', items: [], ordered: listOrdered, start: listStart } as GroupState;
+                        }
+                        const gl = group as Extract<GroupState, { kind: 'list' }>;
+                        gl.items.push(inlineNodes as unknown as PhrasingContent[]);
+                    }
                 }
+                flush();
             }
         }
-        // position: 段落開始〜吸収した最後のノードの end までをカバー
-        const lastAbs = absorbed.length > 0 ? (absorbed[absorbed.length - 1] as unknown as { position?: Position }) : undefined;
-        const combinedPos: Position | undefined = para.position
-            ? {
-                  start: para.position.start,
-                  end: (lastAbs?.position?.end as any) || para.position.end,
-              }
-            : undefined;
 
-        // ヘッダ行の段落（先頭行のみ）を children の先頭に含める
-        const headerPara: Parent = { type: 'paragraph', children: inlineFirstLine as unknown as Parent['children'] } as unknown as Parent;
-        const childrenOut: Parent['children'] = [headerPara as never, ...absorbed];
+        // children: blockquote 全体（先頭 paragraph を含む）
+        const childrenOut: Parent['children'] = blockChildren;
+        const combinedPos = bq.position as Position | undefined;
         const built = buildEventNode(header, childrenOut as any, combinedPos, sv);
-        if (Object.keys(meta).length > 0) (built as any).meta = meta;
+        (built as any).body = bodySegs.length > 0 ? (bodySegs as any) : null;
         built.warnings = [...(built.warnings ?? []), ...warnings];
-        // also annotate built event node with date context for consumers that rely on data
         if (currentDateISO) {
             const prev = ((built as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
             (built as unknown as { data?: Record<string, unknown> }).data = {

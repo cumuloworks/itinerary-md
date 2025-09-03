@@ -44,7 +44,7 @@ export interface ITMDEventNode extends Parent {
                 }
           )
         | null;
-    meta?: Record<string, string | number | boolean | null | RichInline> | null;
+    body?: ITMDBodySegment[] | null;
     warnings?: string[];
     children: Parent['children'];
     position?: Position;
@@ -55,6 +55,8 @@ export interface ITMDEventNode extends Parent {
     };
     version: '1';
 }
+
+export type ITMDBodySegment = { kind: 'inline'; content: RichInline } | { kind: 'meta'; entries: Array<{ key: string; value: RichInline }> } | { kind: 'list'; items: RichInline[]; ordered?: boolean; start?: number | null };
 
 export interface ITMDHeadingNode extends Parent {
     type: 'itmdHeading';

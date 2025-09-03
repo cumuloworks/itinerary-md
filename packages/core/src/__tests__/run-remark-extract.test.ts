@@ -9,13 +9,15 @@ describe('run/remark/extract integration', () => {
         const md = `
 ## 2025-03-15 @Asia/Tokyo
 
-[08:00] flight IB :: A - B
+> [08:00] flight IB :: A - B
+>
+> - price: EUR 100
 
-[09:00] lunch at Cafe
+> [09:00] lunch at Cafe
 `;
         const tree = unified().use(remarkParse).parse(md);
         const ran = unified().use(remarkParse).use(remarkItinerary, {}).runSync(tree);
-        const events = toItineraryEvents(ran as any);
+        const events = toItineraryEvents(ran as unknown as import('mdast').Root);
         expect(events.length).toBeGreaterThan(0);
     });
 });

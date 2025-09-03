@@ -17,7 +17,8 @@ describe('parseHeader', () => {
         const tokens = lexLine('[08:00] lunch :: Cafe Luna', {}, sv);
         const header = parseHeader(tokens, [], sv);
         expect(header.destination?.kind).toBe('single');
-        expect(header.title).toBeNull();
+        // 省略時はイベントタイプをタイトルに（Lunch）
+        expect(mdastToString({ type: 'paragraph', children: (header.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Lunch');
         const d = header.destination as Extract<typeof header.destination, { kind: 'single' }>;
         const at = d.at;
         expect(mdastToString({ type: 'paragraph', children: at } as unknown as Parent)).toContain('Cafe Luna');
@@ -27,7 +28,8 @@ describe('parseHeader', () => {
         const tokens = lexLine('[08:00] train :: A - B', {}, sv);
         const header = parseHeader(tokens, [], sv);
         expect(header.destination?.kind).toBe('dashPair');
-        expect(header.title).toBeNull();
+        // 省略時はイベントタイプをタイトルに（Train）
+        expect(mdastToString({ type: 'paragraph', children: (header.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Train');
         const d = header.destination as Extract<typeof header.destination, { kind: 'dashPair' }>;
         expect(mdastToString({ type: 'paragraph', children: d.from ?? [] } as unknown as Parent)).toBe('A');
         expect(mdastToString({ type: 'paragraph', children: d.to ?? [] } as unknown as Parent)).toBe('B');
@@ -155,5 +157,35 @@ describe('parseHeader', () => {
         const d = h.destination as Extract<typeof h.destination, { kind: 'dashPair' }>;
         expect(mdastToString({ type: 'paragraph', children: d.from } as unknown as Parent)).toBe('A - B');
         expect(mdastToString({ type: 'paragraph', children: d.to } as unknown as Parent)).toBe('C');
+    });
+
+    it('省略記法: [] flight :: A - B → title は "Flight"', () => {
+        const tokens = lexLine('[] flight :: A - B', {}, sv);
+        const h = parseHeader(tokens, [], sv);
+        expect(h.eventType).toBe('flight');
+        // parse 段階では title を決定する（normalize前）
+        expect(mdastToString({ type: 'paragraph', children: (h.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Flight');
+    });
+
+    it('省略記法: [] sightseeing :: Sumida → title は "Sightseeing"', () => {
+        const tokens = lexLine('[] sightseeing :: Sumida', {}, sv);
+        const h = parseHeader(tokens, [], sv);
+        expect(h.eventType).toBe('sightseeing');
+        expect(mdastToString({ type: 'paragraph', children: (h.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Sightseeing');
+    });
+
+    it('省略記法: [] stay :: Ritz → title は "Stay"', () => {
+        const tokens = lexLine('[] stay :: Ritz', {}, sv);
+        const h = parseHeader(tokens, [], sv);
+        expect(h.eventType).toBe('stay');
+        expect(mdastToString({ type: 'paragraph', children: (h.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Stay');
+    });
+
+    it('時間あり省略記法: [18:00] stay :: Ritz → title は "Stay"', () => {
+        const tokens = lexLine('[18:00] stay :: Ritz', {}, sv);
+        const h = parseHeader(tokens, [], sv);
+        expect(h.eventType).toBe('stay');
+        expect(mdastToString({ type: 'paragraph', children: (h.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Stay');
+        expect(h.destination?.kind).toBe('single');
     });
 });
