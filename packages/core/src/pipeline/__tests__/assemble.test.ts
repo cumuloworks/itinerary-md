@@ -101,6 +101,39 @@ describe('assemble', () => {
         expect(mdastToString({ type: 'paragraph', children: get('note') } as unknown as Parent)).toBe('use audio guide');
     });
 
+    it('meta price/cost を正規化し、node.data.itmdPrice に格納（通貨と金額のみ）', () => {
+        const tree: Root = {
+            type: 'root',
+            children: [
+                {
+                    type: 'blockquote',
+                    children: [
+                        { type: 'paragraph', children: [{ type: 'text', value: '[08:00] lunch at Cafe' }] },
+                        {
+                            type: 'list',
+                            ordered: false,
+                            children: [
+                                { type: 'listItem', children: [{ type: 'paragraph', children: [{ type: 'text', value: '- price: EUR 25' }] }] },
+                                { type: 'listItem', children: [{ type: 'paragraph', children: [{ type: 'text', value: '- cost: $ 10.50' }] }] },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        } as any;
+        const out = assembleEvents(tree, sv);
+        const evt = out.children?.[0] as any;
+        const prices = (evt.data?.itmdPrice || []) as Array<{ key: string; raw: string; price: any }>;
+        expect(prices.length).toBe(2);
+        const p1 = prices.find((p) => p.key === 'price');
+        const p2 = prices.find((p) => p.key === 'cost');
+        expect(p1?.price?.tokens?.[0]?.kind).toBe('money');
+        expect(p1?.price?.tokens?.[0]?.normalized?.currency).toBe('EUR');
+        expect(p1?.price?.tokens?.[0]?.normalized?.amount).toBe('25');
+        expect(p2?.price?.tokens?.[0]?.normalized?.currency).toBe('USD');
+        expect(p2?.price?.tokens?.[0]?.normalized?.amount).toBe('10.5');
+    });
+
     it('blockquote 内のヘッダ段落が複数行でも、blockquote 外の list は対象外', () => {
         const tree: Root = {
             type: 'root',
@@ -567,6 +600,20 @@ describe('assemble', () => {
                 {
                     type: 'blockquote',
                     children: [{ type: 'paragraph', children: [{ type: 'text', value: '[]' }] }],
+                },
+            ],
+        } as any;
+        const out = assembleEvents(tree, sv);
+        expect((out.children?.[0] as any).type).toBe('blockquote');
+    });
+
+    it("'[' だけのときは変換しない（blockquote のまま）", () => {
+        const tree: Root = {
+            type: 'root',
+            children: [
+                {
+                    type: 'blockquote',
+                    children: [{ type: 'paragraph', children: [{ type: 'text', value: '[' }] }],
                 },
             ],
         } as any;

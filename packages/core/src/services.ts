@@ -19,6 +19,7 @@ export interface Policy {
     pmHour: number; // e.g., 15
     allowUrlSchemes: string[];
     tzFallback: string | null;
+    currencyFallback?: string | null;
 }
 
 export interface Services {
@@ -36,6 +37,7 @@ export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile):
         pmHour: policy.pmHour ?? 15,
         allowUrlSchemes: policy.allowUrlSchemes ?? ['http', 'https', 'mailto'],
         tzFallback: policy.tzFallback ?? null,
+        currencyFallback: policy.currencyFallback ?? null,
     };
 
     const tz: TzService = {

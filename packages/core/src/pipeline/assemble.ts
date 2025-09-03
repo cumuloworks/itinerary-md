@@ -1,6 +1,7 @@
 import type { Parent, PhrasingContent, Root } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import type { Position } from 'unist';
+import { normalizePriceLine } from '../itmd/price';
 import type { Services } from '../services';
 import { isValidIanaTimeZone } from '../time/iana';
 import type { ITMDHeadingNode } from '../types';
@@ -72,7 +73,10 @@ export function assembleEvents(root: Root, sv: Services): Root {
         const paraText = mdastToString(firstPara as unknown as any);
         const nlIdx = paraText.indexOf('\n');
         const firstLineText = nlIdx >= 0 ? paraText.slice(0, nlIdx) : paraText;
-        if (!firstLineText.trimStart().startsWith('[')) continue;
+        const firstTrim = firstLineText.trimStart();
+        // ヘッダ候補は先頭に '[' があり、同一行内に対応する ']' がある場合のみ
+        if (!firstTrim.startsWith('[')) continue;
+        if (firstTrim.indexOf(']') < 0) continue;
 
         // 先頭段落全体をヘッダとして解釈（改行を含む）
         const tokens = lexLine(paraText, {}, sv);
@@ -159,6 +163,27 @@ export function assembleEvents(root: Root, sv: Services): Root {
         const combinedPos = bq.position as Position | undefined;
         const built = buildEventNode(header, childrenOut as any, combinedPos, sv);
         (built as any).body = bodySegs.length > 0 ? (bodySegs as any) : null;
+
+        // Normalize price/cost meta entries (no calculation; currency+amount only)
+        const priceEntries: Array<{ key: string; raw: string; price: ReturnType<typeof normalizePriceLine> }> = [];
+        for (const seg of bodySegs) {
+            if ((seg as { kind?: string }).kind !== 'meta') continue;
+            const m = seg as { kind: 'meta'; entries: Array<{ key: string; value: PhrasingContent[] }> };
+            for (const e of m.entries) {
+                if (e.key === 'price' || e.key === 'cost') {
+                    const rawStr = mdastToString({ type: 'paragraph', children: e.value } as unknown as any).trim();
+                    const priceNode = normalizePriceLine(rawStr, sv.policy.currencyFallback ?? undefined);
+                    priceEntries.push({ key: e.key, raw: rawStr, price: priceNode });
+                }
+            }
+        }
+        if (priceEntries.length > 0) {
+            const prevData = ((built as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
+            (built as unknown as { data?: Record<string, unknown> }).data = {
+                ...prevData,
+                itmdPrice: priceEntries,
+            } as Record<string, unknown>;
+        }
         built.warnings = [...(built.warnings ?? []), ...warnings];
         if (currentDateISO) {
             const prev = ((built as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
