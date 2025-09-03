@@ -193,23 +193,6 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             } as ParsedHeader['destination'];
             positions.destination = { at: { start: destStartInline, end: destEndInline } };
         }
-    } else if (sep === null && headRaw.includes(' - ')) {
-        // no sep, but has route-like "A - B" → treat as dashPair and drop title
-        const headIdx = headRaw.lastIndexOf(' - ');
-        const found = inlineFullText.indexOf(headRaw, headStartInline);
-        const absStart = found >= 0 ? found : headStartInline;
-        if (headIdx >= 0) {
-            const fromStart = absStart;
-            const fromEnd = absStart + headIdx;
-            const toStart = absStart + headIdx + 3;
-            const toEnd = absStart + headRaw.length;
-            destination = {
-                kind: 'dashPair',
-                from: sliceInline(fromStart, fromEnd),
-                to: sliceInline(toStart, toEnd),
-            } as ParsedHeader['destination'];
-            positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
-        }
     } else if (sep === null) {
         // from ... to ... 構文（ヘッダ内）
         const found = inlineFullText.indexOf(headRaw, headStartInline);

@@ -25,4 +25,37 @@ describe('lexLine', () => {
         expect(kinds.includes('at')).toBe(true);
         expect(kinds.includes('routeDash')).toBe(true);
     });
+
+    it('from/to を検出（outside のみ）', () => {
+        const line = '[08:00] flight JL from Tokyo to London';
+        const t = lexLine(line, {}, sv);
+        const kinds = t.seps.map((s) => s.kind);
+        expect(kinds.includes('from')).toBe(true);
+        expect(kinds.includes('to')).toBe(true);
+    });
+
+    it('括弧内の from/to は無視', () => {
+        const line = '[08:00] flight JL (from Osaka to Sapporo)';
+        const t = lexLine(line, {}, sv);
+        const kinds = t.seps.map((s) => s.kind);
+        expect(kinds.includes('from')).toBe(false);
+        expect(kinds.includes('to')).toBe(false);
+    });
+
+    it('リンクテキスト内の from/to は無視', () => {
+        const line = '[08:00] activity go [from here to there](https://example.com)';
+        const t = lexLine(line, {}, sv);
+        const kinds = t.seps.map((s) => s.kind);
+        expect(kinds.includes('from')).toBe(false);
+        expect(kinds.includes('to')).toBe(false);
+    });
+
+    it('コードスパン内の from/to は無視', () => {
+        const line = '[08:00] note `from A to B` outside to';
+        const t = lexLine(line, {}, sv);
+        const kinds = t.seps.map((s) => s.kind);
+        expect(kinds.includes('from')).toBe(false);
+        // outside の to は検出される
+        expect(kinds.includes('to')).toBe(true);
+    });
 });
