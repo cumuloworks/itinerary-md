@@ -1,14 +1,17 @@
-import { isValidIanaTimeZone, parseItineraryEvents, remarkItinerary } from '@itinerary-md/core';
+import type { ITMDEventNode as CoreItmdEventNode } from '@itinerary-md/core';
+import { isValidIanaTimeZone, remarkItinerary } from '@itinerary-md/core';
 import matter from 'gray-matter';
+import type { Node as MdastNode, PhrasingContent, Root } from 'mdast';
+import { toString as mdastToString } from 'mdast-util-to-string';
 import React, { type FC, memo } from 'react';
-import ReactMarkdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
-
 import remarkGfm from 'remark-gfm';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
+import type { Position } from 'unist';
+
 import { notifyError } from '../core/errors';
-import { isAllowedHref, isAllowedImageSrc, isExternalHttpUrl } from '../utils/url';
+import { EventBlock } from './itinerary/EventBlock';
 import { Heading } from './itinerary/Heading';
-import { Item } from './itinerary/Item';
 import 'highlight.js/styles/github.css';
 import { DateTime } from 'luxon';
 import Statistics from './itinerary/Statistics';
@@ -17,113 +20,505 @@ interface MarkdownPreviewProps {
     content: string;
     timezone?: string;
     currency?: string;
-    stayMode?: 'default' | 'header';
     title?: string;
-    summary?: {
-        startDate?: string;
-        endDate?: string;
-        numDays?: number;
-    };
-    totalFormatted?: string | null;
-    breakdownFormatted?: { transportation: string; activity: string; stay: string } | null;
     showPast?: boolean;
     scrollToRatio?: number;
     activeLine?: number;
     autoScroll?: boolean;
 }
 
-const omitInternalProps = (props: Record<string, unknown>): Record<string, unknown> => {
-    const clean = { ...(props as Record<string, unknown>) } as Record<string, unknown> & {
-        node?: unknown;
-        sourcePosition?: unknown;
-        index?: unknown;
-        siblingCount?: unknown;
+//
+
+type MdNode = { type?: string; depth?: number; children?: any[]; position?: { start?: { line: number; column?: number }; end?: { line: number; column?: number } } };
+type ItmdEventNode = CoreItmdEventNode;
+
+type TextSegment = { text: string; url?: string };
+
+const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | undefined => {
+    if (!inline || !Array.isArray(inline)) return undefined;
+    const segs: TextSegment[] = [];
+    const walk = (n: any) => {
+        if (!n) return;
+        if (n.type === 'text' && typeof n.value === 'string') segs.push({ text: n.value });
+        else if (n.type === 'link' && typeof n.url === 'string') {
+            const text = (mdastToString as any)(n);
+            segs.push({ text, url: n.url });
+        } else if (Array.isArray(n.children)) n.children.forEach(walk);
     };
-    delete (clean as { node?: unknown }).node;
-    delete (clean as { sourcePosition?: unknown }).sourcePosition;
-    delete (clean as { index?: unknown }).index;
-    delete (clean as { siblingCount?: unknown }).siblingCount;
-    return clean as Record<string, unknown>;
+    inline.forEach(walk);
+    return segs;
 };
 
-const WarnEffect: React.FC<{ message?: string }> = ({ message }) => {
-    React.useEffect(() => {
-        if (message) notifyError(message);
-    }, [message]);
-    return null;
-};
+const segmentsToPlainText = (segments?: TextSegment[]): string | undefined => (Array.isArray(segments) ? segments.map((s) => s.text).join('') : undefined);
 
-type MdAstNode = {
-    position?: { start?: { line?: number }; end?: { line?: number } };
-    data?: { hProperties?: Record<string, unknown> };
-    children?: MdAstNode[];
-};
-
-function remarkPositionData() {
-    return function transformer(tree: unknown) {
-        const visit = (node: MdAstNode | undefined) => {
-            if (node?.position && (node.position.start?.line || node.position.end?.line)) {
-                node.data ||= {};
-                node.data.hProperties ||= {};
-                if (node.position.start?.line && node.data.hProperties['data-itin-line-start'] == null) {
-                    node.data.hProperties['data-itin-line-start'] = String(node.position.start.line);
-                }
-                if (node.position.end?.line && node.data.hProperties['data-itin-line-end'] == null) {
-                    node.data.hProperties['data-itin-line-end'] = String(node.position.end.line);
-                }
-            }
-            const children: MdAstNode[] = Array.isArray(node?.children) ? (node?.children as MdAstNode[]) : [];
-            for (const child of children) visit(child);
-        };
-        visit(tree as MdAstNode);
-        return tree as unknown;
-    };
-}
-
-const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, stayMode = 'default', showPast, title, summary, totalFormatted, breakdownFormatted, activeLine, autoScroll = true }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, showPast, title, activeLine, autoScroll = true }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
 
-    const eventsCountByDate = React.useMemo(() => {
+    const { reactContent, root, parsedFrontmatter } = React.useMemo(() => {
         try {
-            const evts = parseItineraryEvents(content, { timezone, stayMode });
-            const acc: Record<string, number> = {};
-            for (const e of evts) {
-                const skipped = (e as unknown as { skip?: boolean })?.skip === true;
-                if (skipped) continue;
-                if (e.date) acc[e.date] = (acc[e.date] || 0) + 1;
-            }
-            return acc;
-        } catch {
-            return {} as Record<string, number>;
-        }
-    }, [content, timezone, stayMode]);
-
-    const isPastDay = (isoDate: string, zoneOverride?: string): boolean => {
-        const zone = isValidIanaTimeZone(zoneOverride || '') ? (zoneOverride as string) : displayTimezone;
-        const day = DateTime.fromISO(isoDate, { zone }).startOf('day');
-        const today = DateTime.now().setZone(zone).startOf('day');
-        return day < today;
-    };
-
-    const safeSummary = summary ?? {};
-    const safeTotalFormatted = totalFormatted ?? null;
-    const safeBreakdownFormatted = breakdownFormatted ?? null;
-
-    const { parsedFrontmatter, parsedBody } = React.useMemo(() => {
-        try {
-            const parsed = matter(content);
-            return {
-                parsedFrontmatter: parsed.data as Record<string, unknown>,
-                parsedBody: parsed.content || '',
+            const fm = matter(content);
+            const fmTimezone = typeof (fm.data as any)?.timezone === 'string' ? (fm.data as any).timezone : undefined;
+            const fmCurrency = typeof (fm.data as any)?.currency === 'string' ? (fm.data as any).currency : undefined;
+            const tzFallback = isValidIanaTimeZone(fmTimezone || '') ? (fmTimezone as string) : timezone;
+            const mdProcessor = (unified as any)()
+                .use(remarkParse)
+                .use(remarkGfm)
+                .use(remarkItinerary as any, { tzFallback, currencyFallback: (fmCurrency as string) || currency });
+            const mdast = mdProcessor.parse(fm.content || content) as unknown as Root;
+            const transformed = mdProcessor.runSync(mdast) as unknown as Root & { children?: MdNode[] };
+            // frontmatter を gray-matter で除去してから parse しているため、mdast の position は
+            // 元ドキュメントに対してフロントマター分だけ行数がずれる。activeLine（エディタの行番号）に合わせるため
+            // data-itin-line-* へはフロントマターの行数オフセットを加算する。
+            const prefixIndex = typeof fm.content === 'string' ? content.indexOf(fm.content) : -1;
+            const frontmatterOffset = prefixIndex > 0 ? (content.slice(0, prefixIndex).match(/\r?\n/g) || []).length : 0;
+            const dateAtLine = new Map<number, { date: string; tz?: string }>();
+            let currentDate: { date: string; tz?: string } | undefined;
+            let hasPastHeading = false;
+            let hasPastByData = false;
+            // headingはitmdHeadingに置換済み
+            const getLineStart = (n: { position?: { start?: { line?: number } } } | undefined): number | undefined => {
+                const l = n?.position?.start?.line as number | undefined;
+                return typeof l === 'number' ? l + frontmatterOffset : undefined;
             };
-        } catch {
-            return { parsedFrontmatter: {} as Record<string, unknown>, parsedBody: content };
-        }
-    }, [content]);
+            const getLineEnd = (n: { position?: { end?: { line?: number } } } | undefined): number | undefined => {
+                const l = n?.position?.end?.line as number | undefined;
+                return typeof l === 'number' ? l + frontmatterOffset : undefined;
+            };
+            for (const node of (transformed.children || []) as MdNode[]) {
+                if ((node as { type?: string }).type === 'itmdHeading') {
+                    const d = node as unknown as { type: string; dateISO?: string; timezone?: string };
+                    if (d.dateISO) {
+                        currentDate = { date: d.dateISO, tz: d.timezone };
+                        const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+                        const today = DateTime.now().setZone(zone).startOf('day');
+                        const day = DateTime.fromISO(d.dateISO, { zone }).startOf('day');
+                        if (day < today) hasPastHeading = true;
+                    }
+                    continue;
+                }
+                if ((node as { type?: string })?.type === 'itmdEvent') {
+                    const line = getLineStart(node as unknown as { position?: Position });
+                    if (line && currentDate) dateAtLine.set(line, currentDate);
+                }
+                // data.itmdDate があればそれで過去判定
+                const itmdDate = ((node as unknown as { data?: { itmdDate?: { dateISO?: string; timezone?: string } } }).data || {}).itmdDate as { dateISO?: string; timezone?: string } | undefined;
+                if (itmdDate?.dateISO) {
+                    const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    const today = DateTime.now().setZone(zone).startOf('day');
+                    const day = DateTime.fromISO(itmdDate.dateISO, { zone }).startOf('day');
+                    if (day < today) hasPastByData = true;
+                }
+            }
 
-    const frontmatterTz = typeof parsedFrontmatter?.timezone === 'string' ? (parsedFrontmatter.timezone as string) : undefined;
+            // Inline renderer for CommonMark phrasing nodes
+            const renderInline = (nodes: any[] | undefined): React.ReactNode => {
+                if (!nodes || nodes.length === 0) return null;
+                const out: React.ReactNode[] = [];
+                const walk = (n: any, key: string): React.ReactNode => {
+                    if (!n) return null;
+                    switch (n.type) {
+                        case 'text':
+                            return n.value as string;
+                        case 'emphasis':
+                            return (
+                                <em key={key} className="italic text-gray-700">
+                                    {renderInline(n.children)}
+                                </em>
+                            );
+                        case 'strong':
+                            return (
+                                <strong key={key} className="font-semibold text-gray-900">
+                                    {renderInline(n.children)}
+                                </strong>
+                            );
+                        case 'delete':
+                            return <del key={key}>{renderInline(n.children)}</del>;
+                        case 'inlineCode':
+                            return (
+                                <code key={key} className="bg-gray-100 px-1 py-0.5 rounded text-sm">
+                                    {typeof n.value === 'string' ? n.value : ''}
+                                </code>
+                            );
+                        case 'link': {
+                            const href = typeof n.url === 'string' ? n.url : undefined;
+                            if (!href) return renderInline(n.children);
+                            return (
+                                <a key={key} href={href} target="_blank" rel="noopener noreferrer" className="underline text-inherit">
+                                    {renderInline(n.children)}
+                                </a>
+                            );
+                        }
+                        case 'break':
+                            return <br key={key} />;
+                        default:
+                            if (Array.isArray(n.children)) return <React.Fragment key={key}>{renderInline(n.children)}</React.Fragment>;
+                            return null;
+                    }
+                };
+                nodes.forEach((n, idx) => {
+                    out.push(walk(n, `in-${idx}`));
+                });
+                return out;
+            };
+
+            // Manual build React elements from mdast（カスタムノード優先、非カスタムも描画）
+            const els: React.ReactNode[] = [];
+            const safeToString = (n: unknown): string => {
+                try {
+                    return mdastToString(n as MdastNode);
+                } catch {
+                    return '';
+                }
+            };
+
+            const renderBlock = (node: MdNode, idx: number): React.ReactNode => {
+                if (!node) return null;
+                const type = (node as { type?: string }).type;
+                const lineStart = getLineStart(node);
+                const lineEnd = getLineEnd(node);
+
+                if (type === 'itmdHeading') {
+                    const d = node as unknown as { dateISO?: string; timezone?: string };
+                    const date = d.dateISO;
+                    const tz = d.timezone;
+                    if (date) {
+                        if (showPastEffective) {
+                            return (
+                                <div key={`h-${lineStart ?? Math.random()}`} className="contents" data-itin-line-start={lineStart ? String(lineStart) : undefined} data-itin-line-end={lineEnd ? String(lineEnd) : undefined}>
+                                    <Heading date={date} timezone={tz} />
+                                </div>
+                            );
+                        }
+                    }
+                    return null;
+                }
+
+                if (type === 'itmdEvent') {
+                    const ev = node as unknown as ItmdEventNode;
+                    const dateInfo = lineStart ? dateAtLine.get(lineStart) : undefined;
+                    const nameSegmentsRaw = inlineToSegments(ev.title as PhrasingContent[] | null | undefined);
+                    const nameSegments = Array.isArray(nameSegmentsRaw) && nameSegmentsRaw.length > 0 ? nameSegmentsRaw : undefined;
+                    const nameText = (() => {
+                        try {
+                            if (Array.isArray(ev.title)) {
+                                const pseudo = { type: 'paragraph', children: ev.title } as unknown as MdastNode;
+                                const s = mdastToString(pseudo);
+                                if (typeof s === 'string' && s.trim()) return s.trim();
+                            }
+                        } catch {}
+                        const plain = segmentsToPlainText(nameSegments);
+                        return plain?.trim() || '';
+                    })();
+                    const baseType = (ev as { baseType?: 'transportation' | 'stay' | 'activity' }).baseType ?? 'activity';
+                    const t = ev.eventType as string;
+                    const depSegs = ev.destination && (ev.destination as any).from ? inlineToSegments((ev.destination as any).from) : undefined;
+                    const arrSegs = ev.destination && ((ev.destination as any).to || (ev.destination as any).at) ? inlineToSegments(((ev.destination as any).to ?? (ev.destination as any).at) as PhrasingContent[]) : undefined;
+                    const metadata: Record<string, string> = {};
+                    // body からセグメント生成: inline はそのまま、meta は Record<string,string> 化（リンクは segments に埋める）
+                    const bodySegments = (() => {
+                        const body = (ev as any).body as Array<any> | undefined;
+                        if (!Array.isArray(body)) return undefined;
+                        const segs: Array<
+                            | { kind: 'inline'; segments: Array<{ text: string; url?: string }> }
+                            | { kind: 'meta'; entries: Array<{ key: string; segments: Array<{ text: string; url?: string }> }> }
+                            | { kind: 'list'; items: Array<Array<{ text: string; url?: string }>>; ordered?: boolean; start?: number | null }
+                        > = [];
+                        for (const s of body) {
+                            if (!s || typeof s !== 'object') continue;
+                            if (s.kind === 'inline') {
+                                const inline = Array.isArray(s.content) ? (s.content as PhrasingContent[]) : [];
+                                const seg = inlineToSegments(inline) || [];
+                                if (seg.length > 0) segs.push({ kind: 'inline', segments: seg });
+                            } else if (s.kind === 'meta') {
+                                const m = s.entries as Array<{ key: string; value: PhrasingContent[] }> | undefined;
+                                const entries: Array<{ key: string; segments: Array<{ text: string; url?: string }> }> = [];
+                                for (const e of m || []) {
+                                    const seg = inlineToSegments(e.value) || [];
+                                    if (e.key) entries.push({ key: e.key, segments: seg });
+                                }
+                                if (entries.length > 0) segs.push({ kind: 'meta', entries });
+                            } else if (s.kind === 'list') {
+                                const items = Array.isArray(s.items) ? (s.items as PhrasingContent[][]) : [];
+                                const listSegs = items.map((inline) => inlineToSegments(inline) || []);
+                                const ordered = !!(s as any).ordered;
+                                const start = typeof (s as any).start === 'number' ? ((s as any).start as number) : undefined;
+                                if (listSegs.length > 0) segs.push({ kind: 'list', items: listSegs, ordered, start });
+                            }
+                        }
+                        return segs.length > 0 ? segs : undefined;
+                    })();
+                    const timeKind = ev.time?.kind as 'marker' | 'point' | 'range' | 'none' | undefined;
+                    const startISO = timeKind === 'point' || timeKind === 'range' ? ((ev.time as any)?.startISO as string | undefined) : undefined;
+                    const endISO = timeKind === 'range' ? ((ev.time as any)?.endISO as string | undefined) : undefined;
+                    const marker = timeKind === 'marker' ? ((ev.time as any)?.marker as 'am' | 'pm' | undefined) : undefined;
+                    const itmdPrice = ((ev as unknown as { data?: { itmdPrice?: Array<{ key: string; raw: string; price: { tokens?: Array<any> } }> } }).data || {}).itmdPrice as
+                        | Array<{ key: string; raw: string; price: { tokens?: Array<any> } }>
+                        | undefined;
+                    const priceInfos: Array<{ key: string; currency: string; amount: number }> | undefined = (() => {
+                        if (!Array.isArray(itmdPrice)) return undefined;
+                        const out: Array<{ key: string; currency: string; amount: number }> = [];
+                        for (const p of itmdPrice) {
+                            const tok = Array.isArray(p.price?.tokens) ? p.price.tokens[0] : undefined;
+                            if (!tok || tok.kind !== 'money') continue;
+                            const cur = String(tok.normalized?.currency || tok.currency || '').toUpperCase();
+                            const amtStr = String(tok.normalized?.amount || tok.amount || '');
+                            const amt = Number(amtStr);
+                            if (!cur || !Number.isFinite(amt)) continue;
+                            out.push({ key: p.key, currency: cur, amount: amt });
+                        }
+                        return out.length > 0 ? out : undefined;
+                    })();
+
+                    const eventData = {
+                        baseType,
+                        type: t,
+                        name: baseType !== 'stay' ? nameText : undefined,
+                        stayName: baseType === 'stay' ? nameText : undefined,
+                        departure: depSegs ? segmentsToPlainText(depSegs) || undefined : undefined,
+                        arrival: arrSegs ? segmentsToPlainText(arrSegs) || undefined : undefined,
+                        location: baseType !== 'transportation' ? segmentsToPlainText(arrSegs) || undefined : undefined,
+                        metadata,
+                    } as any;
+                    {
+                        const isPast = (() => {
+                            const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+                            if (dateInfo?.date) {
+                                const day = DateTime.fromISO(dateInfo.date, { zone }).startOf('day');
+                                const today = DateTime.now().setZone(zone).startOf('day');
+                                return day < today;
+                            }
+                            return false;
+                        })();
+
+                        if (!showPastEffective && isPast) {
+                            // skip rendering when past and showPast=false
+                            return null;
+                        }
+                        const dateStrForDisplay = (dateInfo?.date as string | undefined) ?? (startISO ? DateTime.fromISO(startISO).toISODate() || undefined : undefined);
+                        return (
+                            <div key={`e-${lineStart ?? Math.random()}`} className="contents" data-itin-line-start={lineStart ? String(lineStart) : undefined} data-itin-line-end={lineEnd ? String(lineEnd) : undefined}>
+                                <EventBlock
+                                    eventData={eventData}
+                                    dateStr={dateStrForDisplay}
+                                    timezone={displayTimezone}
+                                    currency={currency}
+                                    priceInfos={priceInfos}
+                                    nameSegments={nameSegments}
+                                    departureSegments={depSegs}
+                                    arrivalSegments={arrSegs}
+                                    startISO={startISO ?? null}
+                                    endISO={endISO ?? null}
+                                    marker={marker ?? null}
+                                    bodySegments={bodySegments}
+                                />
+                            </div>
+                        );
+                    }
+                }
+
+                if (type === 'heading') {
+                    const depth = (node as { depth?: number }).depth || 1;
+                    const text = safeToString(node).trim();
+                    if (!text) return null;
+                    const dataProps: any = {
+                        'data-itin-line-start': lineStart ? String(lineStart) : undefined,
+                        'data-itin-line-end': lineEnd ? String(lineEnd) : undefined,
+                    };
+                    const hClass = (() => {
+                        switch (depth) {
+                            case 1:
+                                return 'text-4xl font-bold text-gray-900 mb-6 mt-6 ml-0';
+                            case 2:
+                                return 'text-2xl font-semibold text-blue-700 border-b-2 border-blue-200 pb-3 mt-8 mb-6 ml-0';
+                            case 3:
+                                return 'text-lg font-semibold text-gray-800 mb-3 mt-6 ml-0';
+                            case 4:
+                                return 'text-base font-semibold text-gray-800 mb-2 mt-4 ml-0';
+                            case 5:
+                                return 'text-sm font-semibold text-gray-800 mb-2 mt-4 ml-0';
+                            case 6:
+                            default:
+                                return 'text-xs font-semibold text-gray-800 mb-2 mt-4 ml-0';
+                        }
+                    })();
+                    switch (depth) {
+                        case 1:
+                            return (
+                                <h1 key={`h-${lineStart ?? idx}`} className={hClass} {...dataProps}>
+                                    {text}
+                                </h1>
+                            );
+                        case 2:
+                            return (
+                                <h2 key={`h-${lineStart ?? idx}`} className={hClass} {...dataProps}>
+                                    {text}
+                                </h2>
+                            );
+                        case 3:
+                            return (
+                                <h3 key={`h-${lineStart ?? idx}`} className={hClass} {...dataProps}>
+                                    {text}
+                                </h3>
+                            );
+                        case 4:
+                            return (
+                                <h4 key={`h-${lineStart ?? idx}`} className={hClass} {...dataProps}>
+                                    {text}
+                                </h4>
+                            );
+                        case 5:
+                            return (
+                                <h5 key={`h-${lineStart ?? idx}`} className={hClass} {...dataProps}>
+                                    {text}
+                                </h5>
+                            );
+                        case 6:
+                        default:
+                            return (
+                                <h6 key={`h-${lineStart ?? idx}`} className={hClass} {...dataProps}>
+                                    {text}
+                                </h6>
+                            );
+                    }
+                }
+
+                if (type === 'paragraph') {
+                    return (
+                        <p
+                            key={`p-${lineStart ?? idx}`}
+                            className="mb-4 leading-relaxed text-gray-800 text-base ml-24"
+                            data-itin-line-start={lineStart ? String(lineStart) : undefined}
+                            data-itin-line-end={lineEnd ? String(lineEnd) : undefined}
+                        >
+                            {renderInline(((node as any).children as any[]) || [])}
+                        </p>
+                    );
+                }
+
+                if (type === 'list') {
+                    const ordered = !!(node as any).ordered;
+                    const start = (node as any).start as number | undefined;
+                    const items = Array.isArray((node as any).children) ? ((node as any).children as any[]) : [];
+                    const listDataProps: any = {
+                        'data-itin-line-start': lineStart ? String(lineStart) : undefined,
+                        'data-itin-line-end': lineEnd ? String(lineEnd) : undefined,
+                    };
+                    const listProps: any = { ...listDataProps };
+                    if (ordered && typeof start === 'number') listProps.start = start;
+                    const children = items.map((li, i) => {
+                        const liStart = getLineStart(li);
+                        const liEnd = getLineEnd(li);
+                        const isTask = typeof li.checked === 'boolean';
+                        const isChecked = !!li.checked;
+                        const checkbox = isTask ? <input type="checkbox" checked={isChecked} readOnly className="absolute -left-6 top-1 w-4 h-4 rounded border-2 border-gray-400 bg-white accent-blue-600" /> : null;
+                        // listItem children can be paragraph or other blocks
+                        const liChildren = Array.isArray(li.children) ? li.children : [];
+                        const liClass = `mb-2 leading-relaxed text-gray-800 ${isTask ? 'task-list-item list-none relative' : ''}`;
+                        return (
+                            <li key={`li-${liStart ?? i}`} className={liClass} data-itin-line-start={liStart ? String(liStart) : undefined} data-itin-line-end={liEnd ? String(liEnd) : undefined}>
+                                {checkbox}
+                                {liChildren.map((c: any, ci: number) => {
+                                    const cStart = getLineStart(c);
+                                    const key = `lic-${cStart ?? ci}`;
+                                    if (c.type === 'paragraph')
+                                        return (
+                                            <span key={key} className={isTask && isChecked ? 'text-gray-500 line-through' : undefined}>
+                                                {renderInline(c.children || [])}
+                                            </span>
+                                        );
+                                    // For nested blocks, renderBlock adds its own keys; wrap to provide a stable key at this level
+                                    return <React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>;
+                                })}
+                            </li>
+                        );
+                    });
+                    return ordered ? (
+                        <ol key={`list-${lineStart ?? idx}`} className="mb-6 space-y-2 ml-24 list-decimal" {...listProps}>
+                            {children}
+                        </ol>
+                    ) : (
+                        <ul key={`list-${lineStart ?? idx}`} className="mb-6 space-y-2 ml-24 list-disc marker:text-blue-600 marker:font-bold marker:text-lg" {...listProps}>
+                            {children}
+                        </ul>
+                    );
+                }
+
+                if (type === 'blockquote') {
+                    const children = Array.isArray((node as any).children) ? ((node as any).children as any[]) : [];
+                    return (
+                        <blockquote
+                            key={`bq-${lineStart ?? idx}`}
+                            className="my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-24"
+                            data-itin-line-start={lineStart ? String(lineStart) : undefined}
+                            data-itin-line-end={lineEnd ? String(lineEnd) : undefined}
+                        >
+                            {children.map((c: any, ci: number) => {
+                                const cStart = getLineStart(c);
+                                const key = `bqc-${cStart ?? ci}`;
+                                if (c.type === 'paragraph') return <p key={key}>{renderInline(c.children || [])}</p>;
+                                return <React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>;
+                            })}
+                        </blockquote>
+                    );
+                }
+
+                if (type === 'code') {
+                    const lang = typeof (node as any).lang === 'string' ? (node as any).lang : undefined;
+                    const value = typeof (node as any).value === 'string' ? (node as any).value : '';
+                    return (
+                        <pre
+                            key={`pre-${lineStart ?? idx}`}
+                            className="bg-gray-50 border border-gray-200 rounded-md overflow-x-auto my-4 ml-20"
+                            data-itin-line-start={lineStart ? String(lineStart) : undefined}
+                            data-itin-line-end={lineEnd ? String(lineEnd) : undefined}
+                        >
+                            <code className={lang ? `language-${lang}` : undefined}>{value}</code>
+                        </pre>
+                    );
+                }
+
+                if (type === 'thematicBreak') {
+                    return <hr key={`hr-${lineStart ?? idx}`} className="my-8 border-gray-300" data-itin-line-start={lineStart ? String(lineStart) : undefined} data-itin-line-end={lineEnd ? String(lineEnd) : undefined} />;
+                }
+
+                // Fallback: ignore unknown block types
+                return null;
+            };
+
+            for (const [idx, node] of ((transformed.children || []) as MdNode[]).entries()) {
+                const rendered = renderBlock(node, idx);
+                if (rendered) els.push(rendered);
+            }
+            const hasHiddenPast = !showPastEffective && (hasPastHeading || hasPastByData);
+            const topBanner = hasHiddenPast ? (
+                <div className="flex items-center text-gray-500 text-xs mt-6 mb-4" data-itin-line-start={undefined} data-itin-line-end={undefined}>
+                    <span className="flex-1 border-t border-gray-200" />
+                    <span className="px-2">Past events are hidden</span>
+                    <span className="flex-1 border-t border-gray-200" />
+                </div>
+            ) : null;
+            return {
+                reactContent: (
+                    <>
+                        {topBanner}
+                        {els}
+                    </>
+                ),
+                root: transformed,
+                parsedFrontmatter: (fm.data || {}) as Record<string, unknown>,
+            } as any;
+        } catch {
+            return { reactContent: null as React.ReactNode, root: null, parsedFrontmatter: {} as Record<string, unknown> } as any;
+        }
+    }, [content, timezone, currency, showPastEffective, displayTimezone]);
+
+    // legacy props no longer used; Statistics computes from mdRoot and frontmatter
+
+    const safeParsedFrontmatter = parsedFrontmatter as Record<string, unknown>;
+
+    const frontmatterTz = typeof safeParsedFrontmatter?.timezone === 'string' ? (safeParsedFrontmatter.timezone as string) : undefined;
     React.useEffect(() => {
         if (frontmatterTz && !isValidIanaTimeZone(frontmatterTz)) {
             notifyError(`Frontmatter timezone "${frontmatterTz}" is invalid. Using fallback.`);
@@ -199,206 +594,9 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
 
     return (
         <div ref={containerRef} className="markdown-preview h-full px-8 py-4 bg-white overflow-auto">
-            {title && <h1>{title}</h1>}
-            <Statistics summary={safeSummary} totalFormatted={safeTotalFormatted} breakdownFormatted={safeBreakdownFormatted} />
-            <ReactMarkdown
-                remarkPlugins={[[remarkItinerary, { timezone, stayMode, frontmatter: parsedFrontmatter, debug: true }], remarkGfm, remarkPositionData]}
-                rehypePlugins={[rehypeHighlight]}
-                components={{
-                    a: (props: unknown) => {
-                        const { href, children, ...rest } = (props as { href?: string; children?: React.ReactNode } & Record<string, unknown>) || {};
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        if (!isAllowedHref(href)) {
-                            return (
-                                <span {...(cleanRest as React.HTMLAttributes<HTMLSpanElement>)} className="text-gray-500 underline decoration-dotted cursor-not-allowed" aria-disabled="true">
-                                    {children}
-                                </span>
-                            );
-                        }
-                        const external = typeof href === 'string' && isExternalHttpUrl(href);
-                        const rel = external ? 'noopener noreferrer' : undefined;
-                        const target = external ? '_blank' : undefined;
-                        return (
-                            <a {...(cleanRest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} href={href} target={target} rel={rel} className="underline">
-                                {children}
-                            </a>
-                        );
-                    },
-                    img: (props: unknown) => {
-                        const { src, alt, ...rest } = (props as { src?: string; alt?: string } & Record<string, unknown>) || {};
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        if (!isAllowedImageSrc(src)) {
-                            return <span {...(cleanRest as React.HTMLAttributes<HTMLSpanElement>)} aria-hidden="true" />;
-                        }
-                        return <img {...(cleanRest as React.ImgHTMLAttributes<HTMLImageElement>)} src={src} alt={typeof alt === 'string' ? alt : ''} loading="lazy" referrerPolicy="no-referrer" />;
-                    },
-                    h2: (props: unknown) => {
-                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date'?: string }) || {};
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        const itinDateStr = (rest as { 'data-itin-date'?: string })['data-itin-date'];
-                        let itmdHeading: { date: string; timezone?: string; prevStayName?: string; warnInvalidTimezone?: string } | undefined;
-                        if (itinDateStr) {
-                            try {
-                                itmdHeading = JSON.parse(itinDateStr);
-                            } catch (e) {}
-                        }
-                        if (itmdHeading && typeof itmdHeading.date === 'string') {
-                            if (!showPastEffective && isPastDay(itmdHeading.date, itmdHeading.timezone)) {
-                                const cnt = eventsCountByDate[itmdHeading.date] || 0;
-                                return (
-                                    <div className="flex items-center text-gray-500 text-xs mt-6 mb-4" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
-                                        <span className="flex-1 border-t border-gray-200" />
-                                        <span className="px-2">{cnt} past events hidden</span>
-                                        <span className="flex-1 border-t border-gray-200" />
-                                    </div>
-                                );
-                            }
-                            return (
-                                <div className="contents" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
-                                    <WarnEffect message={itmdHeading.warnInvalidTimezone ? `Heading timezone "${itmdHeading.warnInvalidTimezone}" is invalid. Using fallback.` : undefined} />
-                                    <Heading date={itmdHeading.date} timezone={itmdHeading.timezone} prevStayName={stayMode === 'header' ? itmdHeading.prevStayName : undefined} />
-                                </div>
-                            );
-                        }
-                        return (
-                            <h2 {...(cleanRest as React.HTMLAttributes<HTMLHeadingElement>)} className="text-2xl font-semibold text-blue-700 border-b-2 border-blue-200 pb-3 mt-8 mb-6">
-                                {children}
-                            </h2>
-                        );
-                    },
-                    p: (props: unknown) => {
-                        type ParagraphRendererProps = {
-                            children?: React.ReactNode;
-                            node?: unknown;
-                            'data-itmd'?: string;
-                            'data-itmd-skip'?: string;
-                            'data-itin-date-str'?: string;
-                            'data-itin-date-tz'?: string;
-                        } & Record<string, unknown>;
-                        const { children, node, ...rest } = (props as ParagraphRendererProps) || ({} as ParagraphRendererProps);
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-
-                        const itmdJsonStr = (rest as ParagraphRendererProps)['data-itmd'];
-                        const skipFlag = (rest as ParagraphRendererProps)['data-itmd-skip'] === 'true';
-                        const dateStr = (rest as ParagraphRendererProps)['data-itin-date-str'];
-                        const dateTz = (rest as ParagraphRendererProps)['data-itin-date-tz'];
-
-                        let itmdObj:
-                            | {
-                                  eventData?: Parameters<typeof Item>[0]['eventData'];
-                                  dateStr?: string;
-                                  dateTz?: string;
-                                  nameSegments?: Array<{ text: string; url?: string }>;
-                                  departureSegments?: Array<{ text: string; url?: string }>;
-                                  arrivalSegments?: Array<{ text: string; url?: string }>;
-                                  extraLinks?: Array<{ label: string; url: string }>;
-                                  warnEventTz?: string[];
-                              }
-                            | undefined;
-
-                        if (itmdJsonStr) {
-                            try {
-                                itmdObj = JSON.parse(itmdJsonStr);
-                            } catch (e) {}
-                        }
-
-                        const effectiveDateStr = itmdObj?.dateStr || dateStr;
-                        const effectiveDateTz = itmdObj?.dateTz || dateTz;
-
-                        if (skipFlag) return null;
-                        if (!showPastEffective && effectiveDateStr && isPastDay(effectiveDateStr, effectiveDateTz)) return null;
-                        if (itmdObj?.eventData) {
-                            const warnMessage = (() => {
-                                const arr = itmdObj?.warnEventTz;
-                                if (Array.isArray(arr) && arr.length > 0) {
-                                    return `Event timezone(s) invalid: ${arr.join(', ')}. Using fallback.`;
-                                }
-                                return undefined;
-                            })();
-
-                            const eventData = itmdObj.eventData as Parameters<typeof Item>[0]['eventData'];
-                            return (
-                                <div className="contents" {...(cleanRest as React.HTMLAttributes<HTMLDivElement>)}>
-                                    <WarnEffect message={warnMessage} />
-                                    <Item
-                                        eventData={eventData}
-                                        dateStr={effectiveDateStr}
-                                        timezone={displayTimezone}
-                                        currency={currency}
-                                        nameSegments={itmdObj.nameSegments}
-                                        departureSegments={itmdObj.departureSegments}
-                                        arrivalSegments={itmdObj.arrivalSegments}
-                                        extraLinks={itmdObj.extraLinks}
-                                    />
-                                </div>
-                            );
-                        }
-                        return (
-                            <p {...(cleanRest as React.HTMLAttributes<HTMLParagraphElement>)} className="mb-4 leading-relaxed text-gray-800 ml-20">
-                                {children}
-                            </p>
-                        );
-                    },
-                    ul: (props: unknown) => {
-                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
-                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
-                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
-                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        return <ul {...(cleanRest as React.HTMLAttributes<HTMLUListElement>)}>{children}</ul>;
-                    },
-                    ol: (props: unknown) => {
-                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
-                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
-                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
-                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        return <ol {...(cleanRest as React.HTMLAttributes<HTMLOListElement>)}>{children}</ol>;
-                    },
-                    li: (props: unknown) => {
-                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
-                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
-                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
-                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        return <li {...(cleanRest as React.HTMLAttributes<HTMLLIElement>)}>{children}</li>;
-                    },
-                    blockquote: (props: unknown) => {
-                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
-                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
-                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
-                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        return <blockquote {...(cleanRest as React.HTMLAttributes<HTMLQuoteElement>)}>{children}</blockquote>;
-                    },
-                    table: (props: unknown) => {
-                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
-                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
-                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
-                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        return <table {...(cleanRest as React.HTMLAttributes<HTMLTableElement>)}>{children}</table>;
-                    },
-                    pre: (props: unknown) => {
-                        const { children, node, ...rest } = (props as { children?: React.ReactNode; node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
-                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
-                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
-                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        return <pre {...(cleanRest as React.HTMLAttributes<HTMLPreElement>)}>{children}</pre>;
-                    },
-                    hr: (props: unknown) => {
-                        const { node, ...rest } = (props as { node?: unknown; 'data-itin-date-str'?: string; 'data-itin-date-tz'?: string } & Record<string, unknown>) || {};
-                        const dateStr = (rest as { 'data-itin-date-str'?: string })['data-itin-date-str'];
-                        const dateTz = (rest as { 'data-itin-date-tz'?: string })['data-itin-date-tz'];
-                        if (!showPastEffective && dateStr && isPastDay(dateStr, dateTz)) return null;
-                        const cleanRest = omitInternalProps(rest as Record<string, unknown>);
-                        return <hr {...(cleanRest as React.HTMLAttributes<HTMLHRElement>)} />;
-                    },
-                }}
-            >
-                {parsedBody}
-            </ReactMarkdown>
+            {title && <h1 className="text-4xl font-bold text-gray-900 mb-6 mt-6 ml-0">{title}</h1>}
+            <Statistics root={root as any} frontmatter={safeParsedFrontmatter} timezone={timezone} currency={currency} />
+            {reactContent}
         </div>
     );
 };

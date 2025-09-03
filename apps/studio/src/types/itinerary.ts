@@ -1,11 +1,9 @@
 export type ViewMode = 'split' | 'editor' | 'preview';
-export type StayMode = 'default' | 'header';
 
 export type TopbarState = {
     timezone: string;
     currency: string;
     viewMode: ViewMode;
-    stayMode: StayMode;
     showPast?: boolean;
     autoScroll?: boolean;
 };
@@ -14,7 +12,6 @@ export type QueryParams = {
     tz?: string;
     cur?: string;
     view?: ViewMode;
-    stay?: StayMode;
     past?: '1' | '0';
     scroll?: '1' | '0';
 };

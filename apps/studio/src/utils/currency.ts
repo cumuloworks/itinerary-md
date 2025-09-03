@@ -93,7 +93,8 @@ const SYMBOL_TO_CODE: Record<string, CurrencyCode> = {
 export const parseAmountWithCurrency = (value: string, fallbackCurrency?: CurrencyCode): { amount: number | null; currency?: CurrencyCode; raw: string } => {
     const raw = value.trim();
     if (!raw) return { amount: null, currency: fallbackCurrency, raw: value };
-    const CODE_AT_END = /^([+-]?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[+-]?[0-9]+(?:\.[0-9]+)?)\s*([A-Za-z]{3})$/;
+    // Allow optional trailing qualifiers (e.g., "/night", "per person") after currency code
+    const CODE_AT_END = /^([+-]?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[+-]?[0-9]+(?:\.[0-9]+)?)\s*([A-Za-z]{3})\b/;
     const codeAtEnd = raw.match(CODE_AT_END);
     if (codeAtEnd) {
         const amt = Number(codeAtEnd[1].replace(/,/g, ''));
@@ -104,7 +105,8 @@ export const parseAmountWithCurrency = (value: string, fallbackCurrency?: Curren
             raw: value,
         };
     }
-    const CODE_AT_START = /^([A-Za-z]{3})\s*([+-]?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[+-]?[0-9]+(?:\.[0-9]+)?)$/;
+    // Allow optional trailing qualifiers after the amount (e.g., "EUR 320/night")
+    const CODE_AT_START = /^([A-Za-z]{3})\s*([+-]?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[+-]?[0-9]+(?:\.[0-9]+)?)\b/;
     const codeAtStart = raw.match(CODE_AT_START);
     if (codeAtStart) {
         const amt = Number(codeAtStart[2].replace(/,/g, ''));
@@ -115,7 +117,8 @@ export const parseAmountWithCurrency = (value: string, fallbackCurrency?: Curren
             raw: value,
         };
     }
-    const SYMBOL_AND_NUM = /^([€¥£₩₫฿₱₽₺$]|A\$|C\$|HK\$|S\$)?\s*([+-]?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[+-]?[0-9]+(?:\.[0-9]+)?)/;
+    // Prefer matching long plain-digit sequences first (e.g., 11000) to avoid capturing only the first 1-3 digits
+    const SYMBOL_AND_NUM = /^([€¥£₩₫฿₱₽₺$]|A\$|C\$|HK\$|S\$)?\s*([+-]?[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)/;
     const symbolMatch = raw.match(SYMBOL_AND_NUM);
     if (symbolMatch) {
         const symbol = symbolMatch[1];

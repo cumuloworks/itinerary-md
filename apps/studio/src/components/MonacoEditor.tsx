@@ -29,7 +29,7 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
         <div className="h-full">
             <Editor
                 height="100%"
-                language="markdown"
+                language="mdx"
                 value={value}
                 onChange={handleEditorChange}
                 theme="vs-light"
@@ -37,17 +37,17 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
                     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
                         onSave();
                     });
-                                        const pos = editor.getPosition();
+                    const pos = editor.getPosition();
                     if (pos?.lineNumber) {
                         cursorLineChangeRef.current?.(pos.lineNumber);
                     }
-                                        editor.onDidChangeCursorPosition((e) => {
+                    editor.onDidChangeCursorPosition((e) => {
                         const ln = e.position?.lineNumber;
                         if (typeof ln === 'number') {
                             cursorLineChangeRef.current?.(ln);
                         }
                     });
-                                        editor.onDidChangeModelContent((e) => {
+                    editor.onDidChangeModelContent((e) => {
                         const changed = new Set<number>();
                         for (const ch of e.changes) {
                             const start = ch.range.startLineNumber;
@@ -63,6 +63,7 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
                 options={{
                     minimap: { enabled: false },
                     fontSize: 14,
+                    fontFamily: 'DM Mono, ui-monospace, monospace',
                     lineNumbers: 'on',
                     wordWrap: 'on',
                     automaticLayout: true,
