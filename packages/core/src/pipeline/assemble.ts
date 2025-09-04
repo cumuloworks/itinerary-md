@@ -9,7 +9,7 @@ import type { ITMDHeadingNode } from '../types';
 import { buildEventNode } from './build';
 import { lexLine } from './lex';
 import { normalizeHeader } from './normalize';
-import { parseHeader } from './parse';
+import { parseHeader, parseTimeSpan } from './parse';
 import { validateHeader } from './validate';
 
 export function assembleEvents(root: Root, sv: Services): Root {
@@ -83,9 +83,9 @@ export function assembleEvents(root: Root, sv: Services): Root {
         const nlIdx = paraText.indexOf('\n');
         const firstLineText = nlIdx >= 0 ? paraText.slice(0, nlIdx) : paraText;
         const firstTrim = firstLineText.trimStart();
-        // ヘッダ候補は先頭に '[' があり、同一行内に対応する ']' がある場合のみ
-        if (!firstTrim.startsWith('[')) continue;
-        if (firstTrim.indexOf(']') < 0) continue;
+        // 中央集約: itmd 変換のゲート判定（空/マーカー/時刻のみ許容）
+        const gate = parseTimeSpan(firstTrim);
+        if (gate.consumed === 0) continue;
 
         // 先頭段落全体をヘッダとして解釈（改行を含む）
         const tokens = lexLine(paraText, {}, sv);

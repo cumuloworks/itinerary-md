@@ -35,23 +35,27 @@ function parseTimeToken(raw: string): { hh: number | null; mm: number | null; tz
 
 type TimeSpan = ParsedHeader['time'];
 
-function parseTimeSpan(line: string): { time: TimeSpan; consumed: number } | { time: null; consumed: 0 } {
+export function parseTimeSpan(line: string): { time: TimeSpan; consumed: number } | { time: null; consumed: 0 } {
     const m = line.match(/^\[(.*?)\](?:\s*-\s*\[(.*?)\])?\s*/);
     if (!m) return { time: null, consumed: 0 } as const;
-    const startRaw = m[1] ?? '';
-    const endRaw = m[2] ?? '';
+    const startRaw = (m[1] ?? '').trim();
+    const endRaw = (m[2] ?? '').trim();
+    // 空ブラケットは none として許容
+    if (startRaw === '') return { time: { kind: 'none' }, consumed: m[0].length } as const;
+    // マーカー（am/pm）
     const marker = startRaw === 'am' || startRaw === 'pm' ? (startRaw as 'am' | 'pm') : null;
-    if (marker) return { time: { kind: 'marker', marker }, consumed: m[0].length };
+    if (marker) return { time: { kind: 'marker', marker }, consumed: m[0].length } as const;
+    // 時刻トークン
     const start = parseTimeToken(startRaw);
     const end = endRaw ? parseTimeToken(endRaw) : null;
     if (start && end)
         return {
             time: { kind: 'range', start: { hh: start.hh!, mm: start.mm!, tz: start.tz ?? null, dayOffset: start.dayOffset ?? null }, end: { hh: end.hh!, mm: end.mm!, tz: end.tz ?? null, dayOffset: end.dayOffset ?? null } },
             consumed: m[0].length,
-        };
-    if (start && !end) return { time: { kind: 'point', start: { hh: start.hh!, mm: start.mm!, tz: start.tz ?? null, dayOffset: start.dayOffset ?? null } }, consumed: m[0].length };
-    // []（時間なし）
-    return { time: { kind: 'none' }, consumed: m[0].length };
+        } as const;
+    if (start && !end) return { time: { kind: 'point', start: { hh: start.hh!, mm: start.mm!, tz: start.tz ?? null, dayOffset: start.dayOffset ?? null } }, consumed: m[0].length } as const;
+    // 無効な内容（例: [!NOTE]）は時間としては未検出扱い
+    return { time: null, consumed: 0 } as const;
 }
 
 // ヘッダ抽出時、改行が単語内に入るケースを許容するため、テキストノード内の改行のみ除去する

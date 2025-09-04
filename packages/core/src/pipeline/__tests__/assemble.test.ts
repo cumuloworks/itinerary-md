@@ -607,6 +607,20 @@ describe('assemble', () => {
         expect((out.children?.[0] as any).type).toBe('blockquote');
     });
 
+    it('[!NOTE] のようなアドモニションは変換しない（blockquote のまま）', () => {
+        const tree: Root = {
+            type: 'root',
+            children: [
+                {
+                    type: 'blockquote',
+                    children: [{ type: 'paragraph', children: [{ type: 'text', value: '[!NOTE] test' }] }],
+                },
+            ],
+        } as any;
+        const out = assembleEvents(tree, sv);
+        expect((out.children?.[0] as any).type).toBe('blockquote');
+    });
+
     it("'[' だけのときは変換しない（blockquote のまま）", () => {
         const tree: Root = {
             type: 'root',
