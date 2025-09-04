@@ -239,7 +239,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                             }
                         })();
                         return (
-                            <div key={`h-${lineStart ?? Math.random()}`} className="contents" {...commonDataProps}>
+                            <div key={`h-${lineStart ?? idx}`} className="contents" {...commonDataProps}>
                                 <Heading date={date} timezone={tz} prevStaySegments={prevStaySegments} />
                             </div>
                         );
