@@ -32,7 +32,7 @@ interface MarkdownPreviewProps {
 type MdNode = { type?: string; depth?: number; children?: any[]; position?: { start?: { line: number; column?: number }; end?: { line: number; column?: number } } };
 type ItmdEventNode = CoreItmdEventNode;
 
-type TextSegment = { text: string; url?: string };
+type TextSegment = { text: string; url?: string; kind?: 'text' | 'code' };
 
 const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | undefined => {
     if (!inline || !Array.isArray(inline)) return undefined;
@@ -40,6 +40,7 @@ const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | un
     const walk = (n: any) => {
         if (!n) return;
         if (n.type === 'text' && typeof n.value === 'string') segs.push({ text: n.value });
+        else if (n.type === 'inlineCode' && typeof n.value === 'string') segs.push({ text: n.value, kind: 'code' });
         else if (n.type === 'link' && typeof n.url === 'string') {
             const text = (mdastToString as any)(n);
             segs.push({ text, url: n.url });
@@ -74,6 +75,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             const prefixIndex = typeof fm.content === 'string' ? content.indexOf(fm.content) : -1;
             const frontmatterOffset = prefixIndex > 0 ? (content.slice(0, prefixIndex).match(/\r?\n/g) || []).length : 0;
             const dateAtLine = new Map<number, { date: string; tz?: string }>();
+            const lastStaySegmentsByDate = new Map<string, Array<{ text: string; url?: string }>>();
             let currentDate: { date: string; tz?: string } | undefined;
             let hasPastHeading = false;
             let hasPastByData = false;
@@ -101,6 +103,18 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 if ((node as { type?: string })?.type === 'itmdEvent') {
                     const line = getLineStart(node as unknown as { position?: Position });
                     if (line && currentDate) dateAtLine.set(line, currentDate);
+                    // 前処理段階で各日付の最終宿泊名を収集（表示可否に関係なく算出）
+                    try {
+                        if (currentDate) {
+                            const ev = node as unknown as { baseType?: string; title?: any[] };
+                            if (ev?.baseType === 'stay') {
+                                try {
+                                    const segs = inlineToSegments(ev.title as any) || [];
+                                    if (segs.length > 0) lastStaySegmentsByDate.set(currentDate.date, segs);
+                                } catch {}
+                            }
+                        }
+                    } catch {}
                 }
                 // data.itmdDate があればそれで過去判定
                 const itmdDate = ((node as unknown as { data?: { itmdDate?: { dateISO?: string; timezone?: string } } }).data || {}).itmdDate as { dateISO?: string; timezone?: string } | undefined;
@@ -185,9 +199,19 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     const tz = d.timezone;
                     if (date) {
                         if (showPastEffective) {
+                            const prevStaySegments = (() => {
+                                try {
+                                    const zone = tz || 'UTC';
+                                    const dt = DateTime.fromISO(date, { zone });
+                                    const prevISO = dt.minus({ days: 1 }).toISODate();
+                                    return prevISO ? lastStaySegmentsByDate.get(prevISO) : undefined;
+                                } catch {
+                                    return undefined;
+                                }
+                            })();
                             return (
                                 <div key={`h-${lineStart ?? Math.random()}`} className="contents" data-itin-line-start={lineStart ? String(lineStart) : undefined} data-itin-line-end={lineEnd ? String(lineEnd) : undefined}>
-                                    <Heading date={date} timezone={tz} />
+                                    <Heading date={date} timezone={tz} prevStaySegments={prevStaySegments} />
                                 </div>
                             );
                         }

@@ -57,8 +57,6 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
                 patch.viewMode = view as ViewMode;
             }
 
-            // stayMode removed
-
             const past = searchParams.get('past');
             if (past) patch.showPast = past === '1';
 

@@ -1,11 +1,12 @@
 import { Hotel } from 'lucide-react';
 import { DateTime } from 'luxon';
 import type React from 'react';
+import { SegmentedText, type TextSegment } from './SegmentedText';
 
 interface HeadingProps {
     date: string;
     timezone?: string;
-    prevStayName?: string;
+    prevStaySegments?: TextSegment[];
 }
 
 const getDayOfWeekColorClass = (dayOfWeek: string) => {
@@ -19,7 +20,7 @@ const getDayOfWeekColorClass = (dayOfWeek: string) => {
     }
 };
 
-export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStayName }) => {
+export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStaySegments }) => {
     const dt = DateTime.fromISO(date, { zone: timezone || 'UTC' });
     const dayOfWeek = dt.isValid ? dt.setLocale('en').toFormat('ccc') : '';
     return (
@@ -29,14 +30,14 @@ export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStayName }
                 <span className={`whitespace-nowrap ml-2 text-sm px-2 py-0.5 bg-gray-200 ${getDayOfWeekColorClass(dayOfWeek)}`}>{dayOfWeek}</span>
                 {timezone && <span className="whitespace-nowrap ml-3 text-xs text-gray-500 font-normal">({timezone})</span>}
             </span>
-            {prevStayName && (
-                <span className="flex items-center text-gray-700 text-base gap-2">
-                    <span className="rounded-full flex items-center justify-center p-1.5 aspect-square bg-purple-500">
-                        <Hotel size={18} className="text-white" />
+            {prevStaySegments && prevStaySegments.length > 0 ? (
+                <span className="flex items-center text-gray-700 text-sm gap-2">
+                    <span className="inline-flex items-center">
+                        <Hotel size={14} className="mr-1 text-purple-600" />
+                        <SegmentedText segments={prevStaySegments} className="font-semibold text-sm" linkClassName="underline text-inherit" />
                     </span>
-                    <span className="font-semibold text-sm">{prevStayName}</span>
                 </span>
-            )}
+            ) : null}
         </h2>
     );
 };

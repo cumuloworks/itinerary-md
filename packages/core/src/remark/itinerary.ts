@@ -6,7 +6,7 @@ import { runPipeline } from '../pipeline/run';
 import { makeDefaultServices, type Policy } from '../services';
 import type { ITMDEventNode } from '../types';
 
-export type ItmdRemarkOptions = Partial<Policy> & { timezone?: string; stayMode?: 'default' | 'header'; debug?: boolean };
+export type ItmdRemarkOptions = Partial<Policy> & { timezone?: string; debug?: boolean };
 
 export const remarkItinerary: Plugin<[ItmdRemarkOptions?], Root> = (policy: ItmdRemarkOptions = {}) => {
     return (tree: Root, file?: VFile) => {
