@@ -51,6 +51,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
                     timezone: d.timezone,
                     children: [],
                     position: (h as unknown as { position?: Position }).position,
+                    data: { hProperties: { 'data-itmd-date': d.date } },
                 } as ITMDHeadingNode;
                 children[i] = headingNode as unknown as Parent['children'][number];
             } else {
@@ -65,10 +66,14 @@ export function assembleEvents(root: Root, sv: Services): Root {
         // annotate non-heading nodes with current date context if available
         if (currentDateISO && node && (node as { type?: string }).type !== 'heading') {
             const dataPrev = ((node as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
+            const hPropsPrev = ((): Record<string, unknown> => {
+                const hp = (dataPrev as unknown as { hProperties?: unknown }).hProperties as Record<string, unknown> | undefined;
+                return hp && typeof hp === 'object' ? hp : {};
+            })();
             (node as unknown as { data?: Record<string, unknown> }).data = {
                 ...dataPrev,
                 itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },
-                itmdContext: { anchorDateISO: currentDateISO, anchorTz: currentDateTz, tzValid: currentTzValid ?? true },
+                hProperties: { ...hPropsPrev, 'data-itmd-date': currentDateISO },
             } as Record<string, unknown>;
         }
         if (node?.type !== 'blockquote') continue;
@@ -201,10 +206,14 @@ export function assembleEvents(root: Root, sv: Services): Root {
         }
         if (currentDateISO) {
             const prev = ((built as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
+            const hPropsPrev = ((): Record<string, unknown> => {
+                const hp = (prev as unknown as { hProperties?: unknown }).hProperties as Record<string, unknown> | undefined;
+                return hp && typeof hp === 'object' ? hp : {};
+            })();
             (built as unknown as { data?: Record<string, unknown> }).data = {
                 ...prev,
                 itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },
-                itmdContext: { anchorDateISO: currentDateISO, anchorTz: currentDateTz, tzValid: currentTzValid ?? true },
+                hProperties: { ...hPropsPrev, 'data-itmd-date': currentDateISO },
             } as Record<string, unknown>;
         }
         children[i] = built as unknown as Parent['children'][number];

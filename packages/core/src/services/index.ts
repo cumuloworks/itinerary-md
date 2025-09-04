@@ -48,17 +48,18 @@ export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile):
 
     const tz: TzService = {
         normalize: (tz) => {
-            const out = coerceIanaTimeZone(tz, undefined);
+            const out = coerceIanaTimeZone(tz);
             return out ?? null;
         },
         coerce: (tz, fb) => {
-            const normalized = coerceIanaTimeZone(tz, fb ?? undefined);
-            const validInput = !!coerceIanaTimeZone(tz, undefined);
+            const primary = coerceIanaTimeZone(tz);
+            const normalized = primary ?? coerceIanaTimeZone(fb ?? undefined);
+            const validInput = !!primary;
             return { tz: normalized ?? null, valid: validInput };
         },
         isValid: (tz) => {
             if (isValidIanaTimeZone(tz)) return true;
-            return !!coerceIanaTimeZone(tz, undefined);
+            return !!coerceIanaTimeZone(tz);
         },
     };
 

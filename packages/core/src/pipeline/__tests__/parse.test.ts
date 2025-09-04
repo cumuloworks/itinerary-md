@@ -167,6 +167,14 @@ describe('parseHeader', () => {
         expect(mdastToString({ type: 'paragraph', children: (h.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Flight');
     });
 
+    it('省略記法: [] flight from Tokyo to Haneda → title は "Flight"', () => {
+        const tokens = lexLine('[] flight from Tokyo to Haneda', {}, sv);
+        const h = parseHeader(tokens, [], sv);
+        expect(h.eventType).toBe('flight');
+        expect(h.destination?.kind).toBe('fromTo');
+        expect(mdastToString({ type: 'paragraph', children: (h.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Flight');
+    });
+
     it('省略記法: [] sightseeing :: Sumida → title は "Sightseeing"', () => {
         const tokens = lexLine('[] sightseeing :: Sumida', {}, sv);
         const h = parseHeader(tokens, [], sv);
