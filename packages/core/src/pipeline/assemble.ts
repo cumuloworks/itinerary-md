@@ -12,6 +12,11 @@ import { normalizeHeader } from './normalize';
 import { parseHeader, parseTimeSpan } from './parse';
 import { validateHeader } from './validate';
 
+function getHProps(obj: unknown): Record<string, unknown> {
+    const hp = (obj as any)?.hProperties as unknown;
+    return hp && typeof hp === 'object' ? (hp as Record<string, unknown>) : {};
+}
+
 export function assembleEvents(root: Root, sv: Services): Root {
     const parent = root as unknown as Parent;
     const children = Array.isArray(parent.children) ? parent.children : [];
@@ -24,11 +29,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
         const node = children[i] as unknown as { type?: string; children?: unknown[]; position?: Position };
         if (node?.type === 'heading' && (node as unknown as { depth?: number }).depth === 2) {
             const h = node as unknown as Parent & { type: 'heading' };
-            const inline = (h.children ?? []) as unknown[] as PhrasingContent[];
-            const text = inline
-                .map((n) => (typeof (n as unknown as { value?: unknown }).value === 'string' ? (n as unknown as { value: string }).value : ''))
-                .join('')
-                .trim();
+            const text = mdastToString(h as unknown as any).trim();
             const d = ((): { date?: string; timezone?: string; tzValid?: boolean; tzInvalidOnHeading?: boolean } | null => {
                 const m = text.match(/^(\d{4}-\d{2}-\d{2})(?:\s*@([A-Za-z0-9_./+:-]+))?/);
                 if (!m) return null;
@@ -64,12 +65,9 @@ export function assembleEvents(root: Root, sv: Services): Root {
             continue;
         }
         // annotate non-heading nodes with current date context if available
-        if (currentDateISO && node && (node as { type?: string }).type !== 'heading') {
+        if (currentDateISO && node && (node as { type?: string }).type !== 'heading' && (node as { type?: string }).type !== 'blockquote') {
             const dataPrev = ((node as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
-            const hPropsPrev = ((): Record<string, unknown> => {
-                const hp = (dataPrev as unknown as { hProperties?: unknown }).hProperties as Record<string, unknown> | undefined;
-                return hp && typeof hp === 'object' ? hp : {};
-            })();
+            const hPropsPrev = getHProps(dataPrev as any);
             (node as unknown as { data?: Record<string, unknown> }).data = {
                 ...dataPrev,
                 itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },
@@ -206,10 +204,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
         }
         if (currentDateISO) {
             const prev = ((built as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
-            const hPropsPrev = ((): Record<string, unknown> => {
-                const hp = (prev as unknown as { hProperties?: unknown }).hProperties as Record<string, unknown> | undefined;
-                return hp && typeof hp === 'object' ? hp : {};
-            })();
+            const hPropsPrev = getHProps(prev as any);
             (built as unknown as { data?: Record<string, unknown> }).data = {
                 ...prev,
                 itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },

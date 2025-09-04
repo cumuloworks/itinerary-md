@@ -42,8 +42,9 @@ export function parseTimeSpan(line: string): { time: TimeSpan; consumed: number 
     const endRaw = (m[2] ?? '').trim();
     // 空ブラケットは none として許容
     if (startRaw === '') return { time: { kind: 'none' }, consumed: m[0].length } as const;
-    // マーカー（am/pm）
-    const marker = startRaw === 'am' || startRaw === 'pm' ? (startRaw as 'am' | 'pm') : null;
+    // マーカー（am/pm）: 大文字小文字非依存
+    const ls = startRaw.toLowerCase();
+    const marker = ls === 'am' || ls === 'pm' ? (ls as 'am' | 'pm') : null;
     if (marker) return { time: { kind: 'marker', marker }, consumed: m[0].length } as const;
     // 時刻トークン
     const start = parseTimeToken(startRaw);
@@ -113,35 +114,40 @@ function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingConte
 }
 
 function splitHeadAndDestUsingSeps(line: string, tokens: LexTokens, consumed: number): { headRaw: string; destRaw: string | null; sep: 'doublecolon' | 'at' | 'from' | null } {
-    const seps = (tokens.seps || []).filter((s) => s.kind === 'doublecolon' || s.kind === 'at') as Array<{ kind: 'doublecolon' | 'at'; index: number }>;
-    const tokenFirst = seps.filter((s) => s.index >= consumed).sort((a, b) => a.index - b.index)[0];
-
-    // ' from ' をセパレータ候補として検出（後続に ' to ' が存在する場合のみ有効）
     const lower = line.toLowerCase();
-    const fromIdx = lower.indexOf(' from ', consumed);
-    const hasToAfterFrom = fromIdx >= 0 ? lower.indexOf(' to ', fromIdx + ' from '.length) >= 0 : false;
-    const fromCandidateIdx = hasToAfterFrom ? fromIdx : -1;
+    type SepKind = 'doublecolon' | 'at' | 'from';
+    const seps = (tokens.seps || []).filter((s) => s.kind === 'doublecolon' || s.kind === 'at' || s.kind === 'from') as Array<{ kind: SepKind; index: number }>;
 
-    // 候補のうち最も早いものを採用
-    if (!tokenFirst && fromCandidateIdx < 0) {
+    // トークン列から、使用可能な最初のセパレータを決定
+    let chosen: { kind: SepKind; rawIdx: number } | null = null;
+    const sorted = seps.filter((s) => s.index >= consumed).sort((a, b) => a.index - b.index);
+    for (const s of sorted) {
+        const rawIdxWord = tokens.map(s.index); // 実文字列における先頭位置
+        if (s.kind === 'from') {
+            // 既存挙動に合わせて ' from '（前後スペース必須）かつ後続に ' to ' が存在する場合のみ有効化
+            const hasLeadingSpace = rawIdxWord > 0 && lower[rawIdxWord - 1] === ' ';
+            const hasTrailingSpace = lower[rawIdxWord + 4] === ' ';
+            if (!(hasLeadingSpace && hasTrailingSpace)) continue;
+            const toIdx = lower.indexOf(' to ', rawIdxWord + 5);
+            if (toIdx < 0) continue;
+            // head 側の rawIdx は先行スペースの位置に合わせる
+            chosen = { kind: 'from', rawIdx: rawIdxWord - 1 };
+            break;
+        }
+        // '::' / 'at' はそのまま採用
+        chosen = { kind: s.kind, rawIdx: rawIdxWord };
+        break;
+    }
+
+    if (!chosen) {
         const s = line.slice(consumed).trim();
         return { headRaw: s, destRaw: null, sep: null };
     }
 
-    let sepKind: 'doublecolon' | 'at' | 'from';
-    let rawIdx: number;
-    if (tokenFirst && (fromCandidateIdx < 0 || tokens.map(tokenFirst.index) <= fromCandidateIdx)) {
-        sepKind = tokenFirst.kind;
-        rawIdx = tokens.map(tokenFirst.index);
-    } else {
-        sepKind = 'from';
-        rawIdx = fromCandidateIdx;
-    }
-
-    const headRaw = line.slice(consumed, rawIdx).trim();
-    const skipLen = sepKind === 'doublecolon' ? 2 : sepKind === 'at' ? 2 : ' from '.length;
-    const destRaw = line.slice(rawIdx + skipLen).trim();
-    return { headRaw, destRaw, sep: sepKind };
+    const headRaw = line.slice(consumed, chosen.rawIdx).trim();
+    const skipLen = chosen.kind === 'doublecolon' ? 2 : chosen.kind === 'at' ? 2 : ' from '.length;
+    const destRaw = line.slice(chosen.rawIdx + skipLen).trim();
+    return { headRaw, destRaw, sep: chosen.kind };
 }
 
 function parseHead(headRaw: string): { eventType?: string; title: PhrasingContent[] | null } {
@@ -208,7 +214,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             const secondEnd = secondStart + tm[2].length;
             positions.time = { ...(positions.time || {}), start: positions.time?.start, end: { start: secondStart, end: secondEnd } };
         }
-        if (tm[1] === 'am' || tm[1] === 'pm') {
+        if ((tm[1] || '').toLowerCase() === 'am' || (tm[1] || '').toLowerCase() === 'pm') {
             positions.time = { ...(positions.time || {}), marker: { start: firstStart, end: firstEnd } };
         }
     }

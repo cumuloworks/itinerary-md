@@ -31,12 +31,7 @@ export function isValidIanaTimeZone(tz: unknown): boolean {
 import { notifyError } from '../core/errors';
 
 export function coerceTimezoneWithToast(tz: unknown, fallback: string, source: string): string {
-    if (typeof tz === 'string') {
-        try {
-            const dtf = new Intl.DateTimeFormat(undefined, { timeZone: tz });
-            if (dtf.resolvedOptions().timeZone === tz) return tz;
-        } catch {}
-    }
+    if (typeof tz === 'string' && isValidIanaTimeZone(tz)) return tz;
     notifyError(`${source}: Invalid timezone "${String(tz)}". Fallback to ${fallback}`);
     return fallback;
 }
