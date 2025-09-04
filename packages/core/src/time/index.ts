@@ -1,2 +1,2 @@
-export * from '../parser/datetime';
+export * from './datetime';
 export * from './iana';

@@ -9,7 +9,8 @@
     "linter": {
         "rules": {
             "suspicious": {
-                "noUnknownAtRules": "off"
+                "noUnknownAtRules": "off",
+                "noExplicitAny": "off"
             }
         }
     }

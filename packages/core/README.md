@@ -107,7 +107,7 @@
 - `positions`: `title/destination/time` のテキストスライス位置
 - `warnings`: 検証での注意
 
-詳細は `packages/core/src/itmd/types.ts` を参照してください。
+詳細は `packages/core/src/types.ts` を参照してください。
 
 ---
 

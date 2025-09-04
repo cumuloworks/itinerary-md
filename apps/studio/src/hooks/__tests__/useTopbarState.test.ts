@@ -1,11 +1,11 @@
-import { isValidIanaTimeZone } from '@itinerary-md/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { notifyError } from '../../core/errors';
+import { isValidIanaTimeZone } from '../../utils/timezone';
 import { useTopbarState } from '../useTopbarState';
 
 // モック
-vi.mock('@itinerary-md/core', () => ({
+vi.mock('../../utils/timezone', () => ({
     isValidIanaTimeZone: vi.fn(),
 }));
 

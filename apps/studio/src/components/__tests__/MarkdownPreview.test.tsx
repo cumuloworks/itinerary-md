@@ -21,7 +21,7 @@ describe('MarkdownPreview (itmd pipeline rendering)', () => {
     });
 
     it('renders an event item for itmdEvent paragraph', () => {
-        const md = `## 2024-01-01\n\n[08:30] flight AA100 :: Tokyo - Seoul`;
+        const md = `## 2024-01-01\n\n> [08:30] flight AA100 :: Tokyo - Seoul`;
         render(<MarkdownPreview content={md} timezone={'UTC'} />);
         // main title contains flight code AA100
         expect(screen.getByText(/AA100/)).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe('MarkdownPreview (itmd pipeline rendering)', () => {
     it('hides past-day events when showPast=false and shows hidden count', () => {
         // Fix current date to 2024-01-02 UTC
         vi.setSystemTime(new Date('2024-01-02T00:00:00Z'));
-        const md = `## 2024-01-01\n\n[08:30] flight AA100 :: Tokyo - Seoul`;
+        const md = `## 2024-01-01\n\n> [08:30] flight AA100 :: Tokyo - Seoul`;
         render(<MarkdownPreview content={md} timezone={'UTC'} showPast={false} />);
         expect(screen.getByText(/Past events are hidden/)).toBeTruthy();
         // The event should not render

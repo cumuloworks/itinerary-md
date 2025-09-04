@@ -1,11 +1,11 @@
 import type { Parent, PhrasingContent, Root } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import type { Position } from 'unist';
-import { normalizePriceLine } from '../itmd/price';
+import { normalizePriceLine } from '../domain/price';
+import { sliceInlineNodes } from '../mdast';
 import type { Services } from '../services';
 import { isValidIanaTimeZone } from '../time/iana';
 import type { ITMDHeadingNode } from '../types';
-import { sliceInlineNodes } from '../utils/mdast-inline';
 import { buildEventNode } from './build';
 import { lexLine } from './lex';
 import { normalizeHeader } from './normalize';
@@ -17,6 +17,8 @@ export function assembleEvents(root: Root, sv: Services): Root {
     const children = Array.isArray(parent.children) ? parent.children : [];
     let currentDateISO: string | undefined;
     let currentDateTz: string | undefined;
+    let currentTzValid: boolean | undefined;
+    let currentTzWasInvalidOnHeading: boolean = false;
 
     for (let i = 0; i < children.length; i += 1) {
         const node = children[i] as unknown as { type?: string; children?: unknown[]; position?: Position };
@@ -27,16 +29,19 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 .map((n) => (typeof (n as unknown as { value?: unknown }).value === 'string' ? (n as unknown as { value: string }).value : ''))
                 .join('')
                 .trim();
-            const d = ((): { date?: string; timezone?: string } | null => {
+            const d = ((): { date?: string; timezone?: string; tzValid?: boolean; tzInvalidOnHeading?: boolean } | null => {
                 const m = text.match(/^(\d{4}-\d{2}-\d{2})(?:\s*@([A-Za-z0-9_./+-]+))?/);
                 if (!m) return null;
                 const date = m[1];
                 const tzRaw = m[2];
-                const tz = tzRaw && isValidIanaTimeZone(tzRaw) ? tzRaw : (sv.policy.tzFallback ?? undefined);
-                return { date, timezone: tz };
+                const tzIsValid = tzRaw ? isValidIanaTimeZone(tzRaw) : true;
+                const tzUsed = tzIsValid ? tzRaw : (sv.policy.tzFallback ?? undefined);
+                return { date, timezone: tzUsed, tzValid: tzIsValid, tzInvalidOnHeading: !!tzRaw && !tzIsValid };
             })();
             currentDateISO = (d?.date as string | undefined) || currentDateISO;
             currentDateTz = (d?.timezone as string | undefined) || currentDateTz;
+            currentTzValid = d?.tzValid ?? currentTzValid;
+            currentTzWasInvalidOnHeading = !!d?.tzInvalidOnHeading;
             // replace heading node with synthetic itmdHeading node for renderer
             if (d?.date) {
                 const headingNode: ITMDHeadingNode = {
@@ -51,6 +56,8 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 // non-date H2 resets current date context
                 currentDateISO = undefined;
                 currentDateTz = undefined;
+                currentTzValid = undefined;
+                currentTzWasInvalidOnHeading = false;
             }
             continue;
         }
@@ -60,6 +67,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
             (node as unknown as { data?: Record<string, unknown> }).data = {
                 ...dataPrev,
                 itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },
+                itmdContext: { anchorDateISO: currentDateISO, anchorTz: currentDateTz, tzValid: currentTzValid ?? true },
             } as Record<string, unknown>;
         }
         if (node?.type !== 'blockquote') continue;
@@ -121,15 +129,16 @@ export function assembleEvents(root: Root, sv: Services): Root {
                     const para0 = kids.find((n) => (n as unknown as { type?: string })?.type === 'paragraph') as (Parent & { type: 'paragraph' }) | undefined;
                     const inlineLi = (para0?.children ?? []) as unknown as PhrasingContent[];
                     const raw = para0 ? mdastToString(para0 as unknown as any) : mdastToString(li as unknown as any);
-                    const text = String(raw || '').trim();
-                    const idx = text.indexOf(':');
+                    const rawText = String(raw || '');
+                    const textTrimmed = rawText.trim();
+                    const idx = rawText.indexOf(':');
                     const isKv = idx > 0;
                     if (isKv) {
-                        const keyRaw = text.slice(0, idx).trim().toLowerCase();
+                        const keyRaw = rawText.slice(0, idx).trim().toLowerCase();
                         const key = keyRaw.replace(/^[-\s]+/, '');
                         let valStart = idx + 1;
-                        if (text[valStart] === ' ') valStart += 1;
-                        const valueNodes = inlineLi.length > 0 ? sliceInlineNodes(inlineLi, valStart, text.length) : ([{ type: 'text', value: text.slice(valStart) }] as any);
+                        if (rawText[valStart] === ' ') valStart += 1;
+                        const valueNodes = inlineLi.length > 0 ? sliceInlineNodes(inlineLi, valStart, rawText.length) : ([{ type: 'text', value: rawText.slice(valStart).trim() }] as any);
                         if (key) {
                             if (!group || group.kind !== 'meta') {
                                 flush();
@@ -138,7 +147,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
                             (group as Extract<GroupState, { kind: 'meta' }>).entries.push({ key, value: valueNodes as unknown as PhrasingContent[] });
                         }
                     } else {
-                        const inlineNodes = inlineLi.length > 0 ? inlineLi : ([{ type: 'text', value: text }] as any);
+                        const inlineNodes = inlineLi.length > 0 ? inlineLi : ([{ type: 'text', value: textTrimmed }] as any);
                         // 先頭の "- " をテキスト先頭から除去（テスト互換）。RichInline内リンク等は保持
                         if (Array.isArray(inlineNodes) && inlineNodes.length > 0) {
                             const first = inlineNodes[0] as unknown as { type?: string; value?: string };
@@ -185,11 +194,16 @@ export function assembleEvents(root: Root, sv: Services): Root {
             } as Record<string, unknown>;
         }
         built.warnings = [...(built.warnings ?? []), ...warnings];
+        // add timezone invalid warning if heading had an invalid tz annotation
+        if (currentTzWasInvalidOnHeading) {
+            built.warnings.push('invalid-tz');
+        }
         if (currentDateISO) {
             const prev = ((built as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
             (built as unknown as { data?: Record<string, unknown> }).data = {
                 ...prev,
                 itmdDate: { dateISO: currentDateISO, timezone: currentDateTz },
+                itmdContext: { anchorDateISO: currentDateISO, anchorTz: currentDateTz, tzValid: currentTzValid ?? true },
             } as Record<string, unknown>;
         }
         children[i] = built as unknown as Parent['children'][number];

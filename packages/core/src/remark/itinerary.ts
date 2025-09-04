@@ -11,7 +11,10 @@ export type ItmdRemarkOptions = Partial<Policy> & { timezone?: string; debug?: b
 export const remarkItinerary: Plugin<[ItmdRemarkOptions?], Root> = (policy: ItmdRemarkOptions = {}) => {
     return (tree: Root, file?: VFile) => {
         const sv = makeDefaultServices(policy, file);
-        runPipeline(tree, file, sv);
+        const newTree = runPipeline(tree, file, sv);
+        // Apply the returned Root back to the original tree
+        tree.children = newTree.children;
+        tree.type = newTree.type;
         if (policy.debug) {
             try {
                 visit(tree as unknown as { type: string }, 'itmdEvent', (n: ITMDEventNode) => {

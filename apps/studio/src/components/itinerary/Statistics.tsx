@@ -57,7 +57,14 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
     const summary = React.useMemo(() => extractHeadingDates(root?.children), [root]);
 
     const { totalFormatted, breakdownFormatted } = React.useMemo(() => {
-        const cur = (currency || (typeof frontmatter?.currency === 'string' ? (frontmatter?.currency as string) : undefined) || 'USD') as string;
+        // 通貨コードを props/frontmatter から抽出し、文字列化→大文字化→トリム→3文字化→検証
+        const rawCurrency = (currency ?? (typeof frontmatter?.currency === 'string' ? (frontmatter?.currency as string) : undefined)) as unknown;
+        const normalizedCandidate = String(rawCurrency ?? 'USD')
+            .toUpperCase()
+            .trim()
+            .slice(0, 3);
+        const VALID_CODE = /^[A-Z]{3}$/;
+        const toCurrency = VALID_CODE.test(normalizedCandidate) ? normalizedCandidate : 'USD';
         let total = 0;
         let transportation = 0;
         let activity = 0;
@@ -69,18 +76,35 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
             const baseType = classifyBaseType(ev.eventType);
             const prices = Array.isArray(ev.data?.itmdPrice) ? (ev.data?.itmdPrice as PriceEntryLike[]) : [];
             if (prices.length === 0) continue;
-            const to = cur;
+            const to = toCurrency;
             let eventSum = 0;
             for (const p of prices) {
                 const tok = Array.isArray(p.price?.tokens) ? p.price.tokens[0] : undefined;
                 if (!tok || tok.kind !== 'money') continue;
-                const from = String(tok.normalized?.currency || tok.currency || to).toUpperCase();
+                // 入力側通貨も正規化・検証し、不正なら表示通貨にフォールバック
+                const fromCandidate = String(tok.normalized?.currency || tok.currency || to)
+                    .toUpperCase()
+                    .trim()
+                    .slice(0, 3);
+                const from = VALID_CODE.test(fromCandidate) ? fromCandidate : to;
                 const amt = Number(String(tok.normalized?.amount || tok.amount || ''));
                 if (!Number.isFinite(amt)) continue;
                 let converted: number | null = null;
-                if (from === to) converted = amt;
-                else if (ratesData) converted = convertAmountUSDBase(amt, from, to, ratesData.rates);
-                else converted = null; // レートが無い異通貨は加算しない
+                if (from === to) {
+                    converted = amt;
+                } else if (ratesData) {
+                    // 必要レートが欠損している場合は 1:1 として加算（スキップしない）
+                    const hasFrom = typeof ratesData.rates[from] === 'number';
+                    const hasTo = typeof ratesData.rates[to] === 'number';
+                    if (hasFrom && hasTo) {
+                        converted = convertAmountUSDBase(amt, from, to, ratesData.rates);
+                    } else {
+                        converted = amt; // 1:1 フォールバック
+                    }
+                } else {
+                    // レート自体が無い場合も 1:1 として扱う
+                    converted = amt;
+                }
                 if (converted != null) eventSum += converted;
             }
             if (eventSum <= 0) continue;
@@ -89,7 +113,13 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
             else if (baseType === 'activity') activity += eventSum;
             else if (baseType === 'stay') stay += eventSum;
         }
-        const formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: cur, currencyDisplay: 'narrowSymbol' });
+        // Intl.NumberFormat は RangeError の可能性があるため try/catch で USD にフォールバック
+        let formatter: Intl.NumberFormat;
+        try {
+            formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: toCurrency, currencyDisplay: 'narrowSymbol' });
+        } catch {
+            formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' });
+        }
         return {
             totalFormatted: total > 0 ? formatter.format(total) : null,
             breakdownFormatted: total > 0 ? { transportation: formatter.format(transportation), activity: formatter.format(activity), stay: formatter.format(stay) } : null,

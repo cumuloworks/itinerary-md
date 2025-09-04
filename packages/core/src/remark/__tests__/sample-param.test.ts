@@ -3,8 +3,8 @@ import path from 'node:path';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { describe, expect, it } from 'vitest';
-import { toItineraryEvents } from '../extract';
-import { remarkItinerary } from '../remark/itinerary';
+import { toItineraryEvents } from '../../extract';
+import { remarkItinerary } from '../itinerary';
 
 describe('sample.md パラメトリック', () => {
     const samplePath = path.resolve(__dirname, '../../../../../apps/studio/public/sample.md');

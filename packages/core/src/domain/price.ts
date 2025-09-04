@@ -1,5 +1,3 @@
-import { unformat as accountingUnformat } from 'accounting-js';
-
 export type MoneyFragment = {
     kind: 'money';
     raw: string;
@@ -86,11 +84,36 @@ function inferScaleByCurrency(code: string): number {
 }
 
 function normalizeAmountString(rawNum: string): string {
-    // Accept both "," thousands and "." decimal or vice versa; rely on accounting to unformat
-    const num = accountingUnformat(String(rawNum));
+    // 単純化ポリシー:
+    // - '.' または ',' のうち「右端のセパレータ」を小数点として扱う
+    // - それ以外のセパレータは千区切りとして除去する
+    let t = String(rawNum).trim();
+    if (!t) return '';
+    let sign = '';
+    if (t[0] === '+' || t[0] === '-') {
+        sign = t[0];
+        t = t.slice(1);
+    }
+    let integerPart = '';
+    let fractionalPart = '';
+    const lastDot = t.lastIndexOf('.');
+    const lastComma = t.lastIndexOf(',');
+    if (lastDot === -1 && lastComma === -1) {
+        integerPart = t.replace(/[.,]/g, '');
+    } else {
+        const sepIndex = Math.max(lastDot, lastComma);
+        const before = t.slice(0, sepIndex);
+        const after = t.slice(sepIndex + 1);
+        integerPart = before.replace(/[.,]/g, '');
+        fractionalPart = after.replace(/[.,]/g, '');
+    }
+    if (!integerPart) integerPart = '0';
+    integerPart = integerPart.replace(/^0+(?=\d)/, '');
+    // 末尾の 0 は落とす（例: 12,30 -> 12.3）
+    fractionalPart = fractionalPart.replace(/0+$/, '');
+    const normalized = fractionalPart ? `${integerPart}.${fractionalPart}` : integerPart;
+    const num = Number(sign + normalized);
     if (!Number.isFinite(num)) return '';
-    // Keep as string with full precision as provided (no rounding other than JS float)
-    // To avoid scientific notation, convert via toString and ensure decimal point is '.'
     return String(num);
 }
 
@@ -126,10 +149,13 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
     }
 
     // Simple single-term detector: CODE AMOUNT | AMOUNT CODE | SYMBOL AMOUNT
+    // Define a single number pattern that accepts optional thousands separators ("," or ".")
+    // and allows an optional decimal part using either "." or ",".
+    const NUM_RE = /[+-]?(?:\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,]\d+)?/;
     const PATTERNS = [
-        /^(?<code>[A-Za-z]{3})\s+(?<num>[+-]?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[+-]?[0-9]+(?:\.[0-9]+)?)(?![^\s])/,
-        /^(?<num>[+-]?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[+-]?[0-9]+(?:\.[0-9]+)?)\s+(?<code>[A-Za-z]{3})(?![^\s])/,
-        /^(?<sym>A\$|C\$|HK\$|S\$|[€¥£₩₫฿₱₽₺$])\s*(?<num>[+-]?[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)/,
+        new RegExp(`^(?<code>[A-Za-z]{3})\\s+(?<num>${NUM_RE.source})(?=\\s|$)`),
+        new RegExp(`^(?<num>${NUM_RE.source})\\s+(?<code>[A-Za-z]{3})(?=\\s|$)`),
+        new RegExp(`^(?<sym>A\\$|C\\$|HK\\$|S\\$|[€¥£₩₫฿₱₽₺$])\\s*(?<num>${NUM_RE.source})(?=\\s|$)`),
     ];
     let match: RegExpMatchArray | null = null;
     let kind: 'codeFirst' | 'numFirst' | 'symbol' | null = null;
@@ -146,7 +172,7 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
     if (!match || !kind) {
         // As a fallback, try to detect currency anywhere and a number anywhere
         const { currency } = detectCurrency(line);
-        const numM = line.match(/[+-]?[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?/);
+        const numM = line.match(NUM_RE);
         if (!currency && !numM) {
             return {
                 type: 'itmdPrice',

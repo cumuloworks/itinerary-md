@@ -1,8 +1,8 @@
 import type { PhrasingContent } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
+import { sliceInlineNodes } from '../mdast';
 import type { Services } from '../services';
 import type { EventTime } from '../types';
-import { sliceInlineNodes } from '../utils/mdast-inline';
 import type { LexTokens } from './lex';
 
 // Minimal paragraph helper to avoid any-casts when calling mdastToString
@@ -22,13 +22,14 @@ export type ParsedHeader = {
 };
 
 function parseTimeToken(raw: string): { hh: number | null; mm: number | null; tz?: string | null; dayOffset?: number | null } | null {
-    const m = raw.match(/^(\d{1,2}):(\d{2})(?:@([A-Za-z0-9_./+-]+))?(?:\+(\d+))?/);
+    const m = raw.match(/^(\d{1,2}):(\d{2})(?:@([A-Za-z0-9_./+-]+?))?(?:\+(\d+))?$/);
     if (!m) return null;
     const hh = Number(m[1]);
     const mm = Number(m[2]);
     const tz = m[3] ? m[3] : null;
     const dayOffset = m[4] ? Number(m[4]) : null;
     if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+    if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
     return { hh, mm, tz, dayOffset };
 }
 
@@ -73,7 +74,7 @@ function splitHeadAndDestUsingSeps(line: string, tokens: LexTokens, consumed: nu
     }
     const rawIdx = tokens.map(first.index);
     const headRaw = line.slice(consumed, rawIdx).trim();
-    const skipLen = first.kind === 'doublecolon' ? 2 : 2; // '::' or 'at'
+    const skipLen = first.kind === 'doublecolon' ? 2 : 1; // '::' or '@'
     const destRaw = line.slice(rawIdx + skipLen).trim();
     return { headRaw, destRaw, sep: first.kind };
 }
@@ -152,22 +153,28 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         const destEndInline = destStartInline >= 0 ? destStartInline + destRaw.length : inlineFullText.length;
         const idx = destRaw.lastIndexOf(' - ');
         // from/to 構文の検出（両方含む場合に限る）
-        const hasFrom = /\bfrom\b/.test(destRaw);
-        const hasTo = /\bto\b/.test(destRaw);
-        if (hasFrom && hasTo) {
-            const fromIdx = destRaw.indexOf('from');
-            const toIdx = destRaw.indexOf('to', fromIdx + 4);
-            const fromStart = destStartInline + fromIdx + 4; // after 'from'
-            const fromEnd = destStartInline + (toIdx >= 0 ? toIdx : destRaw.length);
-            const toStart = destStartInline + (toIdx >= 0 ? toIdx + 2 : destRaw.length); // after 'to'
-            const toEnd = destEndInline;
-            destination = {
-                kind: 'fromTo',
-                from: removeNewlinesInTextNodes(sliceInline(fromStart, fromEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
-                to: removeNewlinesInTextNodes(sliceInline(toStart, toEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
-            } as ParsedHeader['destination'];
-            positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
-        } else if (idx >= 0) {
+        const fromMatch = /\bfrom\b/i.exec(destRaw);
+        const hasFrom = fromMatch !== null;
+        if (hasFrom) {
+            // 'from' の位置から 'to' を検索
+            const toMatch = /\bto\b/i.exec(destRaw.slice(fromMatch.index + fromMatch[0].length));
+            const hasTo = toMatch !== null;
+            if (hasTo) {
+                const fromIdx = fromMatch.index;
+                const toIdx = fromMatch.index + fromMatch[0].length + toMatch.index;
+                const fromStart = destStartInline + fromIdx + 4; // after 'from'
+                const fromEnd = destStartInline + toIdx;
+                const toStart = destStartInline + toIdx + 2; // after 'to'
+                const toEnd = destEndInline;
+                destination = {
+                    kind: 'fromTo',
+                    from: removeNewlinesInTextNodes(sliceInline(fromStart, fromEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
+                    to: removeNewlinesInTextNodes(sliceInline(toStart, toEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
+                } as ParsedHeader['destination'];
+                positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
+            }
+        }
+        if (!destination && idx >= 0) {
             const fromStart = destStartInline;
             const fromEnd = destStartInline + idx;
             const toStart = destStartInline + idx + 3;

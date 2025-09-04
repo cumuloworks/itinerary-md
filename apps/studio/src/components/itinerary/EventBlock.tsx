@@ -1,5 +1,5 @@
-import { formatDateTime, getDayOffset } from '@itinerary-md/core';
 import { MapPin as Activity, Bed, Building, Bus, Camera, Car, Coffee, Landmark, Plane, Ship, ShoppingBag, Sparkles, Train, TreePine, UtensilsCrossed } from 'lucide-react';
+import { formatDateTime, getDayOffset } from '../../utils/timezone';
 import { isAllowedHref } from '../../utils/url';
 import { AirlineLogo } from './AirlineLogo';
 import { Location } from './Location';

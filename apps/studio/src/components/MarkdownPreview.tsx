@@ -1,5 +1,4 @@
-import type { ITMDEventNode as CoreItmdEventNode } from '@itinerary-md/core';
-import { isValidIanaTimeZone, remarkItinerary } from '@itinerary-md/core';
+import remarkItinerary from '@itinerary-md/core';
 import matter from 'gray-matter';
 import type { Node as MdastNode, PhrasingContent, Root } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
@@ -8,12 +7,13 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import type { Position } from 'unist';
-
 import { notifyError } from '../core/errors';
+import { isValidIanaTimeZone } from '../utils/timezone';
 import { EventBlock } from './itinerary/EventBlock';
 import { Heading } from './itinerary/Heading';
 import 'highlight.js/styles/github.css';
 import { DateTime } from 'luxon';
+import { isAllowedHref } from '../utils/url';
 import Statistics from './itinerary/Statistics';
 
 interface MarkdownPreviewProps {
@@ -30,7 +30,15 @@ interface MarkdownPreviewProps {
 //
 
 type MdNode = { type?: string; depth?: number; children?: any[]; position?: { start?: { line: number; column?: number }; end?: { line: number; column?: number } } };
-type ItmdEventNode = CoreItmdEventNode;
+// Minimal shape used by Studio for rendering itmdEvent nodes
+type ItmdEventNode = {
+    type: 'itmdEvent';
+    eventType?: string;
+    baseType?: 'transportation' | 'stay' | 'activity';
+    title?: any[] | null;
+    destination?: { from?: any[]; to?: any[]; at?: any[] } | null;
+    time?: { kind: 'none' } | { kind: 'marker'; marker?: 'am' | 'pm' } | { kind: 'point'; startISO?: string | null } | { kind: 'range'; startISO?: string | null; endISO?: string | null };
+};
 
 type TextSegment = { text: string; url?: string; kind?: 'text' | 'code' };
 
@@ -157,7 +165,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                             );
                         case 'link': {
                             const href = typeof n.url === 'string' ? n.url : undefined;
-                            if (!href) return renderInline(n.children);
+                            if (!href || !isAllowedHref(href)) return renderInline(n.children);
                             return (
                                 <a key={key} href={href} target="_blank" rel="noopener noreferrer" className="underline text-inherit">
                                     {renderInline(n.children)}
@@ -468,6 +476,16 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 }
 
                 if (type === 'blockquote') {
+                    // 過去日のブロックは非表示
+                    if (!showPastEffective) {
+                        const dateInfo = lineStart ? dateAtLine.get(lineStart) : undefined;
+                        const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+                        if (dateInfo?.date) {
+                            const day = DateTime.fromISO(dateInfo.date, { zone }).startOf('day');
+                            const today = DateTime.now().setZone(zone).startOf('day');
+                            if (day < today) return null;
+                        }
+                    }
                     const children = Array.isArray((node as any).children) ? ((node as any).children as any[]) : [];
                     return (
                         <blockquote

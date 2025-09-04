@@ -21,8 +21,6 @@ interface TopBarProps {
 const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, className }) => {
     const tzLabelId = React.useId();
     const currencyLabelId = React.useId();
-    // stay mode removed
-
     const timezoneItems = React.useMemo(() => {
         const now = new Date();
         const toOffsetInfo = (tz: string) => {
@@ -144,8 +142,6 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                         </Select.Portal>
                     </Select.Root>
                 </div>
-
-                {/* stay mode removed */}
 
                 {/* View mode */}
                 <ToggleGroup.Root
