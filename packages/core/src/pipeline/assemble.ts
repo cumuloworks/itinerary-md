@@ -30,7 +30,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 .join('')
                 .trim();
             const d = ((): { date?: string; timezone?: string; tzValid?: boolean; tzInvalidOnHeading?: boolean } | null => {
-                const m = text.match(/^(\d{4}-\d{2}-\d{2})(?:\s*@([A-Za-z0-9_./+-]+))?/);
+                const m = text.match(/^(\d{4}-\d{2}-\d{2})(?:\s*@([A-Za-z0-9_./+:-]+))?/);
                 if (!m) return null;
                 const date = m[1];
                 const tzRaw = m[2];

@@ -52,12 +52,14 @@ export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile):
             return out ?? null;
         },
         coerce: (tz, fb) => {
-            const valid = isValidIanaTimeZone(tz);
-            if (valid) return { tz: tz as string, valid };
-            const fallback = coerceIanaTimeZone(fb, undefined) ?? null;
-            return { tz: fallback, valid: false };
+            const normalized = coerceIanaTimeZone(tz, fb ?? undefined);
+            const validInput = !!coerceIanaTimeZone(tz, undefined);
+            return { tz: normalized ?? null, valid: validInput };
         },
-        isValid: (tz) => isValidIanaTimeZone(tz),
+        isValid: (tz) => {
+            if (isValidIanaTimeZone(tz)) return true;
+            return !!coerceIanaTimeZone(tz, undefined);
+        },
     };
 
     const iso: IsoService = {

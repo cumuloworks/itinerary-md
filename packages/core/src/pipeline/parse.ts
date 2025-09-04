@@ -22,7 +22,7 @@ export type ParsedHeader = {
 };
 
 function parseTimeToken(raw: string): { hh: number | null; mm: number | null; tz?: string | null; dayOffset?: number | null } | null {
-    const m = raw.match(/^(\d{1,2}):(\d{2})(?:@([A-Za-z0-9_./+-]+?))?(?:\+(\d+))?$/);
+    const m = raw.match(/^(\d{1,2}):(\d{2})(?:@([A-Za-z0-9_./+:-]+?))?(?:\+(\d+))?$/);
     if (!m) return null;
     const hh = Number(m[1]);
     const mm = Number(m[2]);
