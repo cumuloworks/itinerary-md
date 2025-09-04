@@ -6,7 +6,7 @@ import React, { type FC, memo } from 'react';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import type { Position } from 'unist';
+// import type { Position } from 'unist';
 import { notifyError } from '../core/errors';
 import { isValidIanaTimeZone } from '../utils/timezone';
 import { EventBlock } from './itinerary/EventBlock';
@@ -89,11 +89,9 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             // data-itin-line-* へはフロントマターの行数オフセットを加算する。
             const prefixIndex = typeof fm.content === 'string' ? content.indexOf(fm.content) : -1;
             const frontmatterOffset = prefixIndex > 0 ? (content.slice(0, prefixIndex).match(/\r?\n/g) || []).length : 0;
-            const dateAtLine = new Map<number, { date: string; tz?: string }>();
             const lastStaySegmentsByDate = new Map<string, Array<{ text: string; url?: string }>>();
             let currentDate: { date: string; tz?: string } | undefined;
-            let hasPastHeading = false;
-            let hasPastByData = false;
+            let hasPastByAttr = false;
             // headingはitmdHeadingに置換済み
             const getLineStart = (n: { position?: { start?: { line?: number } } } | undefined): number | undefined => {
                 const l = n?.position?.start?.line as number | undefined;
@@ -103,21 +101,35 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 const l = n?.position?.end?.line as number | undefined;
                 return typeof l === 'number' ? l + frontmatterOffset : undefined;
             };
+            const getNodeDateAttr = (n: unknown): string | undefined => {
+                try {
+                    const d = (n as { data?: { hProperties?: Record<string, unknown> } })?.data?.hProperties as Record<string, unknown> | undefined;
+                    const v = d && (d['data-itmd-date'] as unknown);
+                    return typeof v === 'string' && v.trim() ? v : undefined;
+                } catch {
+                    return undefined;
+                }
+            };
+            const zoneForCompare = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const isPastISODate = (iso?: string): boolean => {
+                if (!iso) return false;
+                try {
+                    const today = DateTime.now().setZone(zoneForCompare).startOf('day');
+                    const day = DateTime.fromISO(iso, { zone: zoneForCompare }).startOf('day');
+                    return day < today;
+                } catch {
+                    return false;
+                }
+            };
             for (const node of (transformed.children || []) as MdNode[]) {
                 if ((node as { type?: string }).type === 'itmdHeading') {
                     const d = node as unknown as { type: string; dateISO?: string; timezone?: string };
                     if (d.dateISO) {
                         currentDate = { date: d.dateISO, tz: d.timezone };
-                        const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-                        const today = DateTime.now().setZone(zone).startOf('day');
-                        const day = DateTime.fromISO(d.dateISO, { zone }).startOf('day');
-                        if (day < today) hasPastHeading = true;
                     }
                     continue;
                 }
                 if ((node as { type?: string })?.type === 'itmdEvent') {
-                    const line = getLineStart(node as unknown as { position?: Position });
-                    if (line && currentDate) dateAtLine.set(line, currentDate);
                     // 前処理段階で各日付の最終宿泊名を収集（表示可否に関係なく算出）
                     try {
                         if (currentDate) {
@@ -131,14 +143,9 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         }
                     } catch {}
                 }
-                // data.itmdDate があればそれで過去判定
-                const itmdDate = (node as unknown as { data?: { itmdDate?: { dateISO?: string; timezone?: string } } }).data?.itmdDate as { dateISO?: string; timezone?: string } | undefined;
-                if (itmdDate?.dateISO) {
-                    const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-                    const today = DateTime.now().setZone(zone).startOf('day');
-                    const day = DateTime.fromISO(itmdDate.dateISO, { zone }).startOf('day');
-                    if (day < today) hasPastByData = true;
-                }
+                // data-itmd-date で過去の存在を検出
+                const attrDate = getNodeDateAttr(node);
+                if (isPastISODate(attrDate)) hasPastByAttr = true;
             }
 
             // Inline renderer for CommonMark phrasing nodes
@@ -207,36 +214,42 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 const type = (node as { type?: string }).type;
                 const lineStart = getLineStart(node);
                 const lineEnd = getLineEnd(node);
+                const nodeDateAttr = getNodeDateAttr(node);
+                const commonDataProps: any = {
+                    'data-itin-line-start': lineStart ? String(lineStart) : undefined,
+                    'data-itin-line-end': lineEnd ? String(lineEnd) : undefined,
+                    'data-itmd-date': nodeDateAttr,
+                };
 
                 if (type === 'itmdHeading') {
                     const d = node as unknown as { dateISO?: string; timezone?: string };
                     const date = d.dateISO;
                     const tz = d.timezone;
                     if (date) {
-                        if (showPastEffective) {
-                            const prevStaySegments = (() => {
-                                try {
-                                    const zone = tz || 'UTC';
-                                    const dt = DateTime.fromISO(date, { zone });
-                                    const prevISO = dt.minus({ days: 1 }).toISODate();
-                                    return prevISO ? lastStaySegmentsByDate.get(prevISO) : undefined;
-                                } catch {
-                                    return undefined;
-                                }
-                            })();
-                            return (
-                                <div key={`h-${lineStart ?? Math.random()}`} className="contents" data-itin-line-start={lineStart ? String(lineStart) : undefined} data-itin-line-end={lineEnd ? String(lineEnd) : undefined}>
-                                    <Heading date={date} timezone={tz} prevStaySegments={prevStaySegments} />
-                                </div>
-                            );
-                        }
+                        const isPast = isPastISODate(nodeDateAttr);
+                        if (!showPastEffective && isPast) return null;
+                        const prevStaySegments = (() => {
+                            try {
+                                const zone = tz || 'UTC';
+                                const dt = DateTime.fromISO(date, { zone });
+                                const prevISO = dt.minus({ days: 1 }).toISODate();
+                                return prevISO ? lastStaySegmentsByDate.get(prevISO) : undefined;
+                            } catch {
+                                return undefined;
+                            }
+                        })();
+                        return (
+                            <div key={`h-${lineStart ?? idx}`} className="contents" {...commonDataProps}>
+                                <Heading date={date} timezone={tz} prevStaySegments={prevStaySegments} />
+                            </div>
+                        );
                     }
                     return null;
                 }
 
                 if (type === 'itmdEvent') {
                     const ev = node as unknown as ItmdEventNode;
-                    const dateInfo = lineStart ? dateAtLine.get(lineStart) : undefined;
+                    const dateInfo = nodeDateAttr ? { date: nodeDateAttr } : undefined;
                     const nameSegmentsRaw = inlineToSegments(ev.title as PhrasingContent[] | null | undefined);
                     const nameSegments = Array.isArray(nameSegmentsRaw) && nameSegmentsRaw.length > 0 ? nameSegmentsRaw : undefined;
                     const nameText = (() => {
@@ -321,15 +334,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         metadata,
                     } as any;
                     {
-                        const isPast = (() => {
-                            const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-                            if (dateInfo?.date) {
-                                const day = DateTime.fromISO(dateInfo.date, { zone }).startOf('day');
-                                const today = DateTime.now().setZone(zone).startOf('day');
-                                return day < today;
-                            }
-                            return false;
-                        })();
+                        const isPast = isPastISODate(nodeDateAttr);
 
                         if (!showPastEffective && isPast) {
                             // skip rendering when past and showPast=false
@@ -337,7 +342,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         }
                         const dateStrForDisplay = (dateInfo?.date as string | undefined) ?? (startISO ? DateTime.fromISO(startISO).toISODate() || undefined : undefined);
                         return (
-                            <div key={`e-${lineStart ?? Math.random()}`} className="contents" data-itin-line-start={lineStart ? String(lineStart) : undefined} data-itin-line-end={lineEnd ? String(lineEnd) : undefined}>
+                            <div key={`e-${lineStart ?? Math.random()}`} className="contents" {...commonDataProps}>
                                 <EventBlock
                                     eventData={eventData}
                                     dateStr={dateStrForDisplay}
@@ -361,10 +366,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     const depth = (node as { depth?: number }).depth || 1;
                     const text = safeToString(node).trim();
                     if (!text) return null;
-                    const dataProps: any = {
-                        'data-itin-line-start': lineStart ? String(lineStart) : undefined,
-                        'data-itin-line-end': lineEnd ? String(lineEnd) : undefined,
-                    };
+                    const dataProps: any = { ...commonDataProps };
                     const hClass = (() => {
                         switch (depth) {
                             case 1:
@@ -422,26 +424,20 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 }
 
                 if (type === 'paragraph') {
+                    if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
                     return (
-                        <p
-                            key={`p-${lineStart ?? idx}`}
-                            className="mb-4 leading-relaxed text-gray-800 text-base ml-24"
-                            data-itin-line-start={lineStart ? String(lineStart) : undefined}
-                            data-itin-line-end={lineEnd ? String(lineEnd) : undefined}
-                        >
+                        <p key={`p-${lineStart ?? idx}`} className="mb-4 leading-relaxed text-gray-800 text-base ml-24" {...commonDataProps}>
                             {renderInline(((node as any).children as any[]) || [])}
                         </p>
                     );
                 }
 
                 if (type === 'list') {
+                    if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
                     const ordered = !!(node as any).ordered;
                     const start = (node as any).start as number | undefined;
                     const items = Array.isArray((node as any).children) ? ((node as any).children as any[]) : [];
-                    const listDataProps: any = {
-                        'data-itin-line-start': lineStart ? String(lineStart) : undefined,
-                        'data-itin-line-end': lineEnd ? String(lineEnd) : undefined,
-                    };
+                    const listDataProps: any = { ...commonDataProps };
                     const listProps: any = { ...listDataProps };
                     if (ordered && typeof start === 'number') listProps.start = start;
                     const children = items.map((li, i) => {
@@ -483,24 +479,10 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 }
 
                 if (type === 'blockquote') {
-                    // 過去日のブロックは非表示
-                    if (!showPastEffective) {
-                        const dateInfo = lineStart ? dateAtLine.get(lineStart) : undefined;
-                        const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-                        if (dateInfo?.date) {
-                            const day = DateTime.fromISO(dateInfo.date, { zone }).startOf('day');
-                            const today = DateTime.now().setZone(zone).startOf('day');
-                            if (day < today) return null;
-                        }
-                    }
+                    if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
                     const children = Array.isArray((node as any).children) ? ((node as any).children as any[]) : [];
                     return (
-                        <blockquote
-                            key={`bq-${lineStart ?? idx}`}
-                            className="my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-24"
-                            data-itin-line-start={lineStart ? String(lineStart) : undefined}
-                            data-itin-line-end={lineEnd ? String(lineEnd) : undefined}
-                        >
+                        <blockquote key={`bq-${lineStart ?? idx}`} className="my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-24" {...commonDataProps}>
                             {children.map((c: any, ci: number) => {
                                 const cStart = getLineStart(c);
                                 const key = `bqc-${cStart ?? ci}`;
@@ -512,22 +494,19 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 }
 
                 if (type === 'code') {
+                    if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
                     const lang = typeof (node as any).lang === 'string' ? (node as any).lang : undefined;
                     const value = typeof (node as any).value === 'string' ? (node as any).value : '';
                     return (
-                        <pre
-                            key={`pre-${lineStart ?? idx}`}
-                            className="bg-gray-50 border border-gray-200 rounded-md overflow-x-auto my-4 ml-20"
-                            data-itin-line-start={lineStart ? String(lineStart) : undefined}
-                            data-itin-line-end={lineEnd ? String(lineEnd) : undefined}
-                        >
+                        <pre key={`pre-${lineStart ?? idx}`} className="bg-gray-50 border border-gray-200 rounded-md overflow-x-auto my-4 ml-20" {...commonDataProps}>
                             <code className={lang ? `language-${lang}` : undefined}>{value}</code>
                         </pre>
                     );
                 }
 
                 if (type === 'thematicBreak') {
-                    return <hr key={`hr-${lineStart ?? idx}`} className="my-8 border-gray-300" data-itin-line-start={lineStart ? String(lineStart) : undefined} data-itin-line-end={lineEnd ? String(lineEnd) : undefined} />;
+                    if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
+                    return <hr key={`hr-${lineStart ?? idx}`} className="my-8 border-gray-300" {...commonDataProps} />;
                 }
 
                 // Fallback: ignore unknown block types
@@ -538,7 +517,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 const rendered = renderBlock(node, idx);
                 if (rendered) els.push(rendered);
             }
-            const hasHiddenPast = !showPastEffective && (hasPastHeading || hasPastByData);
+            const hasHiddenPast = !showPastEffective && hasPastByAttr;
             const topBanner = hasHiddenPast ? (
                 <div className="flex items-center text-gray-500 text-xs mt-6 mb-4" data-itin-line-start={undefined} data-itin-line-end={undefined}>
                     <span className="flex-1 border-t border-gray-200" />

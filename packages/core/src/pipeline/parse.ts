@@ -21,8 +21,8 @@ export type ParsedHeader = {
     };
 };
 
-function parseTimeToken(raw: string): { hh: number | null; mm: number | null; tz?: string | null; dayOffset?: number | null } | null {
-    const m = raw.match(/^(\d{1,2}):(\d{2})(?:@([A-Za-z0-9_./+-]+?))?(?:\+(\d+))?$/);
+function parseTimeToken(raw: string): { hh: number; mm: number; tz?: string | null; dayOffset?: number | null } | null {
+    const m = raw.match(/^(\d{1,2}):(\d{2})(?:@([A-Za-z0-9_./+:-]+?))?(?:\+(\d+))?$/);
     if (!m) return null;
     const hh = Number(m[1]);
     const mm = Number(m[2]);
@@ -35,23 +35,32 @@ function parseTimeToken(raw: string): { hh: number | null; mm: number | null; tz
 
 type TimeSpan = ParsedHeader['time'];
 
-function parseTimeSpan(line: string): { time: TimeSpan; consumed: number } | { time: null; consumed: 0 } {
+export function parseTimeSpan(line: string): { time: TimeSpan; consumed: number } | { time: null; consumed: 0 } {
     const m = line.match(/^\[(.*?)\](?:\s*-\s*\[(.*?)\])?\s*/);
     if (!m) return { time: null, consumed: 0 } as const;
-    const startRaw = m[1] ?? '';
-    const endRaw = m[2] ?? '';
-    const marker = startRaw === 'am' || startRaw === 'pm' ? (startRaw as 'am' | 'pm') : null;
-    if (marker) return { time: { kind: 'marker', marker }, consumed: m[0].length };
+    const startRaw = (m[1] ?? '').trim();
+    const endRaw = (m[2] ?? '').trim();
+    // 空ブラケットは none として許容
+    if (startRaw === '') return { time: { kind: 'none' }, consumed: m[0].length } as const;
+    // マーカー（am/pm）: 大文字小文字非依存
+    const ls = startRaw.toLowerCase();
+    const marker = ls === 'am' || ls === 'pm' ? (ls as 'am' | 'pm') : null;
+    if (marker) return { time: { kind: 'marker', marker }, consumed: m[0].length } as const;
+    // 時刻トークン
     const start = parseTimeToken(startRaw);
     const end = endRaw ? parseTimeToken(endRaw) : null;
     if (start && end)
         return {
-            time: { kind: 'range', start: { hh: start.hh!, mm: start.mm!, tz: start.tz ?? null, dayOffset: start.dayOffset ?? null }, end: { hh: end.hh!, mm: end.mm!, tz: end.tz ?? null, dayOffset: end.dayOffset ?? null } },
+            time: { kind: 'range', start: { hh: start.hh, mm: start.mm, tz: start.tz ?? null, dayOffset: start.dayOffset ?? null }, end: { hh: end.hh, mm: end.mm, tz: end.tz ?? null, dayOffset: end.dayOffset ?? null } },
             consumed: m[0].length,
-        };
-    if (start && !end) return { time: { kind: 'point', start: { hh: start.hh!, mm: start.mm!, tz: start.tz ?? null, dayOffset: start.dayOffset ?? null } }, consumed: m[0].length };
-    // []（時間なし）
-    return { time: { kind: 'none' }, consumed: m[0].length };
+        } as const;
+    if (start && !end)
+        return {
+            time: { kind: 'point', start: { hh: start.hh, mm: start.mm, tz: start.tz ?? null, dayOffset: start.dayOffset ?? null } },
+            consumed: m[0].length,
+        } as const;
+    // 無効な内容（例: [!NOTE]）は時間としては未検出扱い
+    return { time: null, consumed: 0 } as const;
 }
 
 // ヘッダ抽出時、改行が単語内に入るケースを許容するため、テキストノード内の改行のみ除去する
@@ -63,9 +72,9 @@ function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingConte
     const getFirstTextChar = (arr: PhrasingContent[], fromIdx: number): string | undefined => {
         for (let i = fromIdx; i < arr.length; i += 1) {
             const n = arr[i] as unknown as { type?: string; value?: string };
-            if (n.type === 'text' && typeof n.value === 'string' && n.value.length > 0) return n.value[0];
-            if (n.type === 'text' && typeof n.value === 'string' && n.value.length === 0) continue;
-            if (n.type === 'text') continue;
+            if (n.type === 'text' && typeof n.value === 'string') {
+                if (n.value.length > 0) return n.value[0];
+            }
             // 非テキストの場合はスキップして次へ
         }
         return undefined;
@@ -73,9 +82,9 @@ function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingConte
     const getLastTextChar = (arr: PhrasingContent[], fromIdx: number): string | undefined => {
         for (let i = fromIdx; i >= 0; i -= 1) {
             const n = arr[i] as unknown as { type?: string; value?: string };
-            if (n.type === 'text' && typeof n.value === 'string' && n.value.length > 0) return n.value[n.value.length - 1];
-            if (n.type === 'text' && typeof n.value === 'string' && n.value.length === 0) continue;
-            if (n.type === 'text') continue;
+            if (n.type === 'text' && typeof n.value === 'string') {
+                if (n.value.length > 0) return n.value[n.value.length - 1];
+            }
         }
         return undefined;
     };
@@ -104,18 +113,41 @@ function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingConte
     });
 }
 
-function splitHeadAndDestUsingSeps(line: string, tokens: LexTokens, consumed: number): { headRaw: string; destRaw: string | null; sep: 'doublecolon' | 'at' | null } {
-    const seps = (tokens.seps || []).filter((s) => s.kind === 'doublecolon' || s.kind === 'at') as Array<{ kind: 'doublecolon' | 'at'; index: number }>;
-    const first = seps.filter((s) => s.index >= consumed).sort((a, b) => a.index - b.index)[0];
-    if (!first) {
+function splitHeadAndDestUsingSeps(line: string, tokens: LexTokens, consumed: number): { headRaw: string; destRaw: string | null; sep: 'doublecolon' | 'at' | 'from' | null } {
+    const lower = line.toLowerCase();
+    type SepKind = 'doublecolon' | 'at' | 'from';
+    const seps = (tokens.seps || []).filter((s) => s.kind === 'doublecolon' || s.kind === 'at' || s.kind === 'from') as Array<{ kind: SepKind; index: number }>;
+
+    // トークン列から、使用可能な最初のセパレータを決定
+    let chosen: { kind: SepKind; rawIdx: number } | null = null;
+    const sorted = seps.filter((s) => s.index >= consumed).sort((a, b) => a.index - b.index);
+    for (const s of sorted) {
+        const rawIdxWord = tokens.map(s.index); // 実文字列における先頭位置
+        if (s.kind === 'from') {
+            // 既存挙動に合わせて ' from '（前後スペース必須）かつ後続に ' to ' が存在する場合のみ有効化
+            const hasLeadingSpace = rawIdxWord > 0 && lower[rawIdxWord - 1] === ' ';
+            const hasTrailingSpace = lower[rawIdxWord + 4] === ' ';
+            if (!(hasLeadingSpace && hasTrailingSpace)) continue;
+            const toIdx = lower.indexOf(' to ', rawIdxWord + 5);
+            if (toIdx < 0) continue;
+            // head 側の rawIdx は先行スペースの位置に合わせる
+            chosen = { kind: 'from', rawIdx: rawIdxWord - 1 };
+            break;
+        }
+        // '::' / 'at' はそのまま採用
+        chosen = { kind: s.kind, rawIdx: rawIdxWord };
+        break;
+    }
+
+    if (!chosen) {
         const s = line.slice(consumed).trim();
         return { headRaw: s, destRaw: null, sep: null };
     }
-    const rawIdx = tokens.map(first.index);
-    const headRaw = line.slice(consumed, rawIdx).trim();
-    const skipLen = first.kind === 'doublecolon' ? 2 : 2; // '::' or 'at'
-    const destRaw = line.slice(rawIdx + skipLen).trim();
-    return { headRaw, destRaw, sep: first.kind };
+
+    const headRaw = line.slice(consumed, chosen.rawIdx).trim();
+    const skipLen = chosen.kind === 'doublecolon' ? 2 : chosen.kind === 'at' ? 2 : ' from '.length;
+    const destRaw = line.slice(chosen.rawIdx + skipLen).trim();
+    return { headRaw, destRaw, sep: chosen.kind };
 }
 
 function parseHead(headRaw: string): { eventType?: string; title: PhrasingContent[] | null } {
@@ -142,6 +174,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         const substr = inlineFullText.slice(start, end);
         return substr ? ([{ type: 'text', value: substr }] as unknown as PhrasingContent[]) : [];
     };
+    const pickInline = (start: number, end: number): PhrasingContent[] => normalizeSoftBreaksInTextNodes(sliceInline(start, end).filter((n) => mdastToString(toParagraph([n])).trim() !== ''));
 
     // 絶対オフセットの算出
     // inlineFullText 基準のオフセットを算出（mdInlineに対する位置）
@@ -181,7 +214,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             const secondEnd = secondStart + tm[2].length;
             positions.time = { ...(positions.time || {}), start: positions.time?.start, end: { start: secondStart, end: secondEnd } };
         }
-        if (tm[1] === 'am' || tm[1] === 'pm') {
+        if ((tm[1] || '').toLowerCase() === 'am' || (tm[1] || '').toLowerCase() === 'pm') {
             positions.time = { ...(positions.time || {}), marker: { start: firstStart, end: firstEnd } };
         }
     }
@@ -191,22 +224,43 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         if (destStartInline < 0) destStartInline = inlineFullText.indexOf(destRaw);
         const destEndInline = destStartInline >= 0 ? destStartInline + destRaw.length : inlineFullText.length;
         const idx = destRaw.lastIndexOf(' - ');
-        // from/to 構文の検出（前後スペース必須）
         const lowerDest = destRaw.toLowerCase();
-        const fromIdxRel = lowerDest.indexOf(' from ');
-        if (fromIdxRel >= 0) {
-            const toIdxRel = lowerDest.indexOf(' to ', fromIdxRel + ' from '.length);
+        let handledFromTo = false;
+        // 明示的に 'from' セパレータが使われた場合は 'X to Y' を優先
+        if (!destination && sep === 'from') {
+            const toIdxRel = lowerDest.indexOf(' to ');
             if (toIdxRel >= 0) {
-                const fromStart = destStartInline + fromIdxRel + ' from '.length; // after ' from '
-                const fromEnd = destStartInline + toIdxRel; // before ' to '
-                const toStart = destStartInline + toIdxRel + ' to '.length; // after ' to '
+                const fromStart = destStartInline;
+                const fromEnd = destStartInline + toIdxRel;
+                const toStart = destStartInline + toIdxRel + ' to '.length;
                 const toEnd = destEndInline;
                 destination = {
                     kind: 'fromTo',
-                    from: normalizeSoftBreaksInTextNodes(sliceInline(fromStart, fromEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
-                    to: normalizeSoftBreaksInTextNodes(sliceInline(toStart, toEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
+                    from: pickInline(fromStart, fromEnd),
+                    to: pickInline(toStart, toEnd),
                 } as ParsedHeader['destination'];
                 positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
+                handledFromTo = true;
+            }
+        }
+        // 一般的な ' from X to Y ' 構文の検出（前後スペース必須）
+        if (!destination && !handledFromTo) {
+            const fromIdxRel = lowerDest.indexOf(' from ');
+            if (fromIdxRel >= 0) {
+                const toIdxRel = lowerDest.indexOf(' to ', fromIdxRel + ' from '.length);
+                if (toIdxRel >= 0) {
+                    const fromStart = destStartInline + fromIdxRel + ' from '.length; // after ' from '
+                    const fromEnd = destStartInline + toIdxRel; // before ' to '
+                    const toStart = destStartInline + toIdxRel + ' to '.length; // after ' to '
+                    const toEnd = destEndInline;
+                    destination = {
+                        kind: 'fromTo',
+                        from: pickInline(fromStart, fromEnd),
+                        to: pickInline(toStart, toEnd),
+                    } as ParsedHeader['destination'];
+                    positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
+                    handledFromTo = true;
+                }
             }
         }
         if (!destination && idx >= 0) {
@@ -227,49 +281,11 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             } as ParsedHeader['destination'];
             positions.destination = { at: { start: destStartInline, end: destEndInline } };
         }
-    } else if (sep === null) {
-        // from ... to ... 構文（ヘッダ内）
-        const found = inlineFullText.indexOf(headRaw, headStartInline);
-        const absStart = found >= 0 ? found : headStartInline;
-        const lowerHead = headRaw.toLowerCase();
-        const relFromIdx = lowerHead.indexOf(' from ');
-        const relToIdx = relFromIdx >= 0 ? lowerHead.indexOf(' to ', relFromIdx + ' from '.length) : -1;
-        if (relFromIdx >= 0 && relToIdx >= 0) {
-            const toIdxAbsRel = relFromIdx + lowerHead.slice(relFromIdx).indexOf(' to '); // position of ' to '
-            // raw absolute ranges (exclusive end)
-            let fromLabelStart = absStart + relFromIdx + ' from '.length; // after ' from '
-            let fromLabelEnd = absStart + toIdxAbsRel; // before ' to '
-            let toLabelStart = absStart + toIdxAbsRel + ' to '.length; // after ' to '
-            let toLabelEnd = absStart + headRaw.length;
-
-            // trim helper over inlineFullText
-            const trimRange = (start: number, end: number): { start: number; end: number } => {
-                let s = start;
-                let e = end;
-                while (s < e && /\s/.test(inlineFullText[s]!)) s += 1;
-                while (e > s && /\s/.test(inlineFullText[e - 1]!)) e -= 1;
-                return { start: s, end: e };
-            };
-
-            ({ start: fromLabelStart, end: fromLabelEnd } = trimRange(fromLabelStart, fromLabelEnd));
-            ({ start: toLabelStart, end: toLabelEnd } = trimRange(toLabelStart, toLabelEnd));
-
-            // title は from の手前まで
-            const ttl = sliceInline(headTitleStartInline, absStart + relFromIdx);
-            titleInline = mdastToString(toParagraph(ttl)).trim() === '' ? titleInline : ttl;
-            destination = {
-                kind: 'fromTo',
-                from: normalizeSoftBreaksInTextNodes(sliceInline(fromLabelStart, fromLabelEnd)),
-                to: normalizeSoftBreaksInTextNodes(sliceInline(toLabelStart, toLabelEnd)),
-            } as ParsedHeader['destination'];
-            positions.destination = { from: { start: fromLabelStart, end: fromLabelEnd }, to: { start: toLabelStart, end: toLabelEnd } };
-        }
     }
 
     // タイトル最終決定: no-sep かつ dashPair のときは title=null（ルート解釈）。
     // それ以外では、mdInline から抽出できなければ text ベースの head.title をフォールバックに使う。
     const title = ((): PhrasingContent[] | null => {
-        if (destination?.kind === 'dashPair' && sep === null) return null;
         if (titleInline && titleInline.length > 0) return titleInline;
         if (head.title && mdastToString(toParagraph(head.title)).trim() !== '') return head.title;
         // 省略記法: タイトルが空なら常に eventType をタイトルにする
