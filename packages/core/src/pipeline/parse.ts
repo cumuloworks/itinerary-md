@@ -114,7 +114,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
     const headEndInline = headFoundAt >= 0 ? headFoundAt + headRaw.length : inlineFullText.length;
     let headTitleStartInline = headFoundAt >= 0 ? headFoundAt : headStartInline;
     if (head.eventType && headFoundAt >= 0) {
-        const re = new RegExp('^\\s*' + head.eventType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s+|$)');
+        const re = new RegExp(`^\\s*${head.eventType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+|$)`);
         const m = headRaw.match(re);
         if (m) headTitleStartInline += m[0].length;
     }

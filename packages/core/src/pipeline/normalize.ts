@@ -20,7 +20,7 @@ export function normalizeHeader(h: ParsedHeader, ctx: { baseTz?: string; dateISO
         let baseDateForEnd = ctx.dateISO;
         const offset = t.end.dayOffset ?? null;
         if (baseDateForEnd && offset && offset > 0) {
-            const d = new Date(baseDateForEnd + 'T00:00:00Z');
+            const d = new Date(`${baseDateForEnd}T00:00:00Z`);
             d.setUTCDate(d.getUTCDate() + offset);
             baseDateForEnd = d.toISOString().slice(0, 10);
         }

@@ -345,7 +345,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
     const routeOrLocationDisplay = (() => {
         if (eventData.baseType === 'transportation' && eventData.departure && eventData.arrival) {
             const meta = eventData.metadata as Record<string, string>;
-            return <Route departure={eventData.departure} arrival={eventData.arrival} departureUrl={meta['departure__url']} arrivalUrl={meta['arrival__url']} departureSegments={departureSegments} arrivalSegments={arrivalSegments} />;
+            return <Route departure={eventData.departure} arrival={eventData.arrival} departureUrl={meta.departure__url} arrivalUrl={meta.arrival__url} departureSegments={departureSegments} arrivalSegments={arrivalSegments} />;
         }
         if ((eventData.baseType === 'stay' || eventData.baseType === 'activity') && eventData.location) {
             return <Location location={eventData.location} segments={arrivalSegments} />;
@@ -379,7 +379,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                             (() => {
                                 if (!mainTitle) return undefined;
                                 const meta = eventData.metadata as Record<string, string>;
-                                const url = meta['name__url'];
+                                const url = meta.name__url;
                                 if (url && isAllowedHref(url)) {
                                     return [{ text: mainTitle, url }];
                                 }

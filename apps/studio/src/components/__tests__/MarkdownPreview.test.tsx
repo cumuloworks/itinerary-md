@@ -83,8 +83,8 @@ describe('MarkdownPreview (itmd pipeline rendering)', () => {
         const a50 = getAllByText('50A');
         expect(a40.length).toBeGreaterThan(0);
         expect(a50.length).toBeGreaterThan(0);
-        // Seat ラベルが2回分存在するか（重複キーが collapse されない）
-        const seatLabels = getAllByText('Seat:');
+        // seat ラベルが2回分存在するか（重複キーが collapse されない）
+        const seatLabels = getAllByText('seat:');
         expect(seatLabels.length).toBeGreaterThan(1);
     });
 

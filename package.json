@@ -14,6 +14,7 @@
         "typecheck": "npm -ws run typecheck --if-present",
         "lint": "biome check apps/studio/src packages/core/src apps/studio/test",
         "lint:fix": "biome check --write apps/studio/src packages/core/src apps/studio/test",
+        "lint:unsafe": "biome check --write --unsafe apps/studio/src packages/core/src apps/studio/test",
         "format": "biome format --write apps/studio/src packages/core/src apps/studio/test",
         "format:check": "biome format --ci apps/studio/src packages/core/src apps/studio/test",
         "prepare": "husky",

@@ -117,7 +117,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     } catch {}
                 }
                 // data.itmdDate があればそれで過去判定
-                const itmdDate = ((node as unknown as { data?: { itmdDate?: { dateISO?: string; timezone?: string } } }).data || {}).itmdDate as { dateISO?: string; timezone?: string } | undefined;
+                const itmdDate = (node as unknown as { data?: { itmdDate?: { dateISO?: string; timezone?: string } } }).data?.itmdDate as { dateISO?: string; timezone?: string } | undefined;
                 if (itmdDate?.dateISO) {
                     const zone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
                     const today = DateTime.now().setZone(zone).startOf('day');
@@ -277,7 +277,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     const startISO = timeKind === 'point' || timeKind === 'range' ? ((ev.time as any)?.startISO as string | undefined) : undefined;
                     const endISO = timeKind === 'range' ? ((ev.time as any)?.endISO as string | undefined) : undefined;
                     const marker = timeKind === 'marker' ? ((ev.time as any)?.marker as 'am' | 'pm' | undefined) : undefined;
-                    const itmdPrice = ((ev as unknown as { data?: { itmdPrice?: Array<{ key: string; raw: string; price: { tokens?: Array<any> } }> } }).data || {}).itmdPrice as
+                    const itmdPrice = (ev as unknown as { data?: { itmdPrice?: Array<{ key: string; raw: string; price: { tokens?: Array<any> } }> } }).data?.itmdPrice as
                         | Array<{ key: string; raw: string; price: { tokens?: Array<any> } }>
                         | undefined;
                     const priceInfos: Array<{ key: string; currency: string; amount: number }> | undefined = (() => {
@@ -362,7 +362,6 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                                 return 'text-base font-semibold text-gray-800 mb-2 mt-4 ml-0';
                             case 5:
                                 return 'text-sm font-semibold text-gray-800 mb-2 mt-4 ml-0';
-                            case 6:
                             default:
                                 return 'text-xs font-semibold text-gray-800 mb-2 mt-4 ml-0';
                         }
@@ -398,7 +397,6 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                                     {text}
                                 </h5>
                             );
-                        case 6:
                         default:
                             return (
                                 <h6 key={`h-${lineStart ?? idx}`} className={hClass} {...dataProps}>

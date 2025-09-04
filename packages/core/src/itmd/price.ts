@@ -161,7 +161,7 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
         if (!currency && numM) {
             const rawNumStr = (numM[0] || '') as string;
             const numNorm = normalizeAmountString(rawNumStr);
-            if (defaultCurrency && defaultCurrency.trim()) {
+            if (defaultCurrency?.trim()) {
                 const cur = defaultCurrency.toUpperCase();
                 const scale = inferScaleByCurrency(cur);
                 const money: MoneyFragment = {

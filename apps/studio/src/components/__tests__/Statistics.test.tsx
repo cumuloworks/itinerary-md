@@ -20,7 +20,37 @@ interface TestMdNode {
 }
 
 const heading = (text: string): TestMdNode => ({ type: 'itmdHeading', dateISO: text });
-const itmdEvent = (eventType: string, meta?: Record<string, unknown> | null): TestMdNode => ({ type: 'itmdEvent', eventType, meta });
+const itmdEvent = (eventType: string, costString?: string): TestMdNode => {
+    if (!costString) return { type: 'itmdEvent', eventType };
+
+    // costStringを解析してdata.itmdPrice形式に変換
+    const parts = costString.split(' ');
+    const amount = parts[0];
+    const currency = parts[1] || 'USD';
+
+    return {
+        type: 'itmdEvent',
+        eventType,
+        data: {
+            itmdPrice: [
+                {
+                    key: 'cost',
+                    raw: costString,
+                    price: {
+                        tokens: [
+                            {
+                                kind: 'money',
+                                amount,
+                                currency,
+                                normalized: { amount, currency },
+                            },
+                        ],
+                    },
+                },
+            ],
+        },
+    };
+};
 
 describe('Statistics', () => {
     beforeEach(() => {
@@ -42,9 +72,9 @@ describe('Statistics', () => {
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
         const root: { children: TestMdNode[] } = {
             children: [
-                itmdEvent('flight', { cost: '100 USD' }), // transportation
-                itmdEvent('stay', { cost: '200 USD' }), // stay
-                itmdEvent('museum', { cost: '50 USD' }), // activity
+                itmdEvent('flight', '100 USD'), // transportation
+                itmdEvent('stay', '200 USD'), // stay
+                itmdEvent('museum', '50 USD'), // activity
             ],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
@@ -67,8 +97,8 @@ describe('Statistics', () => {
         });
         const root: { children: TestMdNode[] } = {
             children: [
-                itmdEvent('train', { cost: 'EUR 80' }), // 80 EUR → 100 USD
-                itmdEvent('stay', { cost: '¥11000' }), // 11000 JPY → 100 USD
+                itmdEvent('train', '80 EUR'), // 80 EUR → 100 USD
+                itmdEvent('stay', '11000 JPY'), // 11000 JPY → 100 USD
             ],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
@@ -81,8 +111,8 @@ describe('Statistics', () => {
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
         const root: { children: TestMdNode[] } = {
             children: [
-                itmdEvent('train', { cost: 'EUR 80' }), // レートなし→除外
-                itmdEvent('bus', { cost: 'USD 20' }), // 同通貨→集計
+                itmdEvent('train', '80 EUR'), // レートなし→除外
+                itmdEvent('bus', '20 USD'), // 同通貨→集計
             ],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
@@ -91,9 +121,9 @@ describe('Statistics', () => {
         expect(totalEl?.textContent || '').toMatch(/20/);
     });
 
-    it('meta.price フォールバックと配列メタの正規化に対応する', () => {
+    it('data.itmdPrice形式でフォールバックと正規化に対応する', () => {
         const root: { children: TestMdNode[] } = {
-            children: [itmdEvent('bus', { price: '30 USD' }), itmdEvent('museum', { cost: [{ type: 'text', value: '20 USD' }] as unknown[] })],
+            children: [itmdEvent('bus', '30 USD'), itmdEvent('museum', '20 USD')],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
         // 合計 50

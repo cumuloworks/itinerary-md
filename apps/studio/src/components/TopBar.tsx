@@ -49,7 +49,7 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     .padStart(2, '0');
                 const minsAbs = (Math.abs(offsetMinutes) % 60).toString().padStart(2, '0');
                 const signStr = offsetMinutes >= 0 ? '+' : '-';
-                const offsetLabel = `GMT${signStr}${hoursAbs}${minsAbs !== '00' ? ':' + minsAbs : ''}`;
+                const offsetLabel = `GMT${signStr}${hoursAbs}${minsAbs !== '00' ? `:${minsAbs}` : ''}`;
                 return { tz, offsetMinutes, offsetLabel, label: `${tz} (${offsetLabel})` };
             } catch {
                 return { tz, offsetMinutes: 0, offsetLabel: 'GMT+00', label: `${tz} (GMT+00)` };

@@ -1,15 +1,15 @@
-import type { Parent, PhrasingContent, Text } from 'mdast';
+import type { InlineCode, Parent, PhrasingContent, Text } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 
 function cloneShallow<T extends object>(obj: T): T {
-    return { ...(obj as any) } as T;
+    return { ...obj };
 }
 
 function sliceNode(node: PhrasingContent, start: number, end: number, accOffset: { value: number }): PhrasingContent[] {
     const lengthOf = (n: PhrasingContent): number => {
-        if ((n as any).type === 'text') return ((n as Text).value || '').length;
-        if ((n as any).type === 'inlineCode') return String((n as any).value ?? '').length;
-        const t = mdastToString(n as any);
+        if (n.type === 'text') return ((n as Text).value || '').length;
+        if (n.type === 'inlineCode') return String((n as InlineCode).value ?? '').length;
+        const t = mdastToString(n);
         return t.length;
     };
 
@@ -25,29 +25,29 @@ function sliceNode(node: PhrasingContent, start: number, end: number, accOffset:
     const overlapStart = Math.max(start, nodeStart);
     const overlapEnd = Math.min(end, nodeEnd);
 
-    if ((node as any).type === 'text') {
+    if (node.type === 'text') {
         const text = (node as Text).value || '';
         const relStart = overlapStart - nodeStart;
         const relEnd = overlapEnd - nodeStart;
         const sliced = text.slice(relStart, relEnd);
-        if (sliced) results.push({ type: 'text', value: sliced } as any);
-    } else if ((node as any).type === 'inlineCode') {
-        const text = String((node as any).value ?? '');
+        if (sliced) results.push({ type: 'text', value: sliced } as Text);
+    } else if (node.type === 'inlineCode') {
+        const text = String((node as InlineCode).value ?? '');
         const relStart = overlapStart - nodeStart;
         const relEnd = overlapEnd - nodeStart;
         const sliced = text.slice(relStart, relEnd);
-        if (sliced) results.push({ ...(node as any), value: sliced });
-    } else if ('children' in (node as any) && Array.isArray((node as any).children)) {
-        const parent = node as unknown as Parent & { children: PhrasingContent[] };
+        if (sliced) results.push({ ...(node as InlineCode), value: sliced });
+    } else if ('children' in node && Array.isArray((node as Parent).children)) {
+        const parent = node as Parent & { children: PhrasingContent[] };
         const newChildren: PhrasingContent[] = [];
         for (const ch of parent.children) {
             const sliced = sliceNode(ch, start, end, accOffset);
             newChildren.push(...sliced);
         }
         if (newChildren.length > 0) {
-            const cloned = cloneShallow(parent) as any;
-            cloned.children = newChildren;
-            results.push(cloned);
+            const cloned = cloneShallow(parent);
+            (cloned as Parent & { children: PhrasingContent[] }).children = newChildren;
+            results.push(cloned as PhrasingContent);
         }
         // parent case already advanced accOffset via recursion; early return to avoid double-advance
         return results;
