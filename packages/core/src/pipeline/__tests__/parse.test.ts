@@ -188,4 +188,14 @@ describe('parseHeader', () => {
         expect(mdastToString({ type: 'paragraph', children: (h.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('Stay');
         expect(h.destination?.kind).toBe('single');
     });
+
+    it('single(at): at の2文字を正しくスキップして抽出（t hotel 問題の再発防止）', () => {
+        const line = '[06:30] breakfast Traditional Japanese breakfast at hotel';
+        const tokens = lexLine(line, {}, sv);
+        const h = parseHeader(tokens, [], sv);
+        expect(h.destination?.kind).toBe('single');
+        const d = h.destination as Extract<typeof h.destination, { kind: 'single' }>;
+        const at = d.at as PhrasingContent[];
+        expect(mdastToString({ type: 'paragraph', children: at } as unknown as Parent)).toBe('hotel');
+    });
 });

@@ -55,13 +55,52 @@ function parseTimeSpan(line: string): { time: TimeSpan; consumed: number } | { t
 }
 
 // ヘッダ抽出時、改行が単語内に入るケースを許容するため、テキストノード内の改行のみ除去する
-function removeNewlinesInTextNodes(nodes: PhrasingContent[]): PhrasingContent[] {
-    return nodes.map((n) => {
-        if ((n as unknown as { type?: string }).type === 'text') {
-            const t = n as unknown as { type: 'text'; value: string };
-            return { ...t, value: t.value.replace(/\n/g, '') } as unknown as PhrasingContent;
+// 改行正規化（統一仕様）:
+// - 単語中（前後が英数字）の改行は削除
+// - それ以外の改行はスペース化（CommonMark のソフト改行挙動に寄せる）
+function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingContent[] {
+    const isWordChar = (ch: string | undefined): boolean => !!ch && /[A-Za-z0-9]/.test(ch);
+    const getFirstTextChar = (arr: PhrasingContent[], fromIdx: number): string | undefined => {
+        for (let i = fromIdx; i < arr.length; i += 1) {
+            const n = arr[i] as unknown as { type?: string; value?: string };
+            if (n.type === 'text' && typeof n.value === 'string' && n.value.length > 0) return n.value[0];
+            if (n.type === 'text' && typeof n.value === 'string' && n.value.length === 0) continue;
+            if (n.type === 'text') continue;
+            // 非テキストの場合はスキップして次へ
         }
-        return n;
+        return undefined;
+    };
+    const getLastTextChar = (arr: PhrasingContent[], fromIdx: number): string | undefined => {
+        for (let i = fromIdx; i >= 0; i -= 1) {
+            const n = arr[i] as unknown as { type?: string; value?: string };
+            if (n.type === 'text' && typeof n.value === 'string' && n.value.length > 0) return n.value[n.value.length - 1];
+            if (n.type === 'text' && typeof n.value === 'string' && n.value.length === 0) continue;
+            if (n.type === 'text') continue;
+        }
+        return undefined;
+    };
+    return nodes.map((node, idx, arr) => {
+        if ((node as unknown as { type?: string }).type !== 'text') return node;
+        const t = node as unknown as { type: 'text'; value: string };
+        if (!t.value.includes('\n')) return node;
+        let out = '';
+        for (let i = 0; i < t.value.length; i += 1) {
+            const ch = t.value[i];
+            if (ch !== '\n') {
+                out += ch;
+                continue;
+            }
+            const prevChar = i > 0 ? t.value[i - 1] : getLastTextChar(arr, idx - 1);
+            const nextChar = i < t.value.length - 1 ? t.value[i + 1] : getFirstTextChar(arr, idx + 1);
+            if (isWordChar(prevChar) && isWordChar(nextChar)) {
+                // 単語中の改行は削除
+                // 何も追加しない
+            } else {
+                // それ以外はスペース
+                out += ' ';
+            }
+        }
+        return { ...t, value: out } as unknown as PhrasingContent;
     });
 }
 
@@ -74,7 +113,7 @@ function splitHeadAndDestUsingSeps(line: string, tokens: LexTokens, consumed: nu
     }
     const rawIdx = tokens.map(first.index);
     const headRaw = line.slice(consumed, rawIdx).trim();
-    const skipLen = first.kind === 'doublecolon' ? 2 : 1; // '::' or '@'
+    const skipLen = first.kind === 'doublecolon' ? 2 : 2; // '::' or 'at'
     const destRaw = line.slice(rawIdx + skipLen).trim();
     return { headRaw, destRaw, sep: first.kind };
 }
@@ -152,24 +191,20 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         if (destStartInline < 0) destStartInline = inlineFullText.indexOf(destRaw);
         const destEndInline = destStartInline >= 0 ? destStartInline + destRaw.length : inlineFullText.length;
         const idx = destRaw.lastIndexOf(' - ');
-        // from/to 構文の検出（両方含む場合に限る）
-        const fromMatch = /\bfrom\b/i.exec(destRaw);
-        const hasFrom = fromMatch !== null;
-        if (hasFrom) {
-            // 'from' の位置から 'to' を検索
-            const toMatch = /\bto\b/i.exec(destRaw.slice(fromMatch.index + fromMatch[0].length));
-            const hasTo = toMatch !== null;
-            if (hasTo) {
-                const fromIdx = fromMatch.index;
-                const toIdx = fromMatch.index + fromMatch[0].length + toMatch.index;
-                const fromStart = destStartInline + fromIdx + 4; // after 'from'
-                const fromEnd = destStartInline + toIdx;
-                const toStart = destStartInline + toIdx + 2; // after 'to'
+        // from/to 構文の検出（前後スペース必須）
+        const lowerDest = destRaw.toLowerCase();
+        const fromIdxRel = lowerDest.indexOf(' from ');
+        if (fromIdxRel >= 0) {
+            const toIdxRel = lowerDest.indexOf(' to ', fromIdxRel + ' from '.length);
+            if (toIdxRel >= 0) {
+                const fromStart = destStartInline + fromIdxRel + ' from '.length; // after ' from '
+                const fromEnd = destStartInline + toIdxRel; // before ' to '
+                const toStart = destStartInline + toIdxRel + ' to '.length; // after ' to '
                 const toEnd = destEndInline;
                 destination = {
                     kind: 'fromTo',
-                    from: removeNewlinesInTextNodes(sliceInline(fromStart, fromEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
-                    to: removeNewlinesInTextNodes(sliceInline(toStart, toEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
+                    from: normalizeSoftBreaksInTextNodes(sliceInline(fromStart, fromEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
+                    to: normalizeSoftBreaksInTextNodes(sliceInline(toStart, toEnd).filter((n) => mdastToString(toParagraph([n])).trim() !== '')),
                 } as ParsedHeader['destination'];
                 positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
             }
@@ -181,14 +216,14 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             const toEnd = destEndInline;
             destination = {
                 kind: 'dashPair',
-                from: sliceInline(fromStart, fromEnd),
-                to: sliceInline(toStart, toEnd),
+                from: normalizeSoftBreaksInTextNodes(sliceInline(fromStart, fromEnd)),
+                to: normalizeSoftBreaksInTextNodes(sliceInline(toStart, toEnd)),
             } as ParsedHeader['destination'];
             positions.destination = { from: { start: fromStart, end: fromEnd }, to: { start: toStart, end: toEnd } };
         } else if (sep === 'doublecolon' || sep === 'at') {
             destination = {
                 kind: 'single',
-                at: sliceInline(destStartInline, destEndInline),
+                at: normalizeSoftBreaksInTextNodes(sliceInline(destStartInline, destEndInline)),
             } as ParsedHeader['destination'];
             positions.destination = { at: { start: destStartInline, end: destEndInline } };
         }
@@ -196,14 +231,15 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         // from ... to ... 構文（ヘッダ内）
         const found = inlineFullText.indexOf(headRaw, headStartInline);
         const absStart = found >= 0 ? found : headStartInline;
-        const relFromIdx = headRaw.search(/\bfrom\b/);
-        const relToIdx = relFromIdx >= 0 ? headRaw.slice(relFromIdx + 4).search(/\bto\b/) : -1;
+        const lowerHead = headRaw.toLowerCase();
+        const relFromIdx = lowerHead.indexOf(' from ');
+        const relToIdx = relFromIdx >= 0 ? lowerHead.indexOf(' to ', relFromIdx + ' from '.length) : -1;
         if (relFromIdx >= 0 && relToIdx >= 0) {
-            const toIdxAbsRel = relFromIdx + 4 + relToIdx; // position of 'to'
+            const toIdxAbsRel = relFromIdx + lowerHead.slice(relFromIdx).indexOf(' to '); // position of ' to '
             // raw absolute ranges (exclusive end)
-            let fromLabelStart = absStart + relFromIdx + 4; // after 'from'
-            let fromLabelEnd = absStart + toIdxAbsRel; // before 'to'
-            let toLabelStart = absStart + toIdxAbsRel + 2; // after 'to'
+            let fromLabelStart = absStart + relFromIdx + ' from '.length; // after ' from '
+            let fromLabelEnd = absStart + toIdxAbsRel; // before ' to '
+            let toLabelStart = absStart + toIdxAbsRel + ' to '.length; // after ' to '
             let toLabelEnd = absStart + headRaw.length;
 
             // trim helper over inlineFullText
@@ -223,8 +259,8 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             titleInline = mdastToString(toParagraph(ttl)).trim() === '' ? titleInline : ttl;
             destination = {
                 kind: 'fromTo',
-                from: removeNewlinesInTextNodes(sliceInline(fromLabelStart, fromLabelEnd)),
-                to: removeNewlinesInTextNodes(sliceInline(toLabelStart, toLabelEnd)),
+                from: normalizeSoftBreaksInTextNodes(sliceInline(fromLabelStart, fromLabelEnd)),
+                to: normalizeSoftBreaksInTextNodes(sliceInline(toLabelStart, toLabelEnd)),
             } as ParsedHeader['destination'];
             positions.destination = { from: { start: fromLabelStart, end: fromLabelEnd }, to: { start: toLabelStart, end: toLabelEnd } };
         }

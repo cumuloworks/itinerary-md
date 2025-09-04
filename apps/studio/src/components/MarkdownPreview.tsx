@@ -65,16 +65,23 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
 
     const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
 
-    const { reactContent, root, parsedFrontmatter } = React.useMemo(() => {
+    const { reactContent, root, parsedFrontmatter, isItmd } = React.useMemo(() => {
         try {
             const fm = matter(content);
             const fmTimezone = typeof (fm.data as any)?.timezone === 'string' ? (fm.data as any).timezone : undefined;
             const fmCurrency = typeof (fm.data as any)?.currency === 'string' ? (fm.data as any).currency : undefined;
+            const fmType =
+                typeof (fm.data as any)?.type === 'string'
+                    ? String((fm.data as any).type)
+                          .trim()
+                          .toLowerCase()
+                    : undefined;
+            const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
             const tzFallback = isValidIanaTimeZone(fmTimezone || '') ? (fmTimezone as string) : timezone;
-            const mdProcessor = (unified as any)()
-                .use(remarkParse)
-                .use(remarkGfm)
-                .use(remarkItinerary as any, { tzFallback, currencyFallback: (fmCurrency as string) || currency });
+            const mdProcessor = (unified as any)().use(remarkParse).use(remarkGfm);
+            if (isItmdDoc) {
+                (mdProcessor as any).use(remarkItinerary as any, { tzFallback, currencyFallback: (fmCurrency as string) || currency });
+            }
             const mdast = mdProcessor.parse(fm.content || content) as unknown as Root;
             const transformed = mdProcessor.runSync(mdast) as unknown as Root & { children?: MdNode[] };
             // frontmatter を gray-matter で除去してから parse しているため、mdast の position は
@@ -548,9 +555,10 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 ),
                 root: transformed,
                 parsedFrontmatter: (fm.data || {}) as Record<string, unknown>,
+                isItmd: isItmdDoc,
             } as any;
         } catch {
-            return { reactContent: null as React.ReactNode, root: null, parsedFrontmatter: {} as Record<string, unknown> } as any;
+            return { reactContent: null as React.ReactNode, root: null, parsedFrontmatter: {} as Record<string, unknown>, isItmd: false } as any;
         }
     }, [content, timezone, currency, showPastEffective, displayTimezone]);
 
@@ -635,7 +643,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
     return (
         <div ref={containerRef} className="markdown-preview h-full px-8 py-4 bg-white overflow-auto">
             {title && <h1 className="text-4xl font-bold text-gray-900 mb-6 mt-6 ml-0">{title}</h1>}
-            <Statistics root={root as any} frontmatter={safeParsedFrontmatter} timezone={timezone} currency={currency} />
+            {isItmd && <Statistics root={root as any} frontmatter={safeParsedFrontmatter} timezone={timezone} currency={currency} />}
             {reactContent}
         </div>
     );

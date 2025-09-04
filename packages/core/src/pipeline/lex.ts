@@ -42,8 +42,8 @@ export function lexLine(line: string, _ctx: { baseTz?: string }, _sv: Services):
         }
 
         if (isOutside()) {
-            // ::
-            if (ch === ':' && next === ':') {
+            // :: （前後スペース必須）
+            if (ch === ':' && next === ':' && s[i - 1] === ' ' && s[i + 2] === ' ') {
                 seps.push({ kind: 'doublecolon', index: i });
                 i += 1; // skip next ':'
                 continue;
@@ -53,19 +53,20 @@ export function lexLine(line: string, _ctx: { baseTz?: string }, _sv: Services):
                 seps.push({ kind: 'routeDash', index: i + 1 });
                 continue;
             }
-            // word separators: at/from/to (word boundaries)
+            // word separators: at/from/to （前後スペース必須。ただし行頭/行末は境界として許容）
             const rest = s.slice(i);
-            if (/^\bat\b/.test(rest)) {
+            const prevIsBoundary = i === 0 || s[i - 1] === ' ';
+            if (prevIsBoundary && rest.startsWith('at') && (rest[2] === ' ' || rest.length === 2)) {
                 seps.push({ kind: 'at', index: i });
                 i += 1; // advance a bit
                 continue;
             }
-            if (/^\bfrom\b/.test(rest)) {
+            if (prevIsBoundary && rest.startsWith('from') && (rest[4] === ' ' || rest.length === 4)) {
                 seps.push({ kind: 'from', index: i });
                 i += 3;
                 continue;
             }
-            if (/^\bto\b/.test(rest)) {
+            if (prevIsBoundary && rest.startsWith('to') && (rest[2] === ' ' || rest.length === 2)) {
                 seps.push({ kind: 'to', index: i });
                 i += 1;
             }
