@@ -4,7 +4,7 @@ import type { Position } from 'unist';
 import { normalizePriceLine } from '../domain/price';
 import { sliceInlineNodes } from '../mdast';
 import type { Services } from '../services';
-import { isValidIanaTimeZone } from '../time/iana';
+// TZ検証は services.tz に集約
 import type { ITMDHeadingNode } from '../types';
 import { buildEventNode } from './build';
 import { lexLine } from './lex';
@@ -34,8 +34,9 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 if (!m) return null;
                 const date = m[1];
                 const tzRaw = m[2];
-                const tzIsValid = tzRaw ? isValidIanaTimeZone(tzRaw) : true;
-                const tzUsed = tzIsValid ? tzRaw : (sv.policy.tzFallback ?? undefined);
+                const tzCheck = tzRaw ? sv.tz.coerce(tzRaw, sv.policy.tzFallback ?? undefined) : { tz: undefined, valid: true };
+                const tzIsValid = tzCheck.valid;
+                const tzUsed = tzCheck.tz ?? undefined;
                 return { date, timezone: tzUsed, tzValid: tzIsValid, tzInvalidOnHeading: !!tzRaw && !tzIsValid };
             })();
             currentDateISO = (d?.date as string | undefined) || currentDateISO;

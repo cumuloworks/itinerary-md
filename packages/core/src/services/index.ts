@@ -1,8 +1,14 @@
 import { DateTime } from 'luxon';
 import type { VFile } from 'vfile';
+import { coerceIanaTimeZone, isValidIanaTimeZone } from '../time/iana';
 
 export interface TzService {
+    // 入力TZをIANAとして検証し、無効ならnullを返す
     normalize(tz?: string | null): string | null;
+    // 入力TZをIANAとして検証し、無効ならfallbackを返す（fallbackも検証）
+    coerce(tz?: string | null, fallback?: string | null): { tz: string | null; valid: boolean };
+    // 妥当性のみ判定
+    isValid(tz?: string | null): boolean;
 }
 export interface IsoService {
     toISO(dateISO: string | undefined, hh: number | null, mm: number | null, tz: string | null): string | null;
@@ -41,7 +47,17 @@ export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile):
     };
 
     const tz: TzService = {
-        normalize: (tz) => (tz && typeof tz === 'string' ? tz : null),
+        normalize: (tz) => {
+            const out = coerceIanaTimeZone(tz, undefined);
+            return out ?? null;
+        },
+        coerce: (tz, fb) => {
+            const valid = isValidIanaTimeZone(tz);
+            if (valid) return { tz: tz as string, valid };
+            const fallback = coerceIanaTimeZone(fb, undefined) ?? null;
+            return { tz: fallback, valid: false };
+        },
+        isValid: (tz) => isValidIanaTimeZone(tz),
     };
 
     const iso: IsoService = {

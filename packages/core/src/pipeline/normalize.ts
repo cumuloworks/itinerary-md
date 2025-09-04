@@ -5,18 +5,21 @@ import type { ParsedHeader } from './parse';
 export type NormalizedHeader = ParsedHeader & { time?: EventTime | null };
 
 export function normalizeHeader(h: ParsedHeader, ctx: { baseTz?: string; dateISO?: string }, sv: Services): NormalizedHeader {
-    const baseTz = sv.tz.normalize(ctx.baseTz ?? sv.policy.tzFallback);
+    const baseCoerced = sv.tz.coerce(ctx.baseTz ?? null, sv.policy.tzFallback ?? null);
+    const baseTz = baseCoerced.tz;
     if (!h.time) return { ...h };
     if (!ctx.dateISO) return { ...h };
 
     const t = h.time;
     if (t.kind === 'none' || t.kind === 'marker') return { ...h };
     if (t.kind === 'point') {
-        const startISO = sv.iso.toISO(ctx.dateISO, t.start.hh, t.start.mm, t.start.tz ?? baseTz);
+        const startTz = sv.tz.coerce(t.start.tz ?? null, baseTz ?? null).tz ?? null;
+        const startISO = sv.iso.toISO(ctx.dateISO, t.start.hh, t.start.mm, startTz);
         return { ...h, time: { ...t, startISO } };
     }
     if (t.kind === 'range') {
-        const startISO = sv.iso.toISO(ctx.dateISO, t.start.hh, t.start.mm, t.start.tz ?? baseTz);
+        const startTz = sv.tz.coerce(t.start.tz ?? null, baseTz ?? null).tz ?? null;
+        const startISO = sv.iso.toISO(ctx.dateISO, t.start.hh, t.start.mm, startTz);
         let baseDateForEnd = ctx.dateISO;
         const offset = t.end.dayOffset ?? null;
         if (baseDateForEnd && offset && offset > 0) {
@@ -24,7 +27,9 @@ export function normalizeHeader(h: ParsedHeader, ctx: { baseTz?: string; dateISO
             d.setUTCDate(d.getUTCDate() + offset);
             baseDateForEnd = d.toISOString().slice(0, 10);
         }
-        const endISO = sv.iso.toISO(baseDateForEnd, t.end.hh, t.end.mm, t.end.tz ?? t.start.tz ?? baseTz);
+        const endBase = t.start.tz ?? baseTz ?? null;
+        const endTz = sv.tz.coerce(t.end.tz ?? null, endBase).tz ?? null;
+        const endISO = sv.iso.toISO(baseDateForEnd, t.end.hh, t.end.mm, endTz);
         return { ...h, time: { ...t, startISO, endISO } };
     }
     return { ...h };
