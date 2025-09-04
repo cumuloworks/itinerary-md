@@ -20,7 +20,7 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
-        "types": ["vitest/globals", "react", "react-dom"]
+        "types": ["vitest/globals", "react", "react-dom", "@testing-library/jest-dom"]
     },
     "include": ["src", "@test", "types", "test/event-parser.test.ts", "test/time-parser.test.ts", "test/date-parser.test.ts"],
     "references": [

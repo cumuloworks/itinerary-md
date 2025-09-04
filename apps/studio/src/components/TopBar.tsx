@@ -2,9 +2,9 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Select from '@radix-ui/react-select';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
-import { Check, ChevronDown, Clipboard, Columns, Eye, EyeOff, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, Rows, Share2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronsDown, Clipboard, Columns, Eye, EyeOff, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, RotateCcw, Rows, Share2 } from 'lucide-react';
 import * as React from 'react';
-import type { StayMode, TopbarState, ViewMode } from '../types/itinerary';
+import type { TopbarState, ViewMode } from '../types/itinerary';
 
 interface TopBarProps {
     tzSelectId: string;
@@ -21,7 +21,40 @@ interface TopBarProps {
 const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, className }) => {
     const tzLabelId = React.useId();
     const currencyLabelId = React.useId();
-    const stayLabelId = React.useId();
+    const timezoneItems = React.useMemo(() => {
+        const now = new Date();
+        const toOffsetInfo = (tz: string) => {
+            try {
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tz,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'shortOffset',
+                }).formatToParts(now);
+                const tzNamePart = parts.find((p) => p.type === 'timeZoneName');
+                const raw = tzNamePart?.value || '';
+                // Expect formats like "GMT+9", "GMT+09:00"
+                let offsetMinutes = 0;
+                const match = raw.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/i);
+                if (match) {
+                    const sign = match[1] === '-' ? -1 : 1;
+                    const hours = parseInt(match[2], 10);
+                    const mins = match[3] ? parseInt(match[3], 10) : 0;
+                    offsetMinutes = sign * (hours * 60 + mins);
+                }
+                const hoursAbs = Math.floor(Math.abs(offsetMinutes) / 60)
+                    .toString()
+                    .padStart(2, '0');
+                const minsAbs = (Math.abs(offsetMinutes) % 60).toString().padStart(2, '0');
+                const signStr = offsetMinutes >= 0 ? '+' : '-';
+                const offsetLabel = `GMT${signStr}${hoursAbs}${minsAbs !== '00' ? `:${minsAbs}` : ''}`;
+                return { tz, offsetMinutes, offsetLabel, label: `${tz} (${offsetLabel})` };
+            } catch {
+                return { tz, offsetMinutes: 0, offsetLabel: 'GMT+00', label: `${tz} (GMT+00)` };
+            }
+        };
+        return timezoneOptions.map(toOffsetInfo).sort((a, b) => a.offsetMinutes - b.offsetMinutes || a.tz.localeCompare(b.tz));
+    }, [timezoneOptions]);
 
     return (
         <div className="px-0 md:px-8 w-full">
@@ -36,7 +69,7 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                         <span className="sr-only">Timezone</span>
                     </span>
                     <Select.Root value={topbar.timezone} onValueChange={(v) => onTopbarChange({ timezone: v })}>
-                        <Select.Trigger id={tzSelectId} aria-labelledby={tzLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[220px] h-full">
+                        <Select.Trigger id={tzSelectId} aria-labelledby={tzLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[260px] h-full">
                             <Select.Value />
                             <Select.Icon>
                                 <ChevronDown size={12} />
@@ -45,13 +78,13 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                         <Select.Portal>
                             <Select.Content position="popper" sideOffset={4} className="z-50 overflow-auto rounded-md border border-gray-200 bg-white ">
                                 <Select.Viewport className="p-1 max-h-[240px] min-w-[var(--radix-select-trigger-width)] w-max max-w-[90vw]">
-                                    {timezoneOptions.map((tz) => (
+                                    {timezoneItems.map((item) => (
                                         <Select.Item
-                                            key={tz}
-                                            value={tz}
+                                            key={item.tz}
+                                            value={item.tz}
                                             className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100"
                                         >
-                                            <Select.ItemText>{tz}</Select.ItemText>
+                                            <Select.ItemText>{item.label}</Select.ItemText>
                                             <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
                                                 <Check size={12} />
                                             </Select.ItemIndicator>
@@ -61,6 +94,19 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                             </Select.Content>
                         </Select.Portal>
                     </Select.Root>
+                    <Toolbar.Button
+                        type="button"
+                        aria-label="Reset to device timezone"
+                        title="Reset to device timezone"
+                        onClick={() => {
+                            const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                            if (deviceTz) onTopbarChange({ timezone: deviceTz });
+                        }}
+                        className="inline-flex items-center justify-center px-2 h-full rounded-md border text-gray-700 bg-white hover:bg-gray-50 border-gray-300"
+                    >
+                        <RotateCcw size={14} />
+                        <span className="hidden md:block text-xs ml-1">Device TZ</span>
+                    </Toolbar.Button>
                 </div>
 
                 {/* Currency */}
@@ -91,40 +137,6 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                                             </Select.ItemIndicator>
                                         </Select.Item>
                                     ))}
-                                </Select.Viewport>
-                            </Select.Content>
-                        </Select.Portal>
-                    </Select.Root>
-                </div>
-
-                {/* Stay display */}
-                <div className="flex items-center gap-2 h-full">
-                    <span id={stayLabelId} className="text-xs text-gray-600 whitespace-nowrap">
-                        <span aria-hidden>Stay</span>
-                        <span className="sr-only">Stay mode</span>
-                    </span>
-                    <Select.Root value={topbar.stayMode} onValueChange={(v) => onTopbarChange({ stayMode: v as StayMode })}>
-                        <Select.Trigger aria-labelledby={stayLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[140px] h-full">
-                            <Select.Value />
-                            <Select.Icon>
-                                <ChevronDown size={12} />
-                            </Select.Icon>
-                        </Select.Trigger>
-                        <Select.Portal>
-                            <Select.Content position="popper" sideOffset={4} className="z-50 overflow-auto rounded-md border border-gray-200 bg-white ">
-                                <Select.Viewport className="p-1 max-h-[240px] min-w-[var(--radix-select-trigger-width)] w-max max-w-[90vw]">
-                                    <Select.Item value="default" className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100">
-                                        <Select.ItemText>Default</Select.ItemText>
-                                        <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
-                                            <Check size={12} />
-                                        </Select.ItemIndicator>
-                                    </Select.Item>
-                                    <Select.Item value="header" className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100">
-                                        <Select.ItemText>Header</Select.ItemText>
-                                        <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
-                                            <Check size={12} />
-                                        </Select.ItemIndicator>
-                                    </Select.Item>
                                 </Select.Viewport>
                             </Select.Content>
                         </Select.Portal>
@@ -171,7 +183,8 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     onClick={() => onTopbarChange({ autoScroll: !topbar.autoScroll })}
                     className={`inline-flex items-center justify-center px-2 h-full rounded-md border ${topbar.autoScroll ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'}`}
                 >
-                    <span className="text-xs">Auto Scroll: {topbar.autoScroll ? 'ON' : 'OFF'}</span>
+                    <ChevronsDown size={14} />
+                    <span className="text-xs ml-1">Auto Scroll: {topbar.autoScroll ? 'ON' : 'OFF'}</span>
                 </Toolbar.Button>
 
                 <Toolbar.Separator className="w-px mr-auto" />

@@ -24,10 +24,10 @@ declare global {
 window.Buffer = window.Buffer || Buffer;
 
 ReactDOM.createRoot(rootEl).render(
-    <>
+    <div className="min-h-svh min-w-[320px] bg-[#f8f9fa] font-sans overflow-hidden">
         <ErrorBoundary>
             <App />
         </ErrorBoundary>
         <Toaster />
-    </>
+    </div>
 );

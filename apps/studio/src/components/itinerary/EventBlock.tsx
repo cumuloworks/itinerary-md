@@ -1,19 +1,65 @@
-import type { EventData, TimeLike } from '@itinerary-md/core';
-import { formatDateTime, getDayOffset } from '@itinerary-md/core';
 import { MapPin as Activity, Bed, Building, Bus, Camera, Car, Coffee, Landmark, Plane, Ship, ShoppingBag, Sparkles, Train, TreePine, UtensilsCrossed } from 'lucide-react';
-
+import { formatDateTime, getDayOffset } from '../../utils/timezone';
+import { isAllowedHref } from '../../utils/url';
 import { AirlineLogo } from './AirlineLogo';
 import { Location } from './Location';
 import { Route } from './Route';
+import { SegmentedText } from './SegmentedText';
 
-interface ItemProps {
-    eventData: EventData;
+interface EventBlockProps {
+    eventData: {
+        baseType: 'transportation' | 'stay' | 'activity';
+        type:
+            | 'flight'
+            | 'train'
+            | 'drive'
+            | 'ferry'
+            | 'bus'
+            | 'taxi'
+            | 'subway'
+            | 'stay'
+            | 'dormitory'
+            | 'hotel'
+            | 'hostel'
+            | 'ryokan'
+            | 'meal'
+            | 'lunch'
+            | 'dinner'
+            | 'breakfast'
+            | 'brunch'
+            | 'activity'
+            | 'museum'
+            | 'sightseeing'
+            | 'shopping'
+            | 'spa'
+            | 'park'
+            | 'cafe';
+        name?: string;
+        stayName?: string;
+        departure?: string;
+        arrival?: string;
+        location?: string;
+        metadata: Record<string, string>;
+    };
     dateStr?: string;
     timezone?: string;
     currency?: string;
+    priceInfos?: Array<{ key: string; currency: string; amount: number }>;
+    extraLinks?: Array<{ label: string; url: string }>;
+    nameSegments?: Array<{ text: string; url?: string }>;
+    departureSegments?: Array<{ text: string; url?: string }>;
+    arrivalSegments?: Array<{ text: string; url?: string }>;
+    startISO?: string | null;
+    endISO?: string | null;
+    marker?: 'am' | 'pm' | null;
+    bodySegments?: Array<
+        | { kind: 'inline'; segments: Array<{ text: string; url?: string }> }
+        | { kind: 'meta'; entries: Array<{ key: string; segments: Array<{ text: string; url?: string }> }> }
+        | { kind: 'list'; items: Array<Array<{ text: string; url?: string }>>; ordered?: boolean; start?: number | null }
+    >;
 }
 
-const getTypeColors = (type: EventData['type']) => {
+const getTypeColors = (type: EventBlockProps['eventData']['type']) => {
     switch (type) {
         case 'flight':
             return {
@@ -195,7 +241,7 @@ const getTypeColors = (type: EventData['type']) => {
     }
 };
 
-const getTypeIcon = (type: EventData['type']) => {
+const getTypeIcon = (type: EventBlockProps['eventData']['type']) => {
     switch (type) {
         case 'flight':
             return Plane;
@@ -247,21 +293,25 @@ const getTypeIcon = (type: EventData['type']) => {
 const TimePlaceholder: React.FC = () => <span className="font-mono text-lg leading-tight relative inline-block invisible">-----</span>;
 
 const TimeDisplay: React.FC<{
-    parsedTime?: TimeLike;
+    iso?: string | null;
+    marker?: 'am' | 'pm' | null;
     dateStr?: string;
     timezone?: string;
-}> = ({ parsedTime, dateStr, timezone }) => {
-    if (!parsedTime) {
+}> = ({ iso, marker, dateStr, timezone }) => {
+    if (!iso && !marker) {
         return <span className="font-mono text-lg leading-tight relative inline-block invisible">-----</span>;
     }
 
-    if (parsedTime.kind === 'placeholder') {
-        const label = parsedTime.value === 'am' ? 'AM' : 'PM';
+    if (marker) {
+        const label = marker === 'am' ? 'AM' : 'PM';
         return <span className="font-mono text-lg leading-tight inline-block whitespace-pre">{label.padStart(5, ' ')}</span>;
     }
 
     const displayTz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const date = new Date(parsedTime.epochMs);
+    const date = iso ? new Date(iso) : undefined;
+    if (!date || Number.isNaN(date.getTime())) {
+        return <span className="font-mono text-lg leading-tight relative inline-block invisible">-----</span>;
+    }
     const timeText = formatDateTime(date, displayTz);
 
     const dayOffset = dateStr && displayTz ? getDayOffset(date, dateStr, displayTz) : 0;
@@ -277,7 +327,7 @@ const TimeDisplay: React.FC<{
 
 import { Meta } from './Metadata';
 
-export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, currency }) => {
+export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, timezone, currency, priceInfos, extraLinks, nameSegments, departureSegments, arrivalSegments, startISO, endISO, marker, bodySegments }) => {
     const colors = getTypeColors(eventData.type);
     const IconComponent = getTypeIcon(eventData.type);
     const mainTitle = (() => {
@@ -295,22 +345,22 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
     const routeOrLocationDisplay = (() => {
         if (eventData.baseType === 'transportation' && eventData.departure && eventData.arrival) {
             const meta = eventData.metadata as Record<string, string>;
-            return <Route departure={eventData.departure} arrival={eventData.arrival} startTime={eventData.timeRange?.start} endTime={eventData.timeRange?.end} departureUrl={meta['departure__url']} arrivalUrl={meta['arrival__url']} />;
+            return <Route departure={eventData.departure} arrival={eventData.arrival} departureUrl={meta.departure__url} arrivalUrl={meta.arrival__url} departureSegments={departureSegments} arrivalSegments={arrivalSegments} />;
         }
         if ((eventData.baseType === 'stay' || eventData.baseType === 'activity') && eventData.location) {
-            return <Location location={eventData.location} />;
+            return <Location location={eventData.location} segments={arrivalSegments} />;
         }
         return null;
     })();
 
     return (
         <div className="my-3 flex items-center">
-            {!eventData.timeRange?.start && !eventData.timeRange?.end ? (
+            {!startISO && !endISO && !marker ? (
                 <TimePlaceholder />
             ) : (
                 <div className="flex flex-col gap-5 min-w-0 text-right">
-                    {eventData.timeRange?.start ? <TimeDisplay parsedTime={eventData.timeRange.start} dateStr={dateStr} timezone={timezone} /> : <TimePlaceholder />}
-                    {eventData.timeRange?.end && <TimeDisplay parsedTime={eventData.timeRange.end} dateStr={dateStr} timezone={timezone} />}
+                    {startISO || marker ? <TimeDisplay iso={startISO ?? undefined} marker={marker ?? undefined} dateStr={dateStr} timezone={timezone} /> : <TimePlaceholder />}
+                    {endISO && <TimeDisplay iso={endISO ?? undefined} dateStr={dateStr} timezone={timezone} />}
                 </div>
             )}
 
@@ -324,18 +374,105 @@ export const Item: React.FC<ItemProps> = ({ eventData, dateStr, timezone, curren
                 <div className="flex items-center gap-x-3 flex-wrap">
                     {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
                     {(() => {
-                        const url = (eventData.metadata as Record<string, string>)['name__url'];
-                        return url ? (
-                            <a href={url} target="_blank" rel="noopener noreferrer" className={`font-bold ${colors.text} text-lg hover:underline`}>
-                                {mainTitle}
-                            </a>
-                        ) : (
-                            <span className={`font-bold ${colors.text} text-lg`}>{mainTitle}</span>
-                        );
+                        const segments =
+                            nameSegments ||
+                            (() => {
+                                if (!mainTitle) return undefined;
+                                const meta = eventData.metadata as Record<string, string>;
+                                const url = meta.name__url;
+                                if (url && isAllowedHref(url)) {
+                                    return [{ text: mainTitle, url }];
+                                }
+                                return [{ text: mainTitle }];
+                            })();
+
+                        if (segments) {
+                            return <SegmentedText segments={segments} className={`font-bold ${colors.text} text-lg`} linkClassName="underline text-inherit" />;
+                        }
+                        return null;
                     })()}
                     {routeOrLocationDisplay && <div className="text-gray-700 text-sm font-medium">{routeOrLocationDisplay}</div>}
+                    {Array.isArray(extraLinks) && extraLinks.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                            {extraLinks
+                                .filter((l) => l && typeof l.url === 'string' && isAllowedHref(l.url))
+                                .map((l, idx) => (
+                                    <a key={`${l.label}-${idx}`} href={l.url} target="_blank" rel="noopener noreferrer" className="underline">
+                                        {l.label}
+                                    </a>
+                                ))}
+                        </div>
+                    )}
                 </div>
-                <Meta metadata={eventData.metadata} borderColor={colors.border} currency={currency} />
+                {Array.isArray(bodySegments) && bodySegments.length > 0 ? (
+                    <div className={`mt-2 pt-2 border-t ${colors.border}`}>
+                        {bodySegments.map((seg, idx) => {
+                            if (!seg) return null;
+                            if ((seg as { kind?: string }).kind === 'inline') {
+                                const s = seg as { kind: 'inline'; segments: Array<{ text: string; url?: string }> };
+                                if (!Array.isArray(s.segments) || s.segments.length === 0) return null;
+                                const key = `inline-${s.segments
+                                    .map((x) => `${x.text}-${x.url ?? ''}`)
+                                    .join('|')
+                                    .slice(0, 64)}-${idx}`;
+                                return <SegmentedText key={key} segments={s.segments} className="block text-gray-700 text-sm mb-1" linkClassName="underline text-inherit" />;
+                            }
+                            if ((seg as { kind?: string }).kind === 'meta') {
+                                const m = seg as { kind: 'meta'; entries: Array<{ key: string; segments: Array<{ text: string; url?: string }> }> };
+                                const key = `meta-${m.entries
+                                    .map((e) => e.key)
+                                    .join('|')
+                                    .slice(0, 64)}-${idx}`;
+                                return <Meta key={key} entries={m.entries} metadata={{}} borderColor={colors.border} currency={currency} priceInfos={priceInfos} />;
+                            }
+                            if ((seg as { kind?: string }).kind === 'list') {
+                                const l = seg as { kind: 'list'; items: Array<Array<{ text: string; url?: string }>>; ordered?: boolean; start?: number | null };
+                                if (!Array.isArray(l.items) || l.items.length === 0) return null;
+                                const isOrdered = !!l.ordered;
+                                const start = typeof l.start === 'number' ? l.start : undefined;
+                                if (isOrdered) {
+                                    return (
+                                        <ol key={`list-${start ?? 'ol'}`} className="ml-6 list-decimal marker:text-blue-600 marker:font-bold marker:text-base" start={start}>
+                                            {l.items.map((it) => {
+                                                const keyStr = it
+                                                    .map((seg) => `${seg.text}-${seg.url ?? ''}`)
+                                                    .join('|')
+                                                    .slice(0, 64);
+                                                return (
+                                                    <li key={`li-${keyStr}`}>
+                                                        <SegmentedText segments={it} className="text-gray-700 text-sm" linkClassName="underline text-inherit" />
+                                                    </li>
+                                                );
+                                            })}
+                                        </ol>
+                                    );
+                                }
+                                return (
+                                    <ul
+                                        key={`list-ul-${l.items.length}-${(l.items[0] || [])
+                                            .map((x) => x.text)
+                                            .join('-')
+                                            .slice(0, 16)}`}
+                                        className="ml-6 list-disc marker:text-blue-600 marker:font-bold marker:text-base"
+                                    >
+                                        {l.items.map((it) => {
+                                            const keyStr = it
+                                                .map((seg) => `${seg.text}-${seg.url ?? ''}`)
+                                                .join('|')
+                                                .slice(0, 64);
+                                            return (
+                                                <li key={`li-${keyStr}`}>
+                                                    <SegmentedText segments={it} className="text-gray-700 text-sm" linkClassName="underline text-inherit" />
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                );
+                            }
+                            return null;
+                        })}
+                    </div>
+                ) : null}
             </div>
         </div>
     );

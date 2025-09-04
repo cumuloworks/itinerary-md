@@ -1,12 +1,11 @@
-import { isValidIanaTimeZone } from '@itinerary-md/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { notifyError } from '../core/errors';
-import type { StayMode, TopbarState, ViewMode } from '../types/itinerary';
+import type { TopbarState, ViewMode } from '../types/itinerary';
+import { isValidIanaTimeZone } from '../utils/timezone';
 
 const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
 
 const VIEW_VALUES: readonly ViewMode[] = ['split', 'editor', 'preview'];
-const STAY_VALUES: readonly StayMode[] = ['default', 'header'];
 
 /**
  * Topbar状態を管理するHook（初期化と同期を分離）
@@ -19,7 +18,6 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         currency: 'USD',
         viewMode: 'split',
-        stayMode: 'default',
         showPast: true,
         autoScroll: true,
     }));
@@ -59,11 +57,6 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
                 patch.viewMode = view as ViewMode;
             }
 
-            const stay = searchParams.get('stay');
-            if (stay && STAY_VALUES.includes(stay as StayMode)) {
-                patch.stayMode = stay as StayMode;
-            }
-
             const past = searchParams.get('past');
             if (past) patch.showPast = past === '1';
 
@@ -93,14 +86,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
     useEffect(() => {
         try {
             const curr = new URLSearchParams(window.location.search);
-            if (
-                curr.get('tz') === state.timezone &&
-                curr.get('cur') === state.currency &&
-                curr.get('view') === state.viewMode &&
-                curr.get('stay') === state.stayMode &&
-                curr.get('past') === (state.showPast ? '1' : '0') &&
-                curr.get('scroll') === (state.autoScroll ? '1' : '0')
-            )
+            if (curr.get('tz') === state.timezone && curr.get('cur') === state.currency && curr.get('view') === state.viewMode && curr.get('past') === (state.showPast ? '1' : '0') && curr.get('scroll') === (state.autoScroll ? '1' : '0'))
                 return;
 
             const searchParams = new URLSearchParams(window.location.search);
@@ -109,7 +95,6 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             }
             searchParams.set('cur', state.currency);
             searchParams.set('view', state.viewMode);
-            searchParams.set('stay', state.stayMode);
             searchParams.set('past', state.showPast ? '1' : '0');
             searchParams.set('scroll', state.autoScroll ? '1' : '0');
 
@@ -117,7 +102,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
             history.replaceState(null, '', newUrl);
         } catch {}
-    }, [state.timezone, state.currency, state.viewMode, state.stayMode, state.showPast, state.autoScroll]);
+    }, [state.timezone, state.currency, state.viewMode, state.showPast, state.autoScroll]);
 
     return [state, updateState];
 }

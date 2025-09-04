@@ -8,7 +8,6 @@ import { MonacoEditor } from './components/MonacoEditor';
 import { TopBar } from './components/TopBar';
 import { notifyError, notifySuccess } from './core/errors';
 import { useAutosave } from './hooks/useAutosave';
-import { useCostStatistics } from './hooks/useCostStatistics';
 import { useHashImport } from './hooks/useHashImport';
 import { useInitialContent } from './hooks/useInitialContent';
 import { useItinerary } from './hooks/useItinerary';
@@ -44,22 +43,18 @@ function App() {
 
     const [topbar, updateTopbar] = useTopbarState();
 
-    const { previewContent, events, frontmatterTitle, summary } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
+    const { previewContent, frontmatterTitle } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
         timezone: topbar.timezone,
-        stayMode: topbar.stayMode,
     });
-
-    const { totalFormatted, breakdownFormatted } = useCostStatistics(events, topbar.currency);
 
     const previewProps = useMemo(
         () => ({
             timezone: topbar.timezone,
             currency: topbar.currency,
-            stayMode: topbar.stayMode,
             showPast: topbar.showPast,
             autoScroll: topbar.autoScroll,
         }),
-        [topbar.timezone, topbar.currency, topbar.stayMode, topbar.showPast, topbar.autoScroll]
+        [topbar.timezone, topbar.currency, topbar.showPast, topbar.autoScroll]
     );
 
     const latestContent = useLatest(content);
@@ -131,7 +126,7 @@ function App() {
                             <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Preview</div>
                             <div className="h-[calc(100%-41px)] min-h-0">
                                 <MarkdownPreviewErrorBoundary>
-                                    <MarkdownPreview content={previewContent} {...previewProps} title={frontmatterTitle} summary={summary} totalFormatted={totalFormatted} breakdownFormatted={breakdownFormatted} activeLine={editedLine} />
+                                    <MarkdownPreview content={previewContent} {...previewProps} title={frontmatterTitle} activeLine={editedLine} />
                                 </MarkdownPreviewErrorBoundary>
                             </div>
                         </div>

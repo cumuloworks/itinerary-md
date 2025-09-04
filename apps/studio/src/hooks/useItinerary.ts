@@ -1,4 +1,4 @@
-import { type ItineraryEvent, parseItineraryEvents } from '@itinerary-md/core';
+// Coreのイベント抽出はUI側で直接使わない（remark→mdast→UIレンダリング）
 import matter from 'gray-matter';
 import { useMemo, useRef } from 'react';
 import YAML from 'yaml';
@@ -7,7 +7,6 @@ import { useDebouncedValue } from './useDebouncedValue';
 
 type UseItineraryResult = {
     previewContent: string;
-    events: ItineraryEvent[];
     frontmatterTitle?: string;
     summary: ItinerarySummary;
 };
@@ -19,33 +18,15 @@ type UseItineraryResult = {
  * @param previewDelay プレビュー遅延時間（デフォルト: 300ms）
  * @returns 解析された旅程データ
  */
-export function useItinerary(rawContent: string, previewDelay = 300, opts?: { timezone?: string; stayMode?: 'default' | 'header' }): UseItineraryResult {
+export function useItinerary(rawContent: string, previewDelay = 300, _opts?: { timezone?: string }): UseItineraryResult {
     const previewContent = useDebouncedValue(rawContent, previewDelay);
 
     const lastSuccessfulParseRef = useRef<{
-        events: ItineraryEvent[];
         frontmatterTitle?: string;
         summary: ItinerarySummary;
-    }>({
-        events: [],
-        frontmatterTitle: undefined,
-        summary: {},
-    });
+    }>({ frontmatterTitle: undefined, summary: {} });
 
-    const events = useMemo(() => {
-        if (!previewContent.trim()) {
-            lastSuccessfulParseRef.current.events = [];
-            return [];
-        }
-
-        try {
-            const parsedEvents = parseItineraryEvents(previewContent, opts);
-            lastSuccessfulParseRef.current.events = parsedEvents;
-            return parsedEvents;
-        } catch {
-            return lastSuccessfulParseRef.current.events;
-        }
-    }, [previewContent, opts]);
+    // 旧: events は UI 側で直接使わないため削除
 
     const frontmatterTitle = useMemo(() => {
         if (!previewContent.trim()) {
@@ -63,20 +44,17 @@ export function useItinerary(rawContent: string, previewDelay = 300, opts?: { ti
     }, [previewContent]);
 
     const summary = useMemo(() => {
-        if (!previewContent.trim() || events.length === 0) {
+        if (!previewContent.trim()) {
             const emptySummary = {};
             lastSuccessfulParseRef.current.summary = emptySummary;
             return emptySummary;
         }
 
         try {
-            const dates = events.map((e) => e.date).filter(Boolean) as string[];
-            const uniqueDates = [...new Set(dates)].sort();
-
-            const startDate = uniqueDates[0];
-            const endDate = uniqueDates[uniqueDates.length - 1];
+            // ここではfrontmatterタイトルのみ扱い、日付要約はStatistics側でmdastから抽出
+            const startDate = undefined;
+            const endDate = undefined;
             let numDays: number | undefined;
-
             if (startDate && endDate) {
                 const s = new Date(startDate);
                 const e = new Date(endDate);
@@ -90,11 +68,10 @@ export function useItinerary(rawContent: string, previewDelay = 300, opts?: { ti
         } catch {
             return lastSuccessfulParseRef.current.summary;
         }
-    }, [events, previewContent]);
+    }, [previewContent]);
 
     return {
         previewContent,
-        events,
         frontmatterTitle,
         summary,
     };
