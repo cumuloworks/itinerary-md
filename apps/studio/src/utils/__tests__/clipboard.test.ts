@@ -3,10 +3,12 @@ import { writeTextToClipboard } from '../clipboard';
 
 describe('clipboard utilities', () => {
     let originalClipboard: Clipboard | undefined;
+    let originalClipboardDescriptor: PropertyDescriptor | undefined;
     let originalExecCommand: typeof document.execCommand;
     let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
+        originalClipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
         originalClipboard = navigator.clipboard;
         originalExecCommand = document.execCommand;
         consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -14,12 +16,18 @@ describe('clipboard utilities', () => {
     });
 
     afterEach(() => {
-        if (originalClipboard !== undefined) {
-            Object.defineProperty(navigator, 'clipboard', {
-                value: originalClipboard,
-                writable: true,
-                configurable: true,
-            });
+        if (originalClipboard === undefined) {
+            delete (navigator as any).clipboard;
+        } else {
+            if (originalClipboardDescriptor) {
+                Object.defineProperty(navigator, 'clipboard', { ...originalClipboardDescriptor, value: originalClipboard });
+            } else {
+                Object.defineProperty(navigator, 'clipboard', {
+                    value: originalClipboard,
+                    writable: true,
+                    configurable: true,
+                });
+            }
         }
         document.execCommand = originalExecCommand;
         consoleWarnSpy.mockRestore();
@@ -162,9 +170,7 @@ describe('clipboard utilities', () => {
 
                 // テストではtextareaフォールバックの詳細な動作をテストしない
                 // (実際のDOM操作が複雑なため)
-                await expect(async () => {
-                    await writeTextToClipboard('preserve selection');
-                }).not.toThrow();
+                await expect(writeTextToClipboard('preserve selection')).resolves.toBeUndefined();
             });
 
             it('アクティブ要素のフォーカスを復元', async () => {
@@ -175,9 +181,7 @@ describe('clipboard utilities', () => {
                 document.execCommand = vi.fn().mockReturnValue(true);
 
                 // テストではtextareaフォールバックの詳細な動作をテストしない
-                await expect(async () => {
-                    await writeTextToClipboard('restore focus');
-                }).not.toThrow();
+                await expect(writeTextToClipboard('restore focus')).resolves.toBeUndefined();
 
                 document.body.removeChild(input);
             });
@@ -231,9 +235,7 @@ describe('clipboard utilities', () => {
                 document.execCommand = vi.fn().mockReturnValue(true);
 
                 // テストではtextareaフォールバックの詳細な動作をテストしない
-                await expect(async () => {
-                    await writeTextToClipboard('multiple ranges');
-                }).not.toThrow();
+                await expect(writeTextToClipboard('multiple ranges')).resolves.toBeUndefined();
             });
 
             it('フォーカス不可能な要素がアクティブな場合', async () => {
@@ -255,9 +257,7 @@ describe('clipboard utilities', () => {
                 document.execCommand = vi.fn().mockReturnValue(true);
 
                 // エラーを投げずに処理が完了する
-                await expect(async () => {
-                    await writeTextToClipboard('no focus element');
-                }).not.toThrow();
+                await expect(writeTextToClipboard('no focus element')).resolves.toBeUndefined();
             });
 
             it('nullのactiveElement', async () => {
@@ -275,9 +275,7 @@ describe('clipboard utilities', () => {
 
                 document.execCommand = vi.fn().mockReturnValue(true);
 
-                await expect(async () => {
-                    await writeTextToClipboard('null active');
-                }).not.toThrow();
+                await expect(writeTextToClipboard('null active')).resolves.toBeUndefined();
             });
 
             it('selectionがnullの場合', async () => {
@@ -292,9 +290,7 @@ describe('clipboard utilities', () => {
 
                 document.execCommand = vi.fn().mockReturnValue(true);
 
-                await expect(async () => {
-                    await writeTextToClipboard('no selection');
-                }).not.toThrow();
+                await expect(writeTextToClipboard('no selection')).resolves.toBeUndefined();
 
                 window.getSelection = originalGetSelection;
             });
