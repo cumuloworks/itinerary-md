@@ -12,6 +12,23 @@ import { normalizeHeader } from './normalize';
 import { parseHeader, parseTimeSpan } from './parse';
 import { validateHeader } from './validate';
 
+/**
+ * Traverse a Markdown AST Root and convert eligible H2 headings and blockquotes into ITMD metadata and event nodes.
+ *
+ * This mutates and returns the same `root`. Behavior:
+ * - Recognizes level-2 headings that begin with an ISO date (optionally with a timezone) and replaces them with synthetic `itmdHeading` nodes; when a date is found it becomes the active date context for subsequent nodes.
+ * - Annotates non-heading nodes that follow a recognized heading with an `itmdDate` object and a `data-itmd-date` hProperty.
+ * - Converts blockquotes whose first paragraph gates as an ITMD header into structured event nodes:
+ *   - Parses and validates a header from the blockquote's first paragraph; if the header yields no event type the blockquote is left unchanged.
+ *   - Builds an event body composed of inline segments, meta (key:value) entries, and lists, preserving order.
+ *   - Normalizes price/cost meta entries into `itmdPrice` data on the event when present.
+ *   - Attaches collected warnings to the event; if the heading that established the active date contained an invalid timezone, an `invalid-tz` warning is added.
+ * - When attaching contextual metadata the function preserves existing node `data.hProperties` and merges `data-itmd-date`.
+ *
+ * The function relies on external helpers and services for parsing and normalization and intentionally uses the provided Services object for timezone and policy behavior.
+ *
+ * @returns The same mutated `root` with synthesized `itmdHeading` nodes, annotated nodes, and converted ITMD event nodes where applicable.
+ */
 export function assembleEvents(root: Root, sv: Services): Root {
     const parent = root as unknown as Parent;
     const children = Array.isArray(parent.children) ? parent.children : [];

@@ -37,6 +37,26 @@ export interface Services {
     file?: VFile;
 }
 
+/**
+ * Create a Services container populated with default implementations and a resolved policy.
+ *
+ * The provided partial `policy` object overrides defaults; unspecified policy fields use:
+ * - amHour: 9
+ * - pmHour: 15
+ * - allowUrlSchemes: ['http', 'https', 'mailto']
+ * - tzFallback: null
+ * - currencyFallback: null
+ *
+ * The returned services:
+ * - tz: timezone utilities (normalize, coerce with optional fallback, isValid)
+ * - iso: ISO datetime formatter (produces zoned ISO strings or null on invalid input)
+ * - unicode: shadow/mapping utility (identity implementation)
+ * - log: console
+ * - file: the optional VFile passed through
+ *
+ * @param policy - Partial policy values to merge with defaults.
+ * @returns A Services object with default implementations and the resolved policy.
+ */
 export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile): Services {
     const resolvedPolicy: Policy = {
         amHour: policy.amHour ?? 9,

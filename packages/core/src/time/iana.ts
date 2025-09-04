@@ -1,3 +1,12 @@
+/**
+ * Type guard that checks whether a value is a valid IANA time zone identifier.
+ *
+ * Returns true only when `tz` is a non-empty string and Intl.DateTimeFormat accepts
+ * it as a timeZone whose resolved name exactly matches the input.
+ *
+ * @param tz - Value to test; when this function returns true, the type narrows to `string`.
+ * @returns `true` if `tz` is a non-empty string and a valid IANA time zone name; otherwise `false`.
+ */
 export function isValidIanaTimeZone(tz: unknown): tz is string {
     if (typeof tz !== 'string' || tz.trim() === '') return false;
     try {
@@ -8,6 +17,19 @@ export function isValidIanaTimeZone(tz: unknown): tz is string {
     }
 }
 
+/**
+ * Normalize various time zone inputs to a canonical IANA or UTC offset string.
+ *
+ * If `tz` is a string, this returns:
+ * - the original string if it is a valid IANA time zone name;
+ * - a normalized fixed-offset string in the form `UTC±HH:MM` for inputs like `+9`, `+09`, `+0900`, `+09:00`, and those prefixed with `UTC`/`GMT` (e.g., `UTC+9`, `GMT-05:30`), constrained to 0 ≤ hours ≤ 14 and 0 ≤ minutes < 60;
+ * - `UTC+00:00` for `UTC` or `GMT` (case-insensitive).
+ *
+ * Non-string inputs or strings that cannot be interpreted as an IANA name or valid offset return `undefined`.
+ *
+ * @param tz - A candidate time zone value (e.g., IANA name, UTC/GMT, or offset); may be any type.
+ * @returns A canonical time zone string (IANA name or `UTC±HH:MM`) or `undefined` if the input cannot be coerced.
+ */
 export function coerceIanaTimeZone(tz: unknown): string | undefined {
     const re = /^(?:\s*(?:UTC|GMT)\s*)?([+-])(\d{1,2})(?::?(\d{1,2}))?$/i;
     if (typeof tz === 'string') {

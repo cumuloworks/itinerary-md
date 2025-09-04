@@ -21,6 +21,21 @@ export type ParsedHeader = {
     };
 };
 
+/**
+ * Parse a single time token in the form `HH:MM` with optional timezone and day offset.
+ *
+ * Supported input shapes:
+ * - `HH:MM`
+ * - `HH:MM@TZ` (where `TZ` may contain letters, digits and the characters `_. /+:-`)
+ * - `HH:MM@TZ+N` (where `+N` is a non-negative integer day offset)
+ *
+ * Hours and minutes are returned as numbers (`hh` 0–23, `mm` 0–59). `tz` and `dayOffset`
+ * are returned when present; otherwise they are `null`/undefined on the returned object.
+ *
+ * @param raw - The raw token to parse (trimmed string expected).
+ * @returns An object { hh, mm, tz?, dayOffset? } on success, or `null` if the token does not match
+ *          the expected format or contains out-of-range hour/minute values.
+ */
 function parseTimeToken(raw: string): { hh: number; mm: number; tz?: string | null; dayOffset?: number | null } | null {
     const m = raw.match(/^(\d{1,2}):(\d{2})(?:@([A-Za-z0-9_./+:-]+?))?(?:\+(\d+))?$/);
     if (!m) return null;
@@ -35,6 +50,20 @@ function parseTimeToken(raw: string): { hh: number; mm: number; tz?: string | nu
 
 type TimeSpan = ParsedHeader['time'];
 
+/**
+ * Parses an optional leading bracketed time specification from a line.
+ *
+ * Recognizes these forms at the start of `line`: empty brackets `[]` (kind `'none'`),
+ * a marker `'am'` or `'pm'` (kind `'marker'`), a single time token like `[HH:MM]` (kind `'point'`),
+ * or a time range like `[HH:MM] - [HH:MM]` (kind `'range'`). Time tokens are validated via
+ * `parseTimeToken` and, when present, are normalized so `tz` and `dayOffset` are explicit `null`
+ * when absent.
+ *
+ * @param line - The input string to scan; matching only succeeds if the bracketed time appears at the start.
+ * @returns An object with `time` describing the parsed timespan (or `null` if no valid timespan was found)
+ *          and `consumed` equal to the number of characters consumed from the start of `line` when a match occurred
+ *          (otherwise `consumed` is `0`). Invalid bracketed content (e.g. `[!NOTE]`) yields `{ time: null, consumed: 0 }`.
+ */
 export function parseTimeSpan(line: string): { time: TimeSpan; consumed: number } | { time: null; consumed: 0 } {
     const m = line.match(/^\[(.*?)\](?:\s*-\s*\[(.*?)\])?\s*/);
     if (!m) return { time: null, consumed: 0 } as const;
@@ -65,7 +94,14 @@ export function parseTimeSpan(line: string): { time: TimeSpan; consumed: number 
 // ヘッダ抽出時、改行が単語内に入るケースを許容するため、テキストノード内の改行のみ除去する
 // 改行正規化（統一仕様）:
 // - 単語中（前後が英数字）の改行は削除
-// - それ以外の改行はスペース化（CommonMark のソフト改行挙動に寄せる）
+/**
+ * Normalize soft line breaks inside text nodes.
+ *
+ * Removes newline characters that occur between alphanumeric characters (treating adjacent nodes when needed) and replaces all other newlines with a single space, emulating CommonMark soft-break behavior. Non-text nodes are returned unchanged; text nodes without newlines are preserved.
+ *
+ * @param nodes - Array of mdast phrasing content nodes to process
+ * @returns A new array of phrasing content with text node values normalized for soft breaks
+ */
 function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingContent[] {
     const isWordChar = (ch: string | undefined): boolean => !!ch && /[A-Za-z0-9]/.test(ch);
     const getFirstTextChar = (arr: PhrasingContent[], fromIdx: number): string | undefined => {
@@ -112,6 +148,24 @@ function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingConte
     });
 }
 
+/**
+ * Split a header line into the head portion and an optional destination using the earliest separator after `consumed`.
+ *
+ * Finds the earliest separator after the given `consumed` offset from two sources:
+ * 1. token separators in `tokens.seps` of kind `'doublecolon'` or `'at'` (their absolute index is resolved with `tokens.map`), and
+ * 2. the textual sequence `' from '` (accepted only if a matching `' to '` exists later in the line).
+ *
+ * Returns the trimmed head text (the substring between `consumed` and the separator) and the trimmed destination text (the substring after the separator) or `null` when no separator is present. The `sep` field indicates which separator was used (`'doublecolon' | 'at' | 'from'`) or `null` when none was found.
+ *
+ * Notes:
+ * - Token separators use `tokens.map` to convert token indices into string offsets.
+ * - The returned destination excludes the separator text; skip lengths are 2 characters for `'doublecolon'` and `'at'`, and 6 characters for `' from '` (including surrounding spaces).
+ *
+ * @param line - The raw header line to split.
+ * @param tokens - Lexical token data; `tokens.seps` and `tokens.map` are consulted to locate token-based separators.
+ * @param consumed - Number of characters at the start of `line` that have already been consumed (search for separators begins at this offset).
+ * @returns An object with `headRaw`, `destRaw` (or `null`), and `sep` (or `null`).
+ */
 function splitHeadAndDestUsingSeps(line: string, tokens: LexTokens, consumed: number): { headRaw: string; destRaw: string | null; sep: 'doublecolon' | 'at' | 'from' | null } {
     const seps = (tokens.seps || []).filter((s) => s.kind === 'doublecolon' || s.kind === 'at') as Array<{ kind: 'doublecolon' | 'at'; index: number }>;
     const tokenFirst = seps.filter((s) => s.index >= consumed).sort((a, b) => a.index - b.index)[0];
@@ -144,6 +198,18 @@ function splitHeadAndDestUsingSeps(line: string, tokens: LexTokens, consumed: nu
     return { headRaw, destRaw, sep: sepKind };
 }
 
+/**
+ * Parse a header "head" string into an optional event type and an optional title node.
+ *
+ * The function trims whitespace, splits `headRaw` on runs of whitespace, and treats the
+ * first token (if any) as `eventType`. The remaining tokens are joined with single
+ * spaces into a single text phrasing node used as `title`; if there are no remaining
+ * tokens the `title` is `null`.
+ *
+ * @param headRaw - The raw head portion of a header line (the substring before any destination/time separators)
+ * @returns An object with `eventType` set to the first token (or `undefined` if empty) and `title` either
+ * a single text phrasing node containing the remainder or `null` when no title text is present.
+ */
 function parseHead(headRaw: string): { eventType?: string; title: PhrasingContent[] | null } {
     const tokens = headRaw.trim().split(/\s+/).filter(Boolean);
     if (tokens.length === 0) return { eventType: undefined, title: null };
@@ -153,6 +219,20 @@ function parseHead(headRaw: string): { eventType?: string; title: PhrasingConten
     return { eventType, title };
 }
 
+/**
+ * Parse a single header line into a structured ParsedHeader (event type, title, time, destination, and absolute positions).
+ *
+ * Parses an input token line and optional mdast inline nodes to extract:
+ * - an optional event type,
+ * - a title (prefer inline-extracted phrasing content; falls back to head text or a capitalized eventType),
+ * - an optional time span (point, range, marker, or none),
+ * - an optional destination (single "at", dash-pair, or from→to),
+ * - absolute character offsets for extracted parts when inline content is available.
+ *
+ * @param tokens - LexTokens for the header line; `tokens.raw` is the source string used for token-level parsing.
+ * @param mdInline - Optional mdast phrasing content representing the same inline text; when provided, returned position offsets are computed against this inline content and destination/title/time fragments are sliced from it.
+ * @returns A ParsedHeader describing the parsed pieces and their absolute positions (positions keys are present when computable). The Services parameter is accepted but unused.
+ */
 export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv: Services): ParsedHeader {
     const line = tokens.raw.trim();
     const ts = parseTimeSpan(line);

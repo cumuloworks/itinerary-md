@@ -4,6 +4,19 @@ export function getTimezoneOptions(): string[] {
     return intl.supportedValuesOf?.('timeZone') ?? ['UTC', 'Asia/Tokyo', 'America/Los_Angeles', 'America/New_York', 'Europe/London', 'Europe/Paris', 'Asia/Singapore'];
 }
 
+/**
+ * Determines whether a value represents a valid timezone identifier.
+ *
+ * Accepts either a strict IANA timezone name (verified via Intl.DateTimeFormat
+ * resolution) or a fixed-offset timezone compatible with Luxon. Fixed-offset
+ * forms accepted:
+ * - "UTC" or "GMT" (case-insensitive)
+ * - Optional "UTC"/"GMT" prefix followed by a signed offset: `+HH`, `-HH`,
+ *   `+HH:MM`, or `-HHMM` (hours 0–14, minutes 0–59).
+ *
+ * @param tz - Value to validate as a timezone identifier.
+ * @returns True if `tz` is a valid IANA timezone name or a supported fixed-offset string; otherwise false.
+ */
 export function isValidIanaTimeZone(tz: unknown): boolean {
     if (typeof tz !== 'string' || !tz.trim()) return false;
     try {
