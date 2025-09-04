@@ -12,6 +12,8 @@ import { isValidIanaTimeZone } from '../utils/timezone';
 import { EventBlock } from './itinerary/EventBlock';
 import { Heading } from './itinerary/Heading';
 import 'highlight.js/styles/github.css';
+import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
+import 'remark-github-blockquote-alert/alert.css';
 import { DateTime } from 'luxon';
 import { isAllowedHref } from '../utils/url';
 import Statistics from './itinerary/Statistics';
@@ -60,6 +62,34 @@ const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | un
 
 const segmentsToPlainText = (segments?: TextSegment[]): string | undefined => (Array.isArray(segments) ? segments.map((s) => s.text).join('') : undefined);
 
+// Extract hProperties (e.g. className, data-*) attached by remark plugins such as remark-github-blockquote-alert
+const getHProps = (n: unknown): { className?: string } & Record<string, unknown> => {
+    try {
+        const raw = (n as { data?: { hProperties?: Record<string, unknown> } })?.data?.hProperties as Record<string, unknown> | undefined;
+        if (!raw) return {} as any;
+        const out: Record<string, unknown> = {};
+        const cls = raw.className as unknown;
+        if (Array.isArray(cls)) {
+            const joined = cls
+                .filter((v) => typeof v === 'string')
+                .join(' ')
+                .trim();
+            if (joined) out.className = joined;
+        } else if (typeof cls === 'string' && cls.trim()) {
+            out.className = cls.trim();
+        }
+        for (const [k, v] of Object.entries(raw)) {
+            if (k === 'className') continue;
+            out[k] = v;
+        }
+        return out as any;
+    } catch {
+        return {} as any;
+    }
+};
+
+const mergeClassNames = (...classes: Array<string | undefined>): string => classes.filter((c) => typeof c === 'string' && c.trim()).join(' ');
+
 const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, showPast, title, activeLine, autoScroll = true }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -78,7 +108,10 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     : undefined;
             const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
             const tzFallback = isValidIanaTimeZone(fmTimezone || '') ? (fmTimezone as string) : timezone;
-            const mdProcessor = (unified as any)().use(remarkParse).use(remarkGfm);
+            const mdProcessor = (unified as any)()
+                .use(remarkParse)
+                .use(remarkGfm)
+                .use(remarkGithubBlockquoteAlert as any);
             if (isItmdDoc) {
                 (mdProcessor as any).use(remarkItinerary as any, { tzFallback, currencyFallback: (fmCurrency as string) || currency });
             }
@@ -425,8 +458,11 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
 
                 if (type === 'paragraph') {
                     if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
+                    const hProps = getHProps(node);
+                    const { className: hClass, ...hRest } = hProps;
+                    const pClass = mergeClassNames('mb-4 leading-relaxed text-gray-800 text-base ml-24', hClass as string | undefined);
                     return (
-                        <p key={`p-${lineStart ?? idx}`} className="mb-4 leading-relaxed text-gray-800 text-base ml-24" {...commonDataProps}>
+                        <p key={`p-${lineStart ?? idx}`} className={pClass} {...hRest} {...commonDataProps}>
                             {renderInline(((node as any).children as any[]) || [])}
                         </p>
                     );
@@ -481,14 +517,63 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 if (type === 'blockquote') {
                     if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
                     const children = Array.isArray((node as any).children) ? ((node as any).children as any[]) : [];
-                    return (
-                        <blockquote key={`bq-${lineStart ?? idx}`} className="my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-24" {...commonDataProps}>
-                            {children.map((c: any, ci: number) => {
+                    const hProps = getHProps(node);
+                    const { className: hClass, ...hRest } = hProps;
+                    const hasAlert = typeof hClass === 'string' && hClass.split(/\s+/).includes('markdown-alert');
+                    const baseBq = hasAlert ? 'ml-24' : 'my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-24';
+                    const bqClass = mergeClassNames(baseBq, hClass as string | undefined);
+
+                    const renderChildren = () => {
+                        if (!hasAlert) {
+                            return children.map((c: any, ci: number) => {
                                 const cStart = getLineStart(c);
                                 const key = `bqc-${cStart ?? ci}`;
-                                if (c.type === 'paragraph') return <p key={key}>{renderInline(c.children || [])}</p>;
+                                if (c.type === 'paragraph') {
+                                    const chProps = getHProps(c);
+                                    const { className: chClass, ...chRest } = chProps;
+                                    return (
+                                        <p key={key} className={typeof chClass === 'string' ? chClass : undefined} {...chRest}>
+                                            {renderInline(c.children || [])}
+                                        </p>
+                                    );
+                                }
                                 return <React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>;
-                            })}
+                            });
+                        }
+                        // Special handling for markdown-alert one-line form: "> [!TYPE] message"
+                        const out: React.ReactNode[] = [];
+                        for (let ci = 0; ci < children.length; ci++) {
+                            const c = children[ci];
+                            const cStart = getLineStart(c);
+                            const key = `bqc-${cStart ?? ci}`;
+                            if (c?.type === 'paragraph') {
+                                const chProps = getHProps(c);
+                                const { className: chClass, ...chRest } = chProps;
+                                const cls = typeof chClass === 'string' ? chClass : '';
+                                const isTitle = cls.split(/\s+/).includes('markdown-alert-title');
+                                if (isTitle) {
+                                    out.push(
+                                        <p key={key} className={cls || undefined} {...chRest}>
+                                            {renderInline(c.children || [])}
+                                        </p>
+                                    );
+                                    continue;
+                                }
+                                out.push(
+                                    <p key={key} className={cls || undefined} {...chRest}>
+                                        {renderInline(c.children || [])}
+                                    </p>
+                                );
+                                continue;
+                            }
+                            out.push(<React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>);
+                        }
+                        return out;
+                    };
+
+                    return (
+                        <blockquote key={`bq-${lineStart ?? idx}`} className={bqClass} {...hRest} {...commonDataProps}>
+                            {renderChildren()}
                         </blockquote>
                     );
                 }
