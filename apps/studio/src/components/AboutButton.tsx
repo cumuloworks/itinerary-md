@@ -8,7 +8,7 @@ const AboutButton: React.FC = () => {
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
     const dialogContainerRef = useRef<HTMLDivElement | null>(null);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const titleId = useId();
     const descId = useId();
     const licenseId = useId();
