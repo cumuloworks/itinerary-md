@@ -12,4 +12,3 @@ export declare function normalizeHeader(
     },
     sv: Services
 ): NormalizedHeader;
-//# sourceMappingURL=normalize.d.ts.map

@@ -35,14 +35,21 @@ export interface EditorProps {
 const STORAGE_KEY_DEFAULT = 'itinerary-md-content';
 const AUTOSAVE_DELAY = 1000;
 const PREVIEW_DEBOUNCE_DELAY = 300;
-const SAMPLE_PATH_DEFAULT = '/sample.md';
+const SAMPLE_PATH_DEFAULT = '/sample_en.md'; // Default to English sample
 
-function getLanguageAwareSamplePath(basePath: string, lang: 'en' | 'ja'): string {
+function normalizeLang(lang: string): 'en' | 'ja' {
+    const l = (lang || '').toLowerCase();
+    if (l.startsWith('ja')) return 'ja';
+    return 'en';
+}
+
+function getLanguageAwareSamplePath(basePath: string, lang: string): string {
+    const norm = normalizeLang(lang);
     // Normalize common cases: '/sample.md', '/sample_en.md', '/sample_ja.md'
     const lower = basePath.toLowerCase();
     const isSample = lower.endsWith('/sample.md') || lower.endsWith('/sample_en.md') || lower.endsWith('/sample_ja.md');
     if (!isSample) return basePath;
-    return `/sample_${lang}.md`;
+    return `/sample_${norm}.md`;
 }
 
 const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT, rate }) => {

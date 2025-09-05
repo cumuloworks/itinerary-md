@@ -344,13 +344,13 @@ import remarkItineraryAlert from 'remark-itinerary-alert';
 
 const processor = unified()
   .use(remarkParse)
+  .use(remarkItineraryAlert)      // Add alert feature (must come before remarkItinerary)
   .use(remarkItinerary, {
     tzFallback: 'Asia/Tokyo',      // Default timezone
     currencyFallback: 'JPY',       // Default currency
     amHour: 9,                     // Time for [am]
     pmHour: 15                     // Time for [pm]
-  })
-  .use(remarkItineraryAlert);      // Add alert feature
+  });
 ```
 
 ## AST Node Structure

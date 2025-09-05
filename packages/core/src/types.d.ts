@@ -101,4 +101,3 @@ export interface ITMDHeadingNode extends Parent {
     position?: Position;
 }
 export type { Root };
-//# sourceMappingURL=types.d.ts.map

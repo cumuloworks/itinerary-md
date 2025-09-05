@@ -13,7 +13,7 @@ export type ItmdAlertNode = {
 };
 /**
  * remarkItineraryAlert
- * Convert GitHub-style blockquote alerts (e.g. > [!NOTE]) into itmdAlert nodes
+ * Convert GitHub-style blockquote alerts (e.g. > [!NOTE]) into itmdAlert nodes.
+ * Must run before `remarkItinerary`.
  */
 export declare const remarkItineraryAlert: Plugin<[], Root>;
-//# sourceMappingURL=remarkItineraryAlert.d.ts.map

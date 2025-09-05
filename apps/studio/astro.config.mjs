@@ -19,13 +19,15 @@ export default defineConfig({
             alias: {
                 // Avoid DOM-specific entry on SSR: always use universal implementation
                 'decode-named-character-reference/index.dom.js': 'decode-named-character-reference/index.js',
+                // CSS import for editor package during development
+                '@itinerary-md/editor/index.css': fileURLToPath(new URL('../../packages/editor/dist/index.css', import.meta.url)),
             },
         },
         optimizeDeps: {
-            exclude: ['@itinerary-md/editor', '@itinerary-md/core'],
+            exclude: ['@itinerary-md/editor', 'remark-itinerary'],
         },
         ssr: {
-            noExternal: ['@itinerary-md/editor', '@itinerary-md/core'],
+            noExternal: ['@itinerary-md/editor', 'remark-itinerary'],
         },
         plugins: [
             // Force full reload when local workspace packages are rebuilt
@@ -68,7 +70,10 @@ export default defineConfig({
         ],
         server: {
             fs: {
-                allow: [fileURLToPath(new URL('../../', import.meta.url))]
+                allow: [
+                    fileURLToPath(new URL('../../', import.meta.url)),
+                    fileURLToPath(new URL('../../packages/editor/dist', import.meta.url))
+                ]
             }
         },
     },

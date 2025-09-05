@@ -38,4 +38,3 @@ export interface Services {
     file?: VFile;
 }
 export declare function makeDefaultServices(policy?: Partial<Policy>, file?: VFile): Services;
-//# sourceMappingURL=index.d.ts.map

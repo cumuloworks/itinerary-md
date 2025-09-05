@@ -7,4 +7,3 @@ export declare function validateHeader(
     header: NormalizedHeader;
     warnings: string[];
 };
-//# sourceMappingURL=validate.d.ts.map

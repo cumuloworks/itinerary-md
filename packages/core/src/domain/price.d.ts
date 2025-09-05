@@ -67,4 +67,3 @@ export type PriceNode = {
     warnings?: string[];
 };
 export declare function normalizePriceLine(rawLine: string, defaultCurrency?: string): PriceNode;
-//# sourceMappingURL=price.d.ts.map

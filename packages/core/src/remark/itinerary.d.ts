@@ -6,4 +6,3 @@ export type ItmdRemarkOptions = Partial<Policy> & {
     debug?: boolean;
 };
 export declare const remarkItinerary: Plugin<[ItmdRemarkOptions?], Root>;
-//# sourceMappingURL=itinerary.d.ts.map

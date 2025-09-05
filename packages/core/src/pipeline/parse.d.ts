@@ -70,4 +70,3 @@ export declare function parseTimeSpan(line: string):
           consumed: 0;
       };
 export declare function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv: Services): ParsedHeader;
-//# sourceMappingURL=parse.d.ts.map

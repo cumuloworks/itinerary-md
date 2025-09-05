@@ -10,3 +10,8 @@ declare module '@itinerary-md/editor' {
 
     export const Editor: FC<EditorProps>;
 }
+
+declare module '@itinerary-md/editor/index.css' {
+    const content: string;
+    export default content;
+}

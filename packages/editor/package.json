@@ -31,8 +31,6 @@
         "react-dom": ">=18 <19"
     },
     "dependencies": {
-        "remark-itinerary-alert": "^0.1.0",
-        "remark-itinerary": "^0.1.0",
         "@monaco-editor/react": "^4.7.0",
         "@radix-ui/react-dialog": "^1.1.15",
         "@radix-ui/react-dropdown-menu": "^2.1.16",
@@ -55,6 +53,8 @@
         "rehype-react": "^8.0.0",
         "remark-gfm": "^4.0.1",
         "remark-github-blockquote-alert": "^2.0.0",
+        "remark-itinerary": "^0.1.0",
+        "remark-itinerary-alert": "^0.1.0",
         "remark-parse": "^11.0.0",
         "remark-rehype": "^11.1.2",
         "unified": "^11.0.5",

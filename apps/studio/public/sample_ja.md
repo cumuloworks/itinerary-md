@@ -344,13 +344,13 @@ import remarkItineraryAlert from 'remark-itinerary-alert';
 
 const processor = unified()
   .use(remarkParse)
+  .use(remarkItineraryAlert)      // アラート機能を追加（remarkItineraryより先に実行する必要があります）
   .use(remarkItinerary, {
     tzFallback: 'Asia/Tokyo',      // デフォルトタイムゾーン
     currencyFallback: 'JPY',       // デフォルト通貨
     amHour: 9,                     // [am] の時刻
     pmHour: 15                     // [pm] の時刻
-  })
-  .use(remarkItineraryAlert);      // アラート機能を追加
+  });
 ```
 
 ## AST ノード構造
