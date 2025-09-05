@@ -131,9 +131,15 @@ const AboutButton: React.FC = () => {
                                             <Check size={16} className="text-white" />
                                         </div>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Thank you!</h2>
-                                    <p className="text-lg text-gray-600 mb-4">URL Copied to Clipboard</p>
-                                    <div className="text-sm text-gray-500 hover:text-gray-700 transition-colors">Click anywhere to return</div>
+                                    <h2 id={thanksTitleId} className="text-2xl font-bold text-gray-800 mb-2">
+                                        Thank you!
+                                    </h2>
+                                    <p id={thanksDescId} className="text-lg text-gray-600 mb-4">
+                                        URL Copied to Clipboard
+                                    </p>
+                                    <div className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                                        Click anywhere to return
+                                    </div>
                                 </button>
                             ) : (
                                 <>
