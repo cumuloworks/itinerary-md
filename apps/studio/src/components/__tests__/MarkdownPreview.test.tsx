@@ -2,6 +2,51 @@ import { render, screen } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MarkdownPreview } from '../MarkdownPreview';
 
+describe('MarkdownPreview (github blockquote alert)', () => {
+    it('renders one-line alert title; body may be empty when inline text is omitted by plugin', () => {
+        const md = `> [!CAUTION] lorem ipsum`;
+        const { container } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
+        const bq = container.querySelector('blockquote.markdown-alert.markdown-alert-caution');
+        expect(bq).not.toBeNull();
+        // title
+        const title = bq?.querySelector('.markdown-alert-title');
+        expect(title?.textContent).toMatch(/CAUTION/i);
+        // body paragraph may be empty in one-line form (no strict assertion)
+        const body = bq?.querySelector('p:not(.markdown-alert-title)');
+        expect(body).not.toBeNull();
+    });
+    it('does not duplicate body when one-line followed by non-empty paragraph', () => {
+        const md = `> [!CAUTION] lorem ipsum dolor sit amet\n> Tickets`;
+        const { container } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
+        const bq = container.querySelector('blockquote.markdown-alert.markdown-alert-caution');
+        expect(bq).not.toBeNull();
+        // There should be exactly two body paragraphs after title
+        const paras = (bq as Element).querySelectorAll('p');
+        // p[0] is title, p[1] and p[2] are bodies
+        expect(paras.length).toBeGreaterThanOrEqual(2);
+        expect(paras[1].textContent).toMatch(/lorem ipsum dolor sit amet/);
+        expect(bq).toHaveTextContent(/Tickets/);
+        // Ensure no duplicated concatenation
+        expect(bq).not.toHaveTextContent(/lorem ipsum dolor sit amet\s*lorem ipsum dolor sit amet/);
+    });
+    it('renders multi-line alert body', () => {
+        const md = `> [!WARNING]\n> line1\n> line2`;
+        const { container } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
+        const bq = container.querySelector('blockquote.markdown-alert.markdown-alert-warning');
+        expect(bq).not.toBeNull();
+        expect(bq).toHaveTextContent(/line1/);
+        expect(bq).toHaveTextContent(/line2/);
+    });
+    it('keeps normal blockquote rendering when not an alert', () => {
+        const md = `> Just quote`;
+        const { container } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
+        const bq = container.querySelector('blockquote');
+        expect(bq).not.toBeNull();
+        expect(bq?.className).not.toMatch(/markdown-alert/);
+        expect(screen.getByText('Just quote')).toBeInTheDocument();
+    });
+});
+
 describe('MarkdownPreview (itmd pipeline rendering)', () => {
     const realNow = Date.now;
 

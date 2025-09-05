@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { Toaster } from 'react-hot-toast';
+import { Workbox } from 'workbox-window';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { registerGlobalErrorHandlers } from './core/errors';
 import { initializeRates } from './utils/currency';
@@ -31,3 +32,14 @@ ReactDOM.createRoot(rootEl).render(
         <Toaster />
     </div>
 );
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    const wb = new Workbox('/sw.js');
+    wb.addEventListener('waiting', () => {
+        wb.addEventListener('controlling', () => {
+            window.location.reload();
+        });
+        wb.messageSkipWaiting();
+    });
+    wb.register();
+}

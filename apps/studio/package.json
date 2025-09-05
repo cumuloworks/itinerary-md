@@ -39,6 +39,7 @@
         "rehype-highlight": "^7.0.0",
         "rehype-react": "^7.0.4",
         "remark-gfm": "^4.0.0",
+        "remark-github-blockquote-alert": "^2.0.0",
         "remark-parse": "^11.0.0",
         "remark-rehype": "^11.1.0",
         "tailwindcss": "^4.1.12",
@@ -58,6 +59,8 @@
         "jsdom": "^26.0.0",
         "typescript": "^5.2.2",
         "vite": "^5.2.0",
-        "vitest": "^2.0.5"
+        "vite-plugin-pwa": "^1.0.3",
+        "vitest": "^2.0.5",
+        "workbox-window": "^7.3.0"
     }
 }
