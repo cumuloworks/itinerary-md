@@ -4,7 +4,7 @@ import type { Services } from '../services';
 import type { ITMDEventNode } from '../types';
 import type { NormalizedHeader } from './normalize';
 
-const TRANSPORTATION_EVENT_TYPES = new Set(['flight', 'train', 'drive', 'ferry', 'bus', 'taxi', 'subway']);
+const TRANSPORTATION_EVENT_TYPES = new Set(['flight', 'train', 'drive', 'ferry', 'bus', 'taxi', 'subway', 'cablecar', 'rocket', 'spaceship']);
 const STAY_EVENT_TYPES = new Set(['stay', 'hotel', 'ryokan', 'hostel', 'dormitory']);
 
 function determineBaseType(eventType: string | undefined): ITMDEventNode['baseType'] {

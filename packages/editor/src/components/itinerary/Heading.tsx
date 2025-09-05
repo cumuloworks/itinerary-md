@@ -1,7 +1,7 @@
-import { Hotel } from 'lucide-react';
 import { DateTime } from 'luxon';
 import type React from 'react';
-import { SegmentedText, type TextSegment } from './SegmentedText';
+import { Location } from './Location';
+import type { TextSegment } from './SegmentedText';
 
 interface HeadingProps {
     date: string;
@@ -32,10 +32,7 @@ export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStaySegmen
             </span>
             {prevStaySegments && prevStaySegments.length > 0 ? (
                 <span className="flex items-center text-gray-700 text-sm gap-2">
-                    <span className="inline-flex items-center">
-                        <Hotel size={14} className="mr-1 text-purple-600" />
-                        <SegmentedText segments={prevStaySegments} className="font-semibold text-sm" linkClassName="underline text-inherit" />
-                    </span>
+                    <Location segments={prevStaySegments} />
                 </span>
             ) : null}
         </h2>

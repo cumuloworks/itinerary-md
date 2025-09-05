@@ -1,3 +1,4 @@
+import { remarkItineraryAlert } from '@itinerary-md/alert';
 import remarkItinerary from '@itinerary-md/core';
 import matter from 'gray-matter';
 import type { PhrasingContent, Root } from 'mdast';
@@ -9,8 +10,6 @@ import { unified } from 'unified';
 import { notifyError } from '../core/errors';
 import { isValidIanaTimeZone } from '../utils/timezone';
 import 'highlight.js/styles/github.css';
-import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
-import 'remark-github-blockquote-alert/alert.css';
 import { DateTime } from 'luxon';
 import Statistics from './itinerary/Statistics';
 import { createRenderNode } from './render';
@@ -72,12 +71,9 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                     : undefined;
             const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
             const tzFallback = isValidIanaTimeZone(fmTimezone || '') ? (fmTimezone as string) : timezone;
-            const mdProcessor = (unified as any)()
-                .use(remarkParse)
-                .use(remarkGfm)
-                .use(remarkGithubBlockquoteAlert as any);
+            const mdProcessor = (unified as any)().use(remarkParse).use(remarkGfm);
             if (isItmdDoc) {
-                (mdProcessor as any).use(remarkItinerary as any, { tzFallback, currencyFallback: (fmCurrency as string) || currency });
+                (mdProcessor as any).use(remarkItineraryAlert as any).use(remarkItinerary as any, { tzFallback, currencyFallback: (fmCurrency as string) || currency });
             }
             const mdast = mdProcessor.parse(fm.content || content) as unknown as Root;
             const transformed = mdProcessor.runSync(mdast) as unknown as Root & { children?: MdNode[] };
@@ -125,10 +121,11 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 if ((node as { type?: string })?.type === 'itmdEvent') {
                     try {
                         if (currentDate) {
-                            const ev = node as unknown as { baseType?: string; title?: any[] };
+                            const ev = node as unknown as { baseType?: string; destination?: { to?: PhrasingContent[]; at?: PhrasingContent[] } };
                             if (ev?.baseType === 'stay') {
                                 try {
-                                    const segs = inlineToSegments(ev.title as any) || [];
+                                    const inline = ev.destination?.at as PhrasingContent[] | undefined;
+                                    const segs = inlineToSegments(inline) || [];
                                     if (segs.length > 0) lastStaySegmentsByDate.set(currentDate.date, segs);
                                 } catch {}
                             }
@@ -240,7 +237,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
         const hasBox = (el: Element) => el.getClientRects().length > 0;
         let boxTarget: HTMLElement | null = hasBox(target) ? target : null;
         if (!boxTarget) {
-            const descendants = target.querySelectorAll<HTMLElement>('*');
+            const descendants = target.querySelectorAll<HTMLElement>(' *');
             for (const el of Array.from(descendants)) {
                 if (hasBox(el)) {
                     boxTarget = el;

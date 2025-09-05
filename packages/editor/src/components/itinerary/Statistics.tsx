@@ -47,7 +47,7 @@ const extractHeadingDates = (nodes?: MdNode[]): { startDate?: string; endDate?: 
 // no fallback parser anymore
 
 const classifyBaseType = (eventType: string): 'transportation' | 'activity' | 'stay' => {
-    if (['flight', 'train', 'drive', 'ferry', 'bus', 'taxi', 'subway'].includes(eventType)) return 'transportation';
+    if (['flight', 'train', 'drive', 'ferry', 'bus', 'taxi', 'subway', 'cablecar', 'rocket', 'spaceship'].includes(eventType)) return 'transportation';
     if (['stay', 'hotel', 'ryokan', 'hostel', 'dormitory'].includes(eventType)) return 'stay';
     return 'activity';
 };

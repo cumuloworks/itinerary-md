@@ -215,8 +215,8 @@ describe('Statistics', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
         render(<Statistics root={root} frontmatter={{ currency: 'USD', budget: '200 EUR' }} rate={{ from: 'EUR', to: 'USD', value: 2 }} />);
-        // Total 100 EUR → 200 USD
-        expect(screen.getByText(/200/)).toBeInTheDocument();
+        // Total 100 EUR → 200 USD（複数箇所に表れる可能性があるためAllを使用）
+        expect(screen.getAllByText(/200/).length).toBeGreaterThan(0);
         // Budget 200 EUR → 400 USD、残りは 200 USD left
         const totalEl = document.querySelector('[aria-live="polite"]');
         expect(totalEl?.textContent || '').toMatch(/200/);
