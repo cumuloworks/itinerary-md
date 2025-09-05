@@ -13,6 +13,9 @@ export default defineConfig({
     adapter: vercel(),
     integrations: [react(), sitemap()],
     site: 'https://tripmd.dev',
+    security: {
+        checkOrigin: true // CSRF対策
+    },
     vite: {
         resolve: {
             dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
