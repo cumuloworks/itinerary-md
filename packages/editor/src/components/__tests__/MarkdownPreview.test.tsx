@@ -5,6 +5,8 @@ import { MarkdownPreview } from '../MarkdownPreview';
 describe('MarkdownPreview (github blockquote alert)', () => {
     it('renders one-line alert title; body may be empty when inline text is omitted by plugin', () => {
         // 現行仕様: itmd ドキュメントでは AlertBlock に変換され、タイトル/サブタイトルが表示される
+        const md = `---\ntype: itmd\n---\n\n> [!CAUTION] lorem ipsum dolor sit amet`;
+        render(<MarkdownPreview content={md} timezone={'UTC'} />);
         expect(screen.getByText(/CAUTION/i)).toBeInTheDocument();
         expect(screen.getByText(/lorem ipsum/i)).toBeInTheDocument();
     });
