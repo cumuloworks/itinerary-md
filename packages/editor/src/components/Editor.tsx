@@ -1,3 +1,4 @@
+import { Bug } from 'lucide-react';
 import { type FC, memo, useCallback, useId, useMemo, useState } from 'react';
 import { notifyError, notifySuccess } from '../core/errors';
 import { useAutosave } from '../hooks/useAutosave';
@@ -15,12 +16,19 @@ import { ImportDialog } from './dialog/ImportDialog';
 import { LoadSampleDialog } from './dialog/LoadSampleDialog';
 import { MarkdownPreview } from './MarkdownPreview';
 import { MarkdownPreviewErrorBoundary } from './MarkdownPreviewErrorBoundary';
+import { MdastView } from './MdastView.tsx';
 import { MonacoEditor } from './MonacoEditor';
 import { TopBar } from './TopBar';
 
 export interface EditorProps {
     storageKey?: string;
     samplePath?: string;
+    rate?: { from: string; to: string; value: number };
+    /**
+     * UI language. Example: "en", "ja", or locale like "ja-JP".
+     * If omitted, browser language is used.
+     */
+    language?: string;
 }
 
 const STORAGE_KEY_DEFAULT = 'itinerary-md-content';
@@ -28,7 +36,7 @@ const AUTOSAVE_DELAY = 1000;
 const PREVIEW_DEBOUNCE_DELAY = 300;
 const SAMPLE_PATH_DEFAULT = '/sample.md';
 
-const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT }) => {
+const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT, rate }) => {
     const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
     const tzSelectId = useId();
 
@@ -47,7 +55,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
 
     const [topbar, updateTopbar] = useTopbarState();
 
-    const { previewContent, frontmatterTitle } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
+    const { previewContent, frontmatterTitle, frontmatterDescription, frontmatterTags } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
         timezone: topbar.timezone,
     });
 
@@ -136,11 +144,31 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                 )}
                 {(topbar.viewMode === 'split' || topbar.viewMode === 'preview') && (
                     <div className={`${topbar.viewMode === 'split' ? 'md:basis-1/2 basis-2/3' : 'flex-1'} min-w-0 min-h-0`}>
-                        <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Preview</div>
+                        <div className="px-2 py-1 flex justify-between bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600 group">
+                            <span>{topbar.showMdast ? 'MDAST' : 'Preview'}</span>
+                            <button type="button" className="text-sm text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => updateTopbar({ showMdast: !topbar.showMdast })}>
+                                <Bug size={12} />
+                            </button>
+                        </div>
                         <div className="h-[calc(100%-41px)] min-h-0">
-                            <MarkdownPreviewErrorBoundary>
-                                <MarkdownPreview content={previewContent} title={frontmatterTitle} timezone={topbar.timezone} currency={topbar.currency} showPast={topbar.showPast} activeLine={editedLine} autoScroll={topbar.autoScroll} />
-                            </MarkdownPreviewErrorBoundary>
+                            {topbar.showMdast ? (
+                                <MdastView content={previewContent} timezone={topbar.timezone} currency={topbar.currency} />
+                            ) : (
+                                <MarkdownPreviewErrorBoundary>
+                                    <MarkdownPreview
+                                        content={previewContent}
+                                        title={frontmatterTitle}
+                                        description={frontmatterDescription}
+                                        tags={frontmatterTags}
+                                        timezone={topbar.timezone}
+                                        currency={topbar.currency}
+                                        rate={rate}
+                                        showPast={topbar.showPast}
+                                        activeLine={editedLine}
+                                        autoScroll={topbar.autoScroll}
+                                    />
+                                </MarkdownPreviewErrorBoundary>
+                            )}
                         </div>
                     </div>
                 )}

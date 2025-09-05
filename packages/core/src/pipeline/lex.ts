@@ -2,7 +2,6 @@ import type { Services } from '../services';
 
 export type LexTokens = {
     raw: string;
-    // future: token stream with offsets
     shadow: string;
     map: (shadowIdx: number) => number;
     seps: Array<{ kind: 'doublecolon' | 'at' | 'routeDash' | 'from' | 'to'; index: number }>;
@@ -42,7 +41,7 @@ export function lexLine(line: string, _ctx: { baseTz?: string }, _sv: Services):
         }
 
         if (isOutside()) {
-            // :: （前後スペース必須）
+            // '::' (spaces required around)
             if (ch === ':' && next === ':' && s[i - 1] === ' ' && s[i + 2] === ' ') {
                 seps.push({ kind: 'doublecolon', index: i });
                 i += 1; // skip next ':'
@@ -53,7 +52,7 @@ export function lexLine(line: string, _ctx: { baseTz?: string }, _sv: Services):
                 seps.push({ kind: 'routeDash', index: i + 1 });
                 continue;
             }
-            // word separators: at/from/to （前後スペース必須。ただし行頭/行末は境界として許容）
+            // word separators: at/from/to (spaces required; line start/end allowed as boundaries)
             const rest = s.slice(i);
             const prevIsBoundary = i === 0 || s[i - 1] === ' ';
             if (prevIsBoundary && rest.startsWith('at') && (rest[2] === ' ' || rest.length === 2)) {

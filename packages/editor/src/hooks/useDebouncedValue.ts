@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
 /**
- * 値をデバウンスして返すHook
- * @param value デバウンス対象の値
- * @param delay 遅延時間（ミリ秒）
- * @returns デバウンスされた値
+ * Hook that returns a debounced value.
+ * @param value The value to debounce.
+ * @param delay Delay in milliseconds.
+ * @returns The debounced value.
  */
 export function useDebouncedValue<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState(value);

@@ -3,10 +3,10 @@ import { notifyError, safeLocalStorage } from '../core/errors';
 import type { UseAutosaveOptions } from '../types/itinerary';
 
 /**
- * LocalStorageへの自動保存を管理するHook（通知も内部で処理）
- * @param value 保存する値
- * @param options オプション
- * @returns saveNow: 即座に保存する関数
+ * Hook that manages autosaving to LocalStorage (handles notifications internally).
+ * @param value The content to save.
+ * @param options Options.
+ * @returns saveNow: A function that saves immediately.
  */
 export function useAutosave(value: string, options: UseAutosaveOptions) {
     const { key, delay, onSuccess, onError = () => notifyError('Failed to save') } = options;

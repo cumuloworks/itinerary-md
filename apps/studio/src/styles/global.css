@@ -22,7 +22,7 @@
 @layer components {
     .scrollbar-none {
         -ms-overflow-style: none;
-        /* IE/Edge(旧) */
+        /* IE/Edge (legacy) */
         scrollbar-width: none;
         /* Firefox */
     }

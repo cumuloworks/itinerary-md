@@ -4,7 +4,7 @@ import { notifyError } from '../../core/errors';
 import { isValidIanaTimeZone } from '../../utils/timezone';
 import { useTopbarState } from '../useTopbarState';
 
-// モック
+// Mocks
 vi.mock('../../utils/timezone', () => ({
     isValidIanaTimeZone: vi.fn(),
 }));
@@ -21,7 +21,7 @@ describe('useTopbarState', () => {
     beforeEach(() => {
         vi.clearAllMocks();
 
-        // デフォルトのタイムゾーンモック
+        // Default timezone mock
         global.Intl = {
             ...originalIntl,
             DateTimeFormat: vi.fn(() => ({
@@ -29,7 +29,7 @@ describe('useTopbarState', () => {
             })) as unknown as Intl.DateTimeFormatConstructor,
         } as typeof Intl;
 
-        // locationをモック
+        // Mock location
         delete (window as { location?: Location }).location;
         (window as { location?: Location }).location = {
             ...originalLocation,
@@ -38,10 +38,10 @@ describe('useTopbarState', () => {
             hash: '',
         } as Location;
 
-        // historyをモック
+        // Mock history
         window.history.replaceState = vi.fn();
 
-        // localStorageをモック
+        // Mock localStorage
         const localStorageMock = {
             getItem: vi.fn(),
             setItem: vi.fn(),
@@ -55,7 +55,7 @@ describe('useTopbarState', () => {
             writable: true,
         });
 
-        // isValidIanaTimeZoneのデフォルト実装
+        // Default implementation of isValidIanaTimeZone
         const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
         mockIsValidIana.mockReturnValue(true);
     });
@@ -66,8 +66,8 @@ describe('useTopbarState', () => {
         global.Intl = originalIntl;
     });
 
-    describe('初期化', () => {
-        it('デフォルト値で初期化される', () => {
+    describe('Initialization', () => {
+        it('initializes with default values', () => {
             const { result } = renderHook(() => useTopbarState());
             const [state] = result.current;
 
@@ -80,7 +80,7 @@ describe('useTopbarState', () => {
             });
         });
 
-        it('localStorageから通貨を読み込む', () => {
+        it('loads currency from localStorage', () => {
             const getItemMock = vi.fn().mockReturnValue('EUR');
             window.localStorage.getItem = getItemMock;
 
@@ -91,7 +91,7 @@ describe('useTopbarState', () => {
             expect(state.currency).toBe('EUR');
         });
 
-        it('localStorageのエラーを無視する', () => {
+        it('ignores localStorage errors', () => {
             window.localStorage.getItem = vi.fn().mockImplementation(() => {
                 throw new Error('Storage error');
             });
@@ -102,8 +102,8 @@ describe('useTopbarState', () => {
         });
     });
 
-    describe('URLパラメータからの初期化', () => {
-        it('有効なURLパラメータから状態を設定', () => {
+    describe('Initialization from URL params', () => {
+        it('sets state from valid URL params', () => {
             window.location.search = '?tz=Asia/Tokyo&cur=JPY&view=editor&past=0&scroll=0';
 
             const { result } = renderHook(() => useTopbarState());
@@ -118,7 +118,7 @@ describe('useTopbarState', () => {
             });
         });
 
-        it('無効なタイムゾーンでエラーを通知', () => {
+        it('notifies errors for invalid timezone', () => {
             window.location.search = '?tz=Invalid/Zone';
             const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
             mockIsValidIana.mockReturnValue(false);
@@ -128,7 +128,7 @@ describe('useTopbarState', () => {
             expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('Invalid/Zone'));
         });
 
-        it('無効なビューモードを無視', () => {
+        it('ignores invalid view mode', () => {
             window.location.search = '?view=invalid';
 
             const { result } = renderHook(() => useTopbarState());
@@ -137,11 +137,11 @@ describe('useTopbarState', () => {
             expect(state.viewMode).toBe('split'); // デフォルト値
         });
 
-        it('URLパラメータのエラーを無視', () => {
-            // 既存のlocationを保存
+        it('ignores errors when reading URL params', () => {
+            // Save existing location
             const originalSearch = window.location.search;
 
-            // searchを読み取り時にエラーを投げるようにモック
+            // Mock search getter to throw when reading
             Object.defineProperty(window.location, 'search', {
                 get() {
                     throw new Error('Location error');
@@ -149,12 +149,12 @@ describe('useTopbarState', () => {
                 configurable: true,
             });
 
-            // エラーがあってもクラッシュしない
+            // Should not crash even on errors
             expect(() => {
                 renderHook(() => useTopbarState());
             }).not.toThrow();
 
-            // 元に戻す
+            // Restore original
             Object.defineProperty(window.location, 'search', {
                 value: originalSearch,
                 writable: true,
@@ -163,8 +163,8 @@ describe('useTopbarState', () => {
         });
     });
 
-    describe('状態の更新', () => {
-        it('部分的な更新が可能', () => {
+    describe('State updates', () => {
+        it('allows partial updates', () => {
             const { result } = renderHook(() => useTopbarState());
             const [, updateState] = result.current;
 
@@ -177,7 +177,7 @@ describe('useTopbarState', () => {
             expect(newState.viewMode).toBe('split'); // 他の値は変更されない
         });
 
-        it('複数のプロパティを同時に更新', () => {
+        it('updates multiple properties at once', () => {
             const { result } = renderHook(() => useTopbarState());
             const [, updateState] = result.current;
 
@@ -198,8 +198,8 @@ describe('useTopbarState', () => {
         });
     });
 
-    describe('localStorageとの同期', () => {
-        it('通貨変更時にlocalStorageに保存', () => {
+    describe('Sync with localStorage', () => {
+        it('saves to localStorage on currency change', () => {
             const setItemMock = vi.fn();
             window.localStorage.setItem = setItemMock;
 
@@ -213,7 +213,7 @@ describe('useTopbarState', () => {
             expect(setItemMock).toHaveBeenCalledWith('itinerary-md-currency', 'AUD');
         });
 
-        it('localStorageのエラーを無視', () => {
+        it('ignores localStorage errors', () => {
             window.localStorage.setItem = vi.fn().mockImplementation(() => {
                 throw new Error('Storage error');
             });
@@ -229,8 +229,8 @@ describe('useTopbarState', () => {
         });
     });
 
-    describe('URLとの同期', () => {
-        it('状態変更時にURLを更新', () => {
+    describe('Sync with URL', () => {
+        it('updates URL on state changes', () => {
             const replaceStateMock = vi.fn();
             window.history.replaceState = replaceStateMock;
 
@@ -243,11 +243,11 @@ describe('useTopbarState', () => {
 
             expect(replaceStateMock).toHaveBeenCalled();
             const [, , url] = replaceStateMock.mock.calls[replaceStateMock.mock.calls.length - 1];
-            // URLSearchParamsは自動的にエンコードするので、エンコードされた形式をチェック
+            // URLSearchParams encodes automatically; check the encoded form
             expect(url).toContain('tz=Europe%2FLondon');
         });
 
-        it('無効なタイムゾーンはURLに設定しない', () => {
+        it('does not set invalid timezone to URL', () => {
             const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
             mockIsValidIana.mockReturnValue(false);
             const replaceStateMock = vi.fn();
@@ -264,7 +264,7 @@ describe('useTopbarState', () => {
             expect(url).not.toContain('tz=Invalid/Zone');
         });
 
-        it('全てのパラメータが正しくURLに反映される', () => {
+        it('reflects all parameters to URL correctly', () => {
             const replaceStateMock = vi.fn();
             window.history.replaceState = replaceStateMock;
 
@@ -282,7 +282,7 @@ describe('useTopbarState', () => {
             });
 
             const [, , url] = replaceStateMock.mock.calls[replaceStateMock.mock.calls.length - 1];
-            // URLSearchParamsは自動的にエンコードするので、エンコードされた形式をチェック
+            // URLSearchParams encodes automatically; check the encoded form
             expect(url).toContain('tz=Asia%2FSeoul');
             expect(url).toContain('cur=KRW');
             expect(url).toContain('view=editor');
@@ -290,18 +290,18 @@ describe('useTopbarState', () => {
             expect(url).toContain('scroll=0');
         });
 
-        it('URLが既に同じ場合は更新しない', () => {
+        it('does not update when URL is already the same', () => {
             window.location.search = '?tz=UTC&cur=USD&view=split&past=1&scroll=1';
             const replaceStateMock = vi.fn();
             window.history.replaceState = replaceStateMock;
 
             renderHook(() => useTopbarState());
 
-            // 初期化後はreplaceStateが呼ばれない
+            // replaceState should not be called after initialization
             expect(replaceStateMock).not.toHaveBeenCalled();
         });
 
-        it('URL更新のエラーを無視', () => {
+        it('ignores errors when updating URL', () => {
             window.history.replaceState = vi.fn().mockImplementation(() => {
                 throw new Error('History error');
             });
@@ -317,11 +317,11 @@ describe('useTopbarState', () => {
         });
     });
 
-    describe('エッジケース', () => {
-        it('windowが未定義の環境でも動作', () => {
-            // useTopbarStateはブラウザ環境を前提としているため、
-            // このテストケースは実際には適切ではない
-            // 代わりにwindowが存在する前提でテストする
+    describe('Edge cases', () => {
+        it('works even when window is undefined (conceptually)', () => {
+            // useTopbarState assumes a browser environment,
+            // so this test case is not actually appropriate.
+            // Instead, test under the assumption that window exists.
             expect(typeof window).toBeDefined();
 
             const { result } = renderHook(() => useTopbarState());
@@ -332,7 +332,7 @@ describe('useTopbarState', () => {
             expect(state.currency).toBeDefined();
         });
 
-        it('空のパッチで更新しても状態は変わらない', () => {
+        it('no-op patch does not change state', () => {
             const { result } = renderHook(() => useTopbarState());
             const [initialState, updateState] = result.current;
 
@@ -344,7 +344,7 @@ describe('useTopbarState', () => {
             expect(newState).toEqual(initialState);
         });
 
-        it('複数回の連続更新が正しく処理される', () => {
+        it('handles multiple successive updates correctly', () => {
             const { result } = renderHook(() => useTopbarState());
             const [, updateState] = result.current;
 

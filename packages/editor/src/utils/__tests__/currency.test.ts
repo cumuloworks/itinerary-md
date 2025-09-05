@@ -17,7 +17,7 @@ describe('currency utilities', () => {
     });
 
     describe('parseAmountWithCurrency', () => {
-        it('通貨コードが末尾にある形式を解析', () => {
+        it('parses format with currency code at the end', () => {
             expect(parseAmountWithCurrency('100 USD')).toEqual({
                 amount: 100,
                 currency: 'USD',
@@ -30,7 +30,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('通貨コードが先頭にある形式を解析', () => {
+        it('parses format with currency code at the beginning', () => {
             expect(parseAmountWithCurrency('USD 100')).toEqual({
                 amount: 100,
                 currency: 'USD',
@@ -43,7 +43,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('通貨記号を含む形式を解析', () => {
+        it('parses formats containing currency symbols', () => {
             expect(parseAmountWithCurrency('$100')).toEqual({
                 amount: 100,
                 currency: 'USD',
@@ -66,7 +66,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('特殊な通貨記号を解析', () => {
+        it('parses special currency symbols', () => {
             expect(parseAmountWithCurrency('A$100')).toEqual({
                 amount: 100,
                 currency: 'AUD',
@@ -84,7 +84,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('カンマ区切りの数値を処理', () => {
+        it('handles comma-separated numbers', () => {
             expect(parseAmountWithCurrency('1,000 USD')).toEqual({
                 amount: 1000,
                 currency: 'USD',
@@ -97,7 +97,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('小数点を含む数値を処理', () => {
+        it('handles numbers with decimals', () => {
             expect(parseAmountWithCurrency('99.99 EUR')).toEqual({
                 amount: 99.99,
                 currency: 'EUR',
@@ -110,14 +110,14 @@ describe('currency utilities', () => {
             });
         });
 
-        it('負の値を処理', () => {
+        it('handles negative values', () => {
             expect(parseAmountWithCurrency('-100 USD')).toEqual({
                 amount: -100,
                 currency: 'USD',
                 raw: '-100 USD',
             });
-            // 通貨記号の前にマイナスがある場合は現在の実装では対応していない
-            // 代わりに€-50のような形式をテスト
+            // Current implementation does not support minus before the currency symbol
+            // Instead, test a format like €-50
             expect(parseAmountWithCurrency('€-50')).toEqual({
                 amount: -50,
                 currency: 'EUR',
@@ -125,7 +125,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('修飾子付きの値を処理（/night, per personなど）', () => {
+        it('handles values with modifiers (/night, per person, etc.)', () => {
             expect(parseAmountWithCurrency('100 USD/night')).toEqual({
                 amount: 100,
                 currency: 'USD',
@@ -138,7 +138,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('通貨コードなしでフォールバックを使用', () => {
+        it('uses fallback currency when code is missing', () => {
             expect(parseAmountWithCurrency('100', 'JPY')).toEqual({
                 amount: 100,
                 currency: 'JPY',
@@ -151,7 +151,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('空文字列やnullを処理', () => {
+        it('handles empty strings or null', () => {
             expect(parseAmountWithCurrency('')).toEqual({
                 amount: null,
                 currency: undefined,
@@ -164,7 +164,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('数値として解析できない文字列を処理', () => {
+        it('handles strings that cannot be parsed as numbers', () => {
             expect(parseAmountWithCurrency('abc')).toEqual({
                 amount: null,
                 currency: undefined,
@@ -177,7 +177,7 @@ describe('currency utilities', () => {
             });
         });
 
-        it('大文字小文字を区別しない', () => {
+        it('is case-insensitive for currency codes', () => {
             expect(parseAmountWithCurrency('100 usd')).toEqual({
                 amount: 100,
                 currency: 'USD',
@@ -199,80 +199,80 @@ describe('currency utilities', () => {
             GBP: 0.73,
         };
 
-        it('USDから他の通貨への変換', () => {
+        it('converts from USD to other currencies', () => {
             expect(convertAmountUSDBase(100, 'USD', 'EUR', mockRates)).toBeCloseTo(85);
             expect(convertAmountUSDBase(100, 'USD', 'JPY', mockRates)).toBeCloseTo(11000);
         });
 
-        it('他の通貨からUSDへの変換', () => {
+        it('converts from other currencies to USD', () => {
             expect(convertAmountUSDBase(85, 'EUR', 'USD', mockRates)).toBeCloseTo(100);
             expect(convertAmountUSDBase(11000, 'JPY', 'USD', mockRates)).toBeCloseTo(100);
         });
 
-        it('USD以外の通貨間の変換', () => {
+        it('converts between non-USD currencies', () => {
             const eurToJpy = convertAmountUSDBase(100, 'EUR', 'JPY', mockRates);
             expect(eurToJpy).toBeCloseTo(12941.18, 1);
         });
 
-        it('同じ通貨への変換は金額をそのまま返す', () => {
+        it('returns amount as-is when converting to the same currency', () => {
             expect(convertAmountUSDBase(100, 'USD', 'USD', mockRates)).toBe(100);
             expect(convertAmountUSDBase(50, 'EUR', 'EUR', mockRates)).toBe(50);
         });
 
-        it('レートが存在しない通貨はnullを返す', () => {
+        it('returns null when rate for a currency does not exist', () => {
             expect(convertAmountUSDBase(100, 'USD', 'XXX', mockRates)).toBeNull();
             expect(convertAmountUSDBase(100, 'XXX', 'USD', mockRates)).toBeNull();
         });
 
-        it('無効な入力でnullを返す', () => {
+        it('returns null for invalid inputs', () => {
             expect(convertAmountUSDBase(NaN, 'USD', 'EUR', mockRates)).toBeNull();
             expect(convertAmountUSDBase(Infinity, 'USD', 'EUR', mockRates)).toBeNull();
             expect(convertAmountUSDBase(100, '', 'EUR', mockRates)).toBeNull();
             expect(convertAmountUSDBase(100, 'USD', '', mockRates)).toBeNull();
         });
 
-        it('ゼロの金額を変換', () => {
+        it('converts zero amount', () => {
             expect(convertAmountUSDBase(0, 'USD', 'EUR', mockRates)).toBe(0);
         });
 
-        it('負の金額を変換', () => {
+        it('converts negative amount', () => {
             expect(convertAmountUSDBase(-100, 'USD', 'EUR', mockRates)).toBeCloseTo(-85);
         });
     });
 
     describe('formatCurrency', () => {
-        it('通貨コードで金額をフォーマット', () => {
+        it('formats amount with currency code', () => {
             const formatted = formatCurrency(1234.56, 'USD');
             expect(formatted).toContain('1,234');
             expect(formatted).toMatch(/\$|USD/);
         });
 
-        it('様々な通貨でフォーマット', () => {
+        it('formats various currencies', () => {
             expect(formatCurrency(100, 'EUR')).toMatch(/€|EUR/);
             expect(formatCurrency(10000, 'JPY')).toMatch(/¥|JPY/);
             expect(formatCurrency(50, 'GBP')).toMatch(/£|GBP/);
         });
 
-        it('無効な通貨コードでフォールバック形式を使用', () => {
+        it('uses fallback format for invalid currency codes', () => {
             const formatted = formatCurrency(100, 'XXX');
             expect(formatted).toContain('100');
-            // 無効な通貨コードの場合、ブラウザは汎用通貨記号（¤）を使用することがある
-            // または数値 + 通貨コードのフォーマットになる
+            // For invalid currency codes, browsers may use the generic currency sign (¤)
+            // or format as number + currency code
             expect(formatted === '¤100.00' || formatted.includes('XXX')).toBe(true);
         });
 
-        it('ゼロをフォーマット', () => {
+        it('formats zero', () => {
             const formatted = formatCurrency(0, 'USD');
             expect(formatted).toMatch(/\$0|USD\s*0/);
         });
 
-        it('負の値をフォーマット', () => {
+        it('formats negative values', () => {
             const formatted = formatCurrency(-100, 'USD');
             expect(formatted).toContain('100');
         });
     });
 
-    describe('キャッシュ管理', () => {
+    describe('Cache management', () => {
         const mockRates = {
             base_code: 'USD' as const,
             rates: {
@@ -284,11 +284,11 @@ describe('currency utilities', () => {
         };
 
         describe('getCachedRatesUSD', () => {
-            it('キャッシュが存在しない場合nullを返す', () => {
+            it('returns null when cache does not exist', () => {
                 expect(getCachedRatesUSD()).toBeNull();
             });
 
-            it('有効なキャッシュを返す', () => {
+            it('returns a valid cached value', () => {
                 const now = Date.now();
                 localStorage.setItem(
                     'itinerary-md-rates-usd',
@@ -301,7 +301,7 @@ describe('currency utilities', () => {
                 expect(getCachedRatesUSD()).toEqual(mockRates);
             });
 
-            it('期限切れのキャッシュでnullを返す', () => {
+            it('returns null for expired cache', () => {
                 const oldTime = Date.now() - 13 * 60 * 60 * 1000; // 13時間前
                 localStorage.setItem(
                     'itinerary-md-rates-usd',
@@ -314,12 +314,12 @@ describe('currency utilities', () => {
                 expect(getCachedRatesUSD()).toBeNull();
             });
 
-            it('不正なJSON形式でnullを返す', () => {
+            it('returns null for invalid JSON', () => {
                 localStorage.setItem('itinerary-md-rates-usd', 'invalid json');
                 expect(getCachedRatesUSD()).toBeNull();
             });
 
-            it('不完全なデータ形式でnullを返す', () => {
+            it('returns null for incomplete data format', () => {
                 localStorage.setItem(
                     'itinerary-md-rates-usd',
                     JSON.stringify({
@@ -333,7 +333,7 @@ describe('currency utilities', () => {
         });
 
         describe('setCachedRatesUSD', () => {
-            it('データをキャッシュに保存', () => {
+            it('stores data into cache', () => {
                 setCachedRatesUSD(mockRates);
 
                 const stored = JSON.parse(localStorage.getItem('itinerary-md-rates-usd') || '{}');
@@ -341,7 +341,7 @@ describe('currency utilities', () => {
                 expect(stored.cachedAt).toBeLessThanOrEqual(Date.now());
             });
 
-            it('localStorageエラーを無視', () => {
+            it('ignores localStorage errors', () => {
                 const setItemMock = vi.fn().mockImplementation(() => {
                     throw new Error('Storage error');
                 });
@@ -352,7 +352,7 @@ describe('currency utilities', () => {
         });
 
         describe('fetchRatesUSD', () => {
-            it('APIから為替レートを取得', async () => {
+            it('fetches rates from API', async () => {
                 (global.fetch as Mock).mockResolvedValueOnce({
                     ok: true,
                     json: async () => mockRates,
@@ -364,7 +364,7 @@ describe('currency utilities', () => {
                 expect(global.fetch).toHaveBeenCalledWith('https://open.er-api.com/v6/latest/USD');
             });
 
-            it('取得したデータをキャッシュに保存', async () => {
+            it('stores fetched data into cache', async () => {
                 (global.fetch as Mock).mockResolvedValueOnce({
                     ok: true,
                     json: async () => mockRates,
@@ -376,7 +376,7 @@ describe('currency utilities', () => {
                 expect(cached).toEqual(mockRates);
             });
 
-            it('APIエラーで例外をスロー', async () => {
+            it('throws on API error', async () => {
                 (global.fetch as Mock).mockResolvedValueOnce({
                     ok: false,
                 });
@@ -384,7 +384,7 @@ describe('currency utilities', () => {
                 await expect(fetchRatesUSD()).rejects.toThrow('Failed to fetch rates');
             });
 
-            it('無効なレスポンスで例外をスロー', async () => {
+            it('throws on invalid response', async () => {
                 (global.fetch as Mock).mockResolvedValueOnce({
                     ok: true,
                     json: async () => ({ invalid: 'data' }),
@@ -395,7 +395,7 @@ describe('currency utilities', () => {
         });
 
         describe('initializeRates', () => {
-            it('キャッシュがない場合に新しいレートを取得', async () => {
+            it('fetches new rates when no cache', async () => {
                 (global.fetch as Mock).mockResolvedValueOnce({
                     ok: true,
                     json: async () => mockRates,
@@ -407,7 +407,7 @@ describe('currency utilities', () => {
                 expect(getCachedRatesUSD()).toEqual(mockRates);
             });
 
-            it('有効なキャッシュがある場合は取得をスキップ', async () => {
+            it('skips fetching when cache is valid', async () => {
                 setCachedRatesUSD(mockRates);
 
                 await initializeRates();
@@ -415,7 +415,7 @@ describe('currency utilities', () => {
                 expect(global.fetch).not.toHaveBeenCalled();
             });
 
-            it('エラーを警告として記録', async () => {
+            it('logs errors as warnings', async () => {
                 const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
                 (global.fetch as Mock).mockRejectedValueOnce(new Error('Network error'));
 
@@ -427,19 +427,19 @@ describe('currency utilities', () => {
         });
 
         describe('getRatesUSD', () => {
-            it('キャッシュされたレートを同期的に返す', () => {
+            it('returns cached rates synchronously', () => {
                 setCachedRatesUSD(mockRates);
                 expect(getRatesUSD()).toEqual(mockRates);
             });
 
-            it('キャッシュがない場合nullを返す', () => {
+            it('returns null when cache is missing', () => {
                 expect(getRatesUSD()).toBeNull();
             });
         });
     });
 
     describe('COMMON_CURRENCIES', () => {
-        it('一般的な通貨コードを含む', () => {
+        it('contains common currency codes', () => {
             expect(COMMON_CURRENCIES).toContain('USD');
             expect(COMMON_CURRENCIES).toContain('EUR');
             expect(COMMON_CURRENCIES).toContain('JPY');

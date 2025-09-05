@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import type { Node as MdastNode, PhrasingContent } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import React from 'react';
+import { AlertBlock } from '../AlertBlock';
 import { EventBlock } from '../itinerary/EventBlock';
 import { Heading } from '../itinerary/Heading';
 import { renderInline } from './renderInline';
@@ -80,6 +81,38 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
                 );
             }
             return null;
+        }
+
+        if (type === 'itmdAlert') {
+            const variant = (node as any)?.variant as string | undefined;
+            const title = (node as any)?.title as string | undefined;
+            const inlineTitle = (node as any)?.inlineTitle as any[] | undefined;
+            const children = (node as any)?.children as any[] | undefined;
+
+            // Hide past alerts when showPast is disabled
+            if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
+
+            // Separate title and subtitle
+            const titleEl = title ? <span>{title}</span> : undefined;
+            const subtitleEl = inlineTitle ? <>{renderInline(inlineTitle)}</> : undefined;
+
+            const contentEls =
+                children?.map((c: any, ci: number) => {
+                    const cStart = getLineStart(c);
+                    const key = `alert-c-${cStart ?? ci}`;
+                    if (c.type === 'paragraph') {
+                        return <p key={key}>{renderInline(c.children || [])}</p>;
+                    }
+                    return <React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>;
+                }) || [];
+
+            return (
+                <div key={`alert-${lineStart ?? idx}`} className="contents" {...commonDataProps}>
+                    <AlertBlock variant={variant} title={titleEl} subtitle={subtitleEl}>
+                        {contentEls}
+                    </AlertBlock>
+                </div>
+            );
         }
 
         if (type === 'itmdEvent') {
@@ -313,64 +346,21 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
         }
 
         if (type === 'blockquote') {
+            // Simple blockquote rendering (alerts are handled by itmdAlert)
             if (!showPastEffective && isPastISODate(nodeDateAttr)) return null;
             const children = Array.isArray((node as any).children) ? ((node as any).children as any[]) : [];
-            const hProps = getHProps(node);
-            const { className: hClass, ...hRest } = hProps as any;
-            const hasAlert = typeof hClass === 'string' && (hClass as string).split(/\s+/).includes('markdown-alert');
-            const baseBq = hasAlert ? 'ml-24' : 'my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-24';
-            const bqClass = mergeClassNames(baseBq, hClass as string | undefined);
+            const baseBq = 'my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-20';
 
-            const renderChildren = () => {
-                if (!hasAlert) {
-                    return children.map((c: any, ci: number) => {
+            return (
+                <blockquote key={`bq-${lineStart ?? idx}`} className={baseBq} {...commonDataProps}>
+                    {children.map((c: any, ci: number) => {
                         const cStart = getLineStart(c);
                         const key = `bqc-${cStart ?? ci}`;
                         if (c.type === 'paragraph') {
-                            const chProps = getHProps(c);
-                            const { className: chClass, ...chRest } = chProps as any;
-                            return (
-                                <p key={key} className={typeof chClass === 'string' ? chClass : undefined} {...chRest}>
-                                    {renderInline(c.children || [])}
-                                </p>
-                            );
+                            return <p key={key}>{renderInline(c.children || [])}</p>;
                         }
                         return <React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>;
-                    });
-                }
-                const out: React.ReactNode[] = [];
-                for (let ci = 0; ci < children.length; ci++) {
-                    const c = children[ci];
-                    const cStart = getLineStart(c);
-                    const key = `bqc-${cStart ?? ci}`;
-                    if (c?.type === 'paragraph') {
-                        const chProps = getHProps(c);
-                        const { className: chClass, ...chRest } = chProps as any;
-                        const cls = typeof chClass === 'string' ? chClass : '';
-                        const isTitle = cls.split(/\s+/).includes('markdown-alert-title');
-                        if (isTitle) {
-                            out.push(
-                                <p key={key} className={cls || undefined} {...chRest}>
-                                    {renderInline(c.children || [])}
-                                </p>
-                            );
-                            continue;
-                        }
-                        out.push(
-                            <p key={key} className={cls || undefined} {...chRest}>
-                                {renderInline(c.children || [])}
-                            </p>
-                        );
-                        continue;
-                    }
-                    out.push(<React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>);
-                }
-                return out;
-            };
-
-            return (
-                <blockquote key={`bq-${lineStart ?? idx}`} className={bqClass} {...hRest} {...commonDataProps}>
-                    {renderChildren()}
+                    })}
                 </blockquote>
             );
         }
@@ -380,7 +370,7 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
             const lang = typeof (node as any).lang === 'string' ? (node as any).lang : undefined;
             const value = typeof (node as any).value === 'string' ? (node as any).value : '';
             return (
-                <pre key={`pre-${lineStart ?? idx}`} className="bg-gray-50 border border-gray-200 rounded-md overflow-x-auto my-4 ml-20" {...commonDataProps}>
+                <pre key={`pre-${lineStart ?? idx}`} className="bg-gray-50 border border-gray-200 rounded-md overflow-x-auto my-4 ml-20 text-sm" {...commonDataProps}>
                     <code className={lang ? `language-${lang}` : undefined}>{value}</code>
                 </pre>
             );

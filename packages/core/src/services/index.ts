@@ -3,11 +3,11 @@ import type { VFile } from 'vfile';
 import { coerceIanaTimeZone, isValidIanaTimeZone } from '../time/iana';
 
 export interface TzService {
-    // 入力TZをIANAとして検証し、無効ならnullを返す
+    // Validate input TZ as IANA; return null if invalid
     normalize(tz?: string | null): string | null;
-    // 入力TZをIANAとして検証し、無効ならfallbackを返す（fallbackも検証）
+    // Validate input TZ as IANA; if invalid, return fallback (also validated)
     coerce(tz?: string | null, fallback?: string | null): { tz: string | null; valid: boolean };
-    // 妥当性のみ判定
+    // Validate only
     isValid(tz?: string | null): boolean;
 }
 export interface IsoService {
@@ -21,8 +21,8 @@ export interface Logger {
 }
 
 export interface Policy {
-    amHour: number; // e.g., 9
-    pmHour: number; // e.g., 15
+    amHour: number;
+    pmHour: number;
     allowUrlSchemes: string[];
     tzFallback: string | null;
     currencyFallback?: string | null;
@@ -74,7 +74,6 @@ export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile):
     };
 
     const unicode: UnicodeService = {
-        // 現状は恒等（安全なセパレータ検出は lex 側の深さ管理で担保する）
         makeShadow: (s: string) => ({ shadow: s, map: (i: number) => i }),
     };
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { normalizePriceLine } from '../price';
 
 describe('itmd/price normalizePriceLine', () => {
-    it('通貨コード先頭: EUR 1.234,56 を受理し trailing text も許可', () => {
+    it('accepts currency code at head: "EUR 1.234,56" and allows trailing text', () => {
         const node = normalizePriceLine('EUR 1.234,56 per night');
         expect(node.tokens.length).toBe(1);
         const money = node.tokens[0] as Extract<(typeof node.tokens)[number], { kind: 'money' }>;
@@ -11,14 +11,14 @@ describe('itmd/price normalizePriceLine', () => {
         expect(money.normalized.amount).toBe('1234.56');
     });
 
-    it('通貨コード後尾: 1.234,56 EUR を受理', () => {
+    it('accepts currency code at tail: "1.234,56 EUR"', () => {
         const node = normalizePriceLine('1.234,56 EUR');
         const money = node.tokens[0] as Extract<(typeof node.tokens)[number], { kind: 'money' }>;
         expect(money.normalized.currency).toBe('EUR');
         expect(money.normalized.amount).toBe('1234.56');
     });
 
-    it('通貨記号: €12,30 を受理 (欧州小数)', () => {
+    it('accepts currency symbol: "€12,30" (European decimal)', () => {
         const node = normalizePriceLine('€12,30');
         const money = node.tokens[0] as Extract<(typeof node.tokens)[number], { kind: 'money' }>;
         expect(money.normalized.currency).toBe('EUR');
@@ -26,7 +26,7 @@ describe('itmd/price normalizePriceLine', () => {
         expect(money.normalized.amount).toBe('12.3');
     });
 
-    it('通貨記号: HK$ 1,234.56 を受理 (米国小数)', () => {
+    it('accepts currency symbol: "HK$ 1,234.56" (US decimal)', () => {
         const node = normalizePriceLine('HK$ 1,234.56');
         const money = node.tokens[0] as Extract<(typeof node.tokens)[number], { kind: 'money' }>;
         expect(money.normalized.currency).toBe('HKD');
@@ -34,14 +34,14 @@ describe('itmd/price normalizePriceLine', () => {
         expect(money.normalized.amount).toBe('1234.56');
     });
 
-    it('トレーリングテキスト: USD 100 per night', () => {
+    it('trailing text: "USD 100 per night"', () => {
         const node = normalizePriceLine('USD 100 per night');
         const money = node.tokens[0] as Extract<(typeof node.tokens)[number], { kind: 'money' }>;
         expect(money.normalized.currency).toBe('USD');
         expect(money.normalized.amount).toBe('100');
     });
 
-    it('フォールバック: デフォルト通貨で数値のみを解釈 (1.234,56 -> 1234.56)', () => {
+    it('fallback: parse numbers with default currency (1.234,56 -> 1234.56)', () => {
         const node = normalizePriceLine('1.234,56', 'eur');
         const money = node.tokens[0] as Extract<(typeof node.tokens)[number], { kind: 'money' }>;
         expect(money.normalized.currency).toBe('EUR');

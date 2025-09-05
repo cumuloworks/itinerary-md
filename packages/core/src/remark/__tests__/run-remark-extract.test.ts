@@ -16,7 +16,7 @@ function toItineraryEvents(root: Root): { type: string; titleText?: string }[] {
 }
 
 describe('run/remark/extract integration', () => {
-    it('複数イベントが itmdEvent になり、抽出できる', () => {
+    it('converts multiple events into itmdEvent and extracts them', () => {
         const md = `
 ## 2025-03-15 @Asia/Tokyo
 

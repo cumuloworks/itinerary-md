@@ -8,8 +8,8 @@ const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
 const VIEW_VALUES: readonly ViewMode[] = ['split', 'editor', 'preview'];
 
 /**
- * Topbar状態を管理するHook（初期化と同期を分離）
- * @returns [state, setState] - 状態と更新関数
+ * Hook to manage Topbar state (initialization and sync are separated).
+ * @returns [state, setState] - State and update function.
  */
 export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) => void] {
     const isInitializedRef = useRef(false);
@@ -20,6 +20,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
         viewMode: 'split',
         showPast: true,
         autoScroll: true,
+        showMdast: false,
     }));
 
     useEffect(() => {
@@ -62,6 +63,8 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
 
             const scroll = searchParams.get('scroll');
             if (scroll) patch.autoScroll = scroll === '1';
+
+            // mdast flag is ephemeral and should not be driven by URL
 
             if (Object.keys(patch).length > 0) {
                 setState((prevState) => ({ ...prevState, ...patch }));

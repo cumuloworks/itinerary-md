@@ -5,19 +5,19 @@ import { lexLine } from '../lex';
 describe('lexLine', () => {
     const sv = makeDefaultServices({});
 
-    it('1行入力を LexTokens に変換する', () => {
+    it('converts a single line into LexTokens', () => {
         const out = lexLine('[08:00] flight ABC :: A - B', {}, sv);
         expect(out.raw).toContain('flight');
     });
 
-    it('shadow と map が提供され、ASCII では恒等', () => {
+    it('provides shadow and map; identity for ASCII', () => {
         const line = '[08:00] flight ABC :: A - B';
         const t = lexLine(line, {}, sv);
         expect(t.shadow).toBe(line);
         expect(t.map(5)).toBe(5);
     });
 
-    it('括弧/リンク/コード外のみで ::, at, routeDash を検出', () => {
+    it('detects ::, at, routeDash only outside parentheses/links/code', () => {
         const line = '[08:00] lunch at Cafe :: X - Y [link: http://a-b.com] (`code - span`)';
         const t = lexLine(line, {}, sv);
         const kinds = t.seps.map((s) => s.kind);
@@ -26,7 +26,7 @@ describe('lexLine', () => {
         expect(kinds.includes('routeDash')).toBe(true);
     });
 
-    it('from/to を検出（outside のみ）', () => {
+    it('detects from/to (outside only)', () => {
         const line = '[08:00] flight JL from Tokyo to London';
         const t = lexLine(line, {}, sv);
         const kinds = t.seps.map((s) => s.kind);
@@ -34,7 +34,7 @@ describe('lexLine', () => {
         expect(kinds.includes('to')).toBe(true);
     });
 
-    it('括弧内の from/to は無視', () => {
+    it('ignores from/to inside parentheses', () => {
         const line = '[08:00] flight JL (from Osaka to Sapporo)';
         const t = lexLine(line, {}, sv);
         const kinds = t.seps.map((s) => s.kind);
@@ -42,7 +42,7 @@ describe('lexLine', () => {
         expect(kinds.includes('to')).toBe(false);
     });
 
-    it('リンクテキスト内の from/to は無視', () => {
+    it('ignores from/to inside link text', () => {
         const line = '[08:00] activity go [from here to there](https://example.com)';
         const t = lexLine(line, {}, sv);
         const kinds = t.seps.map((s) => s.kind);
@@ -50,12 +50,12 @@ describe('lexLine', () => {
         expect(kinds.includes('to')).toBe(false);
     });
 
-    it('コードスパン内の from/to は無視', () => {
+    it('ignores from/to inside code span', () => {
         const line = '[08:00] note `from A to B` outside to';
         const t = lexLine(line, {}, sv);
         const kinds = t.seps.map((s) => s.kind);
         expect(kinds.includes('from')).toBe(false);
-        // outside の to は検出される
+        // 'to' in outside context is detected
         expect(kinds.includes('to')).toBe(true);
     });
 });

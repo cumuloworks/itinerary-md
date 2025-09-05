@@ -10,10 +10,10 @@ type UseHashImportResult = {
 };
 
 /**
- * ハッシュからのインポート処理を管理するHook
- * @param onContentLoaded コンテンツがロードされた時のコールバック
- * @param saveFunction 保存処理の関数
- * @returns ダイアログ状態と操作関数
+ * Hook to manage importing content from the URL hash.
+ * @param onContentLoaded Callback invoked when content has been loaded.
+ * @param saveFunction Function to persist the loaded content.
+ * @returns Dialog state and operation functions.
  */
 export function useHashImport(onContentLoaded?: (content: string) => void, saveFunction?: () => void): UseHashImportResult {
     const [pendingHashContent, setPendingHashContent] = useState<string | null>(null);

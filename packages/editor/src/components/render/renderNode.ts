@@ -17,6 +17,7 @@ export const createRenderNode = (ctx: RenderBlockContext) => {
             case 'blockquote':
             case 'itmdEvent':
             case 'itmdHeading':
+            case 'itmdAlert':
                 return renderBlock(node as any, idx);
             default:
                 // inline or unknown -> try inline

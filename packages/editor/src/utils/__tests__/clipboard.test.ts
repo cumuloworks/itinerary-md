@@ -34,8 +34,8 @@ describe('clipboard utilities', () => {
     });
 
     describe('writeTextToClipboard', () => {
-        describe('Clipboard API を使用', () => {
-            it('テキストをクリップボードに書き込む', async () => {
+        describe('Using Clipboard API', () => {
+            it('writes text to the clipboard', async () => {
                 const writeTextMock = vi.fn().mockResolvedValue(undefined);
                 Object.defineProperty(navigator, 'clipboard', {
                     value: { writeText: writeTextMock },
@@ -49,7 +49,7 @@ describe('clipboard utilities', () => {
                 expect(consoleWarnSpy).not.toHaveBeenCalled();
             });
 
-            it('空の文字列を書き込む', async () => {
+            it('writes an empty string', async () => {
                 const writeTextMock = vi.fn().mockResolvedValue(undefined);
                 Object.defineProperty(navigator, 'clipboard', {
                     value: { writeText: writeTextMock },
@@ -62,7 +62,7 @@ describe('clipboard utilities', () => {
                 expect(writeTextMock).toHaveBeenCalledWith('');
             });
 
-            it('改行を含むテキストを書き込む', async () => {
+            it('writes text containing newlines', async () => {
                 const writeTextMock = vi.fn().mockResolvedValue(undefined);
                 Object.defineProperty(navigator, 'clipboard', {
                     value: { writeText: writeTextMock },
@@ -76,7 +76,7 @@ describe('clipboard utilities', () => {
                 expect(writeTextMock).toHaveBeenCalledWith(multilineText);
             });
 
-            it('特殊文字を含むテキストを書き込む', async () => {
+            it('writes text containing special characters', async () => {
                 const writeTextMock = vi.fn().mockResolvedValue(undefined);
                 Object.defineProperty(navigator, 'clipboard', {
                     value: { writeText: writeTextMock },
@@ -90,7 +90,7 @@ describe('clipboard utilities', () => {
                 expect(writeTextMock).toHaveBeenCalledWith(specialText);
             });
 
-            it('APIエラー時にフォールバック方式を使用', async () => {
+            it('uses fallback method when API errors occur', async () => {
                 const writeTextMock = vi.fn().mockRejectedValue(new Error('Permission denied'));
                 Object.defineProperty(navigator, 'clipboard', {
                     value: { writeText: writeTextMock },
@@ -109,7 +109,7 @@ describe('clipboard utilities', () => {
             });
         });
 
-        describe('textarea フォールバック方式', () => {
+        describe('Textarea fallback method', () => {
             beforeEach(() => {
                 Object.defineProperty(navigator, 'clipboard', {
                     value: undefined,
@@ -118,7 +118,7 @@ describe('clipboard utilities', () => {
                 });
             });
 
-            it('textareaを使用してテキストをコピー', async () => {
+            it('copies text using a textarea', async () => {
                 const execCommandMock = vi.fn().mockReturnValue(true);
                 document.execCommand = execCommandMock;
 
@@ -132,12 +132,12 @@ describe('clipboard utilities', () => {
                 expect(removeChildSpy).toHaveBeenCalled();
             });
 
-            it('textareaの属性を正しく設定', async () => {
+            it('sets textarea attributes correctly', async () => {
                 let createdTextarea: HTMLTextAreaElement | null = null;
                 const originalAppendChild = document.body.appendChild.bind(document.body);
                 const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
                     createdTextarea = node as HTMLTextAreaElement;
-                    // 実際にDOMに追加する必要がある
+                    // Needs to be actually appended to the DOM
                     return originalAppendChild(node);
                 });
 
@@ -157,8 +157,8 @@ describe('clipboard utilities', () => {
                 appendChildSpy.mockRestore();
             });
 
-            it('既存の選択範囲を保持', async () => {
-                // 選択範囲を作成
+            it('preserves existing selection range', async () => {
+                // Create selection range
                 const range = document.createRange();
                 const selection = window.getSelection();
                 selection?.removeAllRanges();
@@ -168,37 +168,37 @@ describe('clipboard utilities', () => {
 
                 document.execCommand = vi.fn().mockReturnValue(true);
 
-                // テストではtextareaフォールバックの詳細な動作をテストしない
-                // (実際のDOM操作が複雑なため)
+                // Do not test textarea fallback details here
+                // (Actual DOM operations are complex)
                 await expect(writeTextToClipboard('preserve selection')).resolves.toBeUndefined();
             });
 
-            it('アクティブ要素のフォーカスを復元', async () => {
+            it('restores focus to the previously active element', async () => {
                 const input = document.createElement('input');
                 document.body.appendChild(input);
                 input.focus();
 
                 document.execCommand = vi.fn().mockReturnValue(true);
 
-                // テストではtextareaフォールバックの詳細な動作をテストしない
+                // Do not test textarea fallback details here
                 await expect(writeTextToClipboard('restore focus')).resolves.toBeUndefined();
 
                 document.body.removeChild(input);
             });
 
-            it('エラーが発生してもクリーンアップを実行', async () => {
+            it('performs cleanup even when an error occurs', async () => {
                 const execCommandMock = vi.fn().mockImplementation(() => {
                     throw new Error('execCommand error');
                 });
                 document.execCommand = execCommandMock;
 
-                // エラーが発生してもクラッシュしない
+                // Should not crash even if an error occurs
                 await expect(writeTextToClipboard('error test')).rejects.toThrow('execCommand error');
             });
         });
 
-        describe('エッジケース', () => {
-            it('非常に長いテキストをコピー', async () => {
+        describe('Edge cases', () => {
+            it('copies a very long text', async () => {
                 const writeTextMock = vi.fn().mockResolvedValue(undefined);
                 Object.defineProperty(navigator, 'clipboard', {
                     value: { writeText: writeTextMock },
@@ -212,7 +212,7 @@ describe('clipboard utilities', () => {
                 expect(writeTextMock).toHaveBeenCalledWith(longText);
             });
 
-            it('複数の選択範囲を保持', async () => {
+            it('preserves multiple selection ranges', async () => {
                 Object.defineProperty(navigator, 'clipboard', {
                     value: undefined,
                     writable: true,
@@ -222,23 +222,23 @@ describe('clipboard utilities', () => {
                 const selection = window.getSelection();
                 selection?.removeAllRanges();
 
-                // 複数の範囲を追加（ブラウザがサポートしている場合）
+                // Add multiple ranges (if the browser supports it)
                 const range1 = document.createRange();
                 const range2 = document.createRange();
                 selection?.addRange(range1);
                 try {
                     selection?.addRange(range2);
                 } catch {
-                    // 一部のブラウザは複数の範囲をサポートしない
+                    // Some browsers do not support multiple ranges
                 }
 
                 document.execCommand = vi.fn().mockReturnValue(true);
 
-                // テストではtextareaフォールバックの詳細な動作をテストしない
+                // Do not test textarea fallback details here
                 await expect(writeTextToClipboard('multiple ranges')).resolves.toBeUndefined();
             });
 
-            it('フォーカス不可能な要素がアクティブな場合', async () => {
+            it('handles when the active element is not focusable', async () => {
                 Object.defineProperty(navigator, 'clipboard', {
                     value: undefined,
                     writable: true,
@@ -247,7 +247,7 @@ describe('clipboard utilities', () => {
 
                 const div = document.createElement('div');
 
-                // divにfocusメソッドを追加しない（フォーカス不可能）
+                // Do not add focus() to div (non-focusable)
                 Object.defineProperty(document, 'activeElement', {
                     value: div,
                     writable: true,
@@ -256,11 +256,11 @@ describe('clipboard utilities', () => {
 
                 document.execCommand = vi.fn().mockReturnValue(true);
 
-                // エラーを投げずに処理が完了する
+                // Should complete without throwing
                 await expect(writeTextToClipboard('no focus element')).resolves.toBeUndefined();
             });
 
-            it('nullのactiveElement', async () => {
+            it('handles null activeElement', async () => {
                 Object.defineProperty(navigator, 'clipboard', {
                     value: undefined,
                     writable: true,
@@ -278,7 +278,7 @@ describe('clipboard utilities', () => {
                 await expect(writeTextToClipboard('null active')).resolves.toBeUndefined();
             });
 
-            it('selectionがnullの場合', async () => {
+            it('handles null selection', async () => {
                 Object.defineProperty(navigator, 'clipboard', {
                     value: undefined,
                     writable: true,

@@ -18,7 +18,7 @@ describe('timezone utilities', () => {
     });
 
     describe('getTimezoneOptions', () => {
-        it('サポートされているタイムゾーンのリストを返す', () => {
+        it('returns the list of supported timezones', () => {
             const mockTimezones = ['UTC', 'Asia/Tokyo', 'Europe/London', 'America/New_York'];
             global.Intl = {
                 ...originalIntl,
@@ -32,7 +32,7 @@ describe('timezone utilities', () => {
             expect(options).toEqual(mockTimezones);
         });
 
-        it('supportedValuesOfが存在しない場合フォールバックリストを返す', () => {
+        it('returns fallback list when supportedValuesOf is unavailable', () => {
             global.Intl = {
                 ...originalIntl,
                 supportedValuesOf: undefined,
@@ -46,7 +46,7 @@ describe('timezone utilities', () => {
             expect(options.length).toBeGreaterThan(0);
         });
 
-        it('supportedValuesOfがエラーを投げる場合エラーが伝播する', () => {
+        it('propagates error when supportedValuesOf throws', () => {
             global.Intl = {
                 ...originalIntl,
                 supportedValuesOf: vi.fn(() => {
@@ -54,24 +54,24 @@ describe('timezone utilities', () => {
                 }),
             } as typeof Intl;
 
-            // 現在の実装ではエラーハンドリングがないため、エラーが伝播する
+            // Current implementation has no error handling, so the error propagates
             expect(() => {
                 getTimezoneOptions();
             }).toThrow('Not supported');
         });
 
-        it('空のリストを返す場合は空の配列が返される', () => {
+        it('returns empty array when an empty list is returned', () => {
             global.Intl = {
                 ...originalIntl,
                 supportedValuesOf: vi.fn(() => []),
             } as typeof Intl;
 
             const options = getTimezoneOptions();
-            // 現在の実装では空の配列がそのまま返される
+            // Current implementation returns the empty array as-is
             expect(options.length).toBe(0);
         });
 
-        it('重複のないタイムゾーンリストを返す', () => {
+        it('returns a de-duplicated timezone list', () => {
             const mockTimezones = ['UTC', 'Asia/Tokyo', 'UTC', 'Asia/Tokyo', 'Europe/London'];
             global.Intl = {
                 ...originalIntl,
@@ -88,7 +88,7 @@ describe('timezone utilities', () => {
     });
 
     describe('coerceTimezoneWithToast', () => {
-        it('有効なタイムゾーンをそのまま返す', () => {
+        it('returns valid timezone as-is', () => {
             const mockDateTimeFormat = vi.fn(() => ({
                 resolvedOptions: () => ({ timeZone: 'Asia/Tokyo' }),
             }));
@@ -100,7 +100,7 @@ describe('timezone utilities', () => {
             expect(notifyError).not.toHaveBeenCalled();
         });
 
-        it('無効なタイムゾーンでフォールバックを返す', () => {
+        it('returns fallback for invalid timezone', () => {
             const mockDateTimeFormat = vi.fn(() => ({
                 resolvedOptions: () => ({ timeZone: 'UTC' }),
             }));
@@ -112,7 +112,7 @@ describe('timezone utilities', () => {
             expect(notifyError).toHaveBeenCalledWith('Test: Invalid timezone "Invalid/Zone". Fallback to America/New_York');
         });
 
-        it('DateTimeFormatがエラーを投げる場合フォールバックを返す', () => {
+        it('returns fallback when DateTimeFormat throws', () => {
             global.Intl.DateTimeFormat = vi.fn(() => {
                 throw new Error('Invalid timezone');
             }) as unknown as Intl.DateTimeFormatConstructor;
@@ -123,35 +123,35 @@ describe('timezone utilities', () => {
             expect(notifyError).toHaveBeenCalledWith('Source: Invalid timezone "Bad/Zone". Fallback to Europe/London');
         });
 
-        it('文字列以外の型でフォールバックを返す', () => {
+        it('returns fallback for non-string values', () => {
             const result = coerceTimezoneWithToast(123, 'UTC', 'Number input');
 
             expect(result).toBe('UTC');
             expect(notifyError).toHaveBeenCalledWith('Number input: Invalid timezone "123". Fallback to UTC');
         });
 
-        it('nullでフォールバックを返す', () => {
+        it('returns fallback for null', () => {
             const result = coerceTimezoneWithToast(null, 'Asia/Seoul', 'Null input');
 
             expect(result).toBe('Asia/Seoul');
             expect(notifyError).toHaveBeenCalledWith('Null input: Invalid timezone "null". Fallback to Asia/Seoul');
         });
 
-        it('undefinedでフォールバックを返す', () => {
+        it('returns fallback for undefined', () => {
             const result = coerceTimezoneWithToast(undefined, 'Pacific/Auckland', 'Undefined input');
 
             expect(result).toBe('Pacific/Auckland');
             expect(notifyError).toHaveBeenCalledWith('Undefined input: Invalid timezone "undefined". Fallback to Pacific/Auckland');
         });
 
-        it('空文字列でフォールバックを返す', () => {
+        it('returns fallback for empty string', () => {
             const result = coerceTimezoneWithToast('', 'UTC', 'Empty string');
 
             expect(result).toBe('UTC');
             expect(notifyError).toHaveBeenCalledWith('Empty string: Invalid timezone "". Fallback to UTC');
         });
 
-        it('大文字小文字が異なるタイムゾーンを検証', () => {
+        it('validates timezone with different casing', () => {
             const mockDateTimeFormat = vi.fn(() => ({
                 resolvedOptions: () => ({ timeZone: 'UTC' }),
             }));
@@ -163,7 +163,7 @@ describe('timezone utilities', () => {
             expect(notifyError).toHaveBeenCalled();
         });
 
-        it('resolvedOptionsが異なるタイムゾーンを返す場合フォールバック', () => {
+        it('returns fallback when resolvedOptions timezone mismatches input', () => {
             const mockDateTimeFormat = vi.fn(() => ({
                 resolvedOptions: () => ({ timeZone: 'Europe/Paris' }),
             }));
@@ -175,7 +175,7 @@ describe('timezone utilities', () => {
             expect(notifyError).toHaveBeenCalledWith('Mismatch: Invalid timezone "Europe/London". Fallback to UTC');
         });
 
-        it('様々な有効なタイムゾーンを検証', () => {
+        it('validates various valid timezones', () => {
             const validTimezones = ['UTC', 'GMT', 'Asia/Tokyo', 'Asia/Seoul', 'Europe/London', 'Europe/Paris', 'America/New_York', 'America/Los_Angeles', 'Pacific/Auckland', 'Australia/Sydney', 'Africa/Cairo', 'Etc/GMT+9', 'Etc/GMT-5'];
 
             validTimezones.forEach((tz) => {
@@ -191,7 +191,7 @@ describe('timezone utilities', () => {
             expect(notifyError).not.toHaveBeenCalled();
         });
 
-        it('エラーメッセージにソース情報を含む', () => {
+        it('includes source info in error message', () => {
             global.Intl.DateTimeFormat = vi.fn(() => {
                 throw new Error('Invalid');
             }) as unknown as Intl.DateTimeFormatConstructor;
@@ -201,7 +201,7 @@ describe('timezone utilities', () => {
             expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('Component X:'));
         });
 
-        it('エラーメッセージにフォールバック値を含む', () => {
+        it('includes fallback value in error message', () => {
             global.Intl.DateTimeFormat = vi.fn(() => {
                 throw new Error('Invalid');
             }) as unknown as Intl.DateTimeFormatConstructor;
@@ -211,7 +211,7 @@ describe('timezone utilities', () => {
             expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('Fallback to Asia/Shanghai'));
         });
 
-        it('オブジェクトをString化してエラーメッセージに含める', () => {
+        it('stringifies objects for error message', () => {
             const obj = { toString: () => '[Object timezone]' };
             const result = coerceTimezoneWithToast(obj, 'UTC', 'Object test');
 

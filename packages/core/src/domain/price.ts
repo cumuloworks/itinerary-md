@@ -84,9 +84,9 @@ function inferScaleByCurrency(code: string): number {
 }
 
 function normalizeAmountString(rawNum: string): string {
-    // 単純化ポリシー:
-    // - '.' または ',' のうち「右端のセパレータ」を小数点として扱う
-    // - それ以外のセパレータは千区切りとして除去する
+    // Simplification policy:
+    // - Treat the rightmost of '.' or ',' as the decimal separator
+    // - Remove all other separators as thousands delimiters
     let t = String(rawNum).trim();
     if (!t) return '';
     let sign = '';
@@ -109,7 +109,7 @@ function normalizeAmountString(rawNum: string): string {
     }
     if (!integerPart) integerPart = '0';
     integerPart = integerPart.replace(/^0+(?=\d)/, '');
-    // 末尾の 0 は落とす（例: 12,30 -> 12.3）
+    // Trim trailing zeros (e.g., 12,30 -> 12.3)
     fractionalPart = fractionalPart.replace(/0+$/, '');
     const normalized = fractionalPart ? `${integerPart}.${fractionalPart}` : integerPart;
     const num = Number(sign + normalized);

@@ -1,8 +1,8 @@
 import type { QueryParams, ViewMode } from '../types/itinerary';
 
 /**
- * URLクエリパラメータを解析して型安全な値を返すHook
- * @returns 解析されたクエリパラメータ
+ * Hook that parses URL query parameters and returns type-safe values.
+ * @returns Parsed query parameters.
  */
 export function useQueryParams(): QueryParams {
     try {

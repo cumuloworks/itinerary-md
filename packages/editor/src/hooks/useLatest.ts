@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * 最新の値を常に参照するためのHook
- * React 19のuseEventの代替として使用
- * @param value 最新に保持したい値
- * @returns 最新値への参照
+ * Hook to always reference the latest value.
+ * Serves as a substitute for React 19's useEvent.
+ * @param value Value to keep up-to-date.
+ * @returns A ref to the latest value.
  */
 export function useLatest<T>(value: T): React.MutableRefObject<T> {
     const ref = useRef(value) as React.MutableRefObject<T>;

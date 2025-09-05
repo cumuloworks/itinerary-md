@@ -4,38 +4,28 @@ import { MarkdownPreview } from '../MarkdownPreview';
 
 describe('MarkdownPreview (github blockquote alert)', () => {
     it('renders one-line alert title; body may be empty when inline text is omitted by plugin', () => {
-        const md = `> [!CAUTION] lorem ipsum`;
-        const { container } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
-        const bq = container.querySelector('blockquote.markdown-alert.markdown-alert-caution');
-        expect(bq).not.toBeNull();
-        // title
-        const title = bq?.querySelector('.markdown-alert-title');
-        expect(title?.textContent).toMatch(/CAUTION/i);
-        // body paragraph may be empty in one-line form (no strict assertion)
-        const body = bq?.querySelector('p:not(.markdown-alert-title)');
-        expect(body).not.toBeNull();
+        // Current behavior: in itmd documents it is converted to AlertBlock and the title/subtitle are rendered
+        const md = `---\ntype: itmd\n---\n\n> [!CAUTION] lorem ipsum dolor sit amet`;
+        render(<MarkdownPreview content={md} timezone={'UTC'} />);
+        expect(screen.getByText(/CAUTION/i)).toBeInTheDocument();
+        expect(screen.getByText(/lorem ipsum/i)).toBeInTheDocument();
     });
     it('does not duplicate body when one-line followed by non-empty paragraph', () => {
-        const md = `> [!CAUTION] lorem ipsum dolor sit amet\n> Tickets`;
+        const md = `---\ntype: itmd\n---\n\n> [!CAUTION] lorem ipsum dolor sit amet\n> Tickets`;
         const { container } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
-        const bq = container.querySelector('blockquote.markdown-alert.markdown-alert-caution');
-        expect(bq).not.toBeNull();
-        // There should be exactly two body paragraphs after title
-        const paras = (bq as Element).querySelectorAll('p');
-        // p[0] is title, p[1] and p[2] are bodies
-        expect(paras.length).toBeGreaterThanOrEqual(2);
-        expect(paras[1].textContent).toMatch(/lorem ipsum dolor sit amet/);
-        expect(bq).toHaveTextContent(/Tickets/);
-        // Ensure no duplicated concatenation
-        expect(bq).not.toHaveTextContent(/lorem ipsum dolor sit amet\s*lorem ipsum dolor sit amet/);
+        // Title and subtitle
+        expect(screen.getByText(/CAUTION/i)).toBeInTheDocument();
+        // Subtitle appears only once (not duplicated into body)
+        const text = container.textContent || '';
+        expect((text.match(/lorem ipsum dolor sit amet/gi) || []).length).toBe(1);
+        // Second-line body is rendered
+        expect(screen.getByText(/Tickets/)).toBeInTheDocument();
     });
     it('renders multi-line alert body', () => {
-        const md = `> [!WARNING]\n> line1\n> line2`;
-        const { container } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
-        const bq = container.querySelector('blockquote.markdown-alert.markdown-alert-warning');
-        expect(bq).not.toBeNull();
-        expect(bq).toHaveTextContent(/line1/);
-        expect(bq).toHaveTextContent(/line2/);
+        const md = `---\ntype: itmd\n---\n\n> [!WARNING]\n> line1\n> line2`;
+        render(<MarkdownPreview content={md} timezone={'UTC'} />);
+        expect(screen.getByText(/line1/)).toBeInTheDocument();
+        expect(screen.getByText(/line2/)).toBeInTheDocument();
     });
     it('keeps normal blockquote rendering when not an alert', () => {
         const md = `> Just quote`;
@@ -122,12 +112,12 @@ describe('MarkdownPreview (itmd pipeline rendering)', () => {
 > - seat: [40A](https://example.com/)
 > - seat: [50A](https://example.com/)`;
         const { getAllByText } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
-        // それぞれ個別にレンダリングされる（順序保持）
+        // Each is rendered separately (order preserved)
         const a40 = getAllByText('40A');
         const a50 = getAllByText('50A');
         expect(a40.length).toBeGreaterThan(0);
         expect(a50.length).toBeGreaterThan(0);
-        // seat ラベルが2回分存在するか（重複キーが collapse されない）
+        // There are two seat labels (duplicate keys are not collapsed)
         const seatLabels = getAllByText('seat:');
         expect(seatLabels.length).toBeGreaterThan(1);
     });

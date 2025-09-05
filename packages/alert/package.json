@@ -1,0 +1,30 @@
+{
+    "name": "@itinerary-md/alert",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "test": "vitest --run --passWithNoTests",
+        "test:watch": "vitest"
+    },
+    "dependencies": {
+        "unist-util-visit": "^5.0.0"
+    },
+    "devDependencies": {
+        "@types/mdast": "^4.0.4",
+        "@types/unist": "^3.0.3",
+        "vitest": "^3.2.4",
+        "typescript": "^5.4.0"
+    }
+}
+

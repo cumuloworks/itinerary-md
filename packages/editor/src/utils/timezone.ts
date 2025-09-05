@@ -7,14 +7,14 @@ export function getTimezoneOptions(): string[] {
 export function isValidIanaTimeZone(tz: unknown): boolean {
     if (typeof tz !== 'string' || !tz.trim()) return false;
     try {
-        // IANA 名称 or オフセット表記（UTC/GMT/+HH(:MM)）を受理
+        // Accept IANA names or offset notation (UTC/GMT/+HH(:MM))
         const raw = tz.trim();
-        // 1) IANA 名称は Intl で厳格判定
+        // 1) Strictly validate IANA names using Intl
         try {
             const dtf = new Intl.DateTimeFormat(undefined, { timeZone: raw });
             if (dtf.resolvedOptions().timeZone === raw) return true;
         } catch {}
-        // 2) オフセット表記は Luxon 互換の固定オフセットとして許容（Intl は受理しないため自前判定）
+        // 2) Allow offset notation as Luxon-compatible fixed offsets (Intl does not accept, so validate manually)
         if (/^(UTC|GMT)$/i.test(raw)) return true;
         const m = raw.match(/^(?:\s*(?:UTC|GMT)\s*)?([+-])(\d{1,2})(?::?(\d{1,2}))?$/i);
         if (m) {

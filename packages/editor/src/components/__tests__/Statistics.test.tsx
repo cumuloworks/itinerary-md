@@ -23,7 +23,7 @@ const heading = (text: string): TestMdNode => ({ type: 'itmdHeading', dateISO: t
 const itmdEvent = (eventType: string, costString?: string): TestMdNode => {
     if (!costString) return { type: 'itmdEvent', eventType };
 
-    // costStringを解析してdata.itmdPrice形式に変換
+    // Parse costString and convert to data.itmdPrice shape
     const parts = costString.split(' ');
     const amount = parts[0];
     const currency = parts[1] || 'USD';
@@ -57,7 +57,7 @@ describe('Statistics', () => {
         vi.clearAllMocks();
     });
 
-    it('ヘッダから日付レンジを抽出し日数を表示する', () => {
+    it('extracts date range from headings and shows number of days', () => {
         const root: { children: TestMdNode[] } = {
             children: [heading('2024-01-01'), heading('2024-01-03')],
         };
@@ -67,7 +67,7 @@ describe('Statistics', () => {
         expect(screen.getByText(/3 days/)).toBeInTheDocument();
     });
 
-    it('USDでの合計と内訳(transportation/activity/stay)を集計する', () => {
+    it('aggregates total and breakdown (transportation/activity/stay) in USD', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
         const root: { children: TestMdNode[] } = {
@@ -78,15 +78,15 @@ describe('Statistics', () => {
             ],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
-        // 合計: 350（ロケール依存の記号/小数は無視して数値で確認）
+        // Total: 350 (ignore locale symbols/decimals; assert by number)
         expect(screen.getByText(/350/)).toBeInTheDocument();
-        // 内訳: 100, 50, 200 の数値が表示される
+        // Breakdown: numbers 100, 50, 200 appear
         expect(screen.getByText(/100/)).toBeInTheDocument();
         expect(screen.getAllByText(/50/).length).toBeGreaterThan(0);
         expect(screen.getByText(/200/)).toBeInTheDocument();
     });
 
-    it('為替レートがある場合にEUR/JPYからUSDへ換算して合計する', () => {
+    it('converts EUR/JPY to USD with rates when available and sums', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({
             data: {
@@ -102,63 +102,63 @@ describe('Statistics', () => {
             ],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
-        // 合計は概ね 200（表記ゆれ回避のため数値を部分一致で確認）
+        // Total is around 200 (assert by partial number match)
         expect(screen.getByText(/200/)).toBeInTheDocument();
     });
 
-    it('為替レートが無い場合は異通貨も 1:1 で合計に含める', () => {
+    it('excludes amounts when rates are unavailable (no 1:1 fallback)', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
         const root: { children: TestMdNode[] } = {
             children: [
-                itmdEvent('train', '80 EUR'), // レートなし→1:1 換算で集計
-                itmdEvent('bus', '20 USD'), // 同通貨→集計
+                itmdEvent('train', '80 EUR'), // no rates -> excluded as unconverted
+                itmdEvent('bus', '20 USD'), // same currency -> included
             ],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
-        // 合計は 100（80 + 20）。合計は aria-live="polite" に表示
+        // Total is 20 (80 は未変換で除外)
         const totalEl = document.querySelector('[aria-live="polite"]');
-        expect(totalEl?.textContent || '').toMatch(/100/);
+        expect(totalEl?.textContent || '').toMatch(/20/);
     });
 
-    it('通貨コードの正規化と検証: frontmatter/props の無効値は USD にフォールバック', () => {
+    it('currency normalization/validation: invalid frontmatter/props fall back to USD', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
-        // frontmatter の通貨が無効（例: 'U$' → 検証失敗→USD）
+        // frontmatter currency invalid (e.g., 'U$' -> validation fails -> USD)
         const root: { children: TestMdNode[] } = {
             children: [itmdEvent('bus', '10 USD')],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'U$' }} />);
-        // 複数箇所に同じ数値が出るため、getAllByText で確認
+        // The same number appears in multiple places; check with getAllByText
         expect(screen.getAllByText(/10/).length).toBeGreaterThan(0);
     });
 
-    it('通貨コードの正規化: 小文字や空白を大文字3文字に整形して使用', () => {
+    it('currency normalization: trim/uppercase to 3 letters', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({ data: { base_code: 'USD', rates: { USD: 1, EUR: 0.8 } }, ready: true });
         const root: { children: TestMdNode[] } = {
             children: [itmdEvent('bus', '10 USD')],
         };
         render(<Statistics root={root} frontmatter={{ currency: '  eur  ' }} />);
-        // 10 USD -> EUR 変換（0.8）で 8 相当が表示される
+        // 10 USD -> EUR conversion (0.8) shows a value around 8
         expect(screen.getAllByText(/8/).length).toBeGreaterThan(0);
     });
 
-    it('レートが片側欠損の場合は 1:1 換算で合計に含める', () => {
+    it('excludes when either side of rate is missing (no 1:1)', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({
-            data: { base_code: 'USD', rates: { USD: 1, EUR: 0.8 } }, // JPY レート欠損
+            data: { base_code: 'USD', rates: { USD: 1, EUR: 0.8 } }, // Missing JPY rate
             ready: true,
         });
         const root: { children: TestMdNode[] } = {
-            children: [itmdEvent('train', '100 JPY')], // JPY→EUR（JPYが欠損）→1:1 で 100
+            children: [itmdEvent('train', '100 JPY')], // JPY->EUR (JPY missing) -> excluded as unconverted
         };
         render(<Statistics root={root} frontmatter={{ currency: 'EUR' }} />);
         const totalEl = document.querySelector('[aria-live="polite"]');
-        expect(totalEl?.textContent || '').toMatch(/100/);
+        expect(totalEl?.textContent || '').toMatch('—');
     });
 
-    it('Intl.NumberFormat が RangeError の場合は USD フォールバックでフォーマット', () => {
+    it('does not crash when Intl.NumberFormat throws RangeError and shows em dash if unconverted', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
         const root: { children: TestMdNode[] } = {
@@ -174,24 +174,53 @@ describe('Statistics', () => {
         }) as unknown as typeof Intl.NumberFormat);
         try {
             render(<Statistics root={root} frontmatter={{ currency: 'EUR' }} />);
-            // 50 が表示されれば、USD フォールバックでフォーマット成功（複数箇所の可能性あり）
-            expect(screen.getAllByText(/50/).length).toBeGreaterThan(0);
+            const totalEl = document.querySelector('[aria-live="polite"]');
+            expect(totalEl?.textContent || '').toBe('—');
         } finally {
             spy.mockRestore();
         }
     });
 
-    it('data.itmdPrice形式でフォールバックと正規化に対応する', () => {
+    it('supports fallback and normalization with data.itmdPrice format', () => {
         const root: { children: TestMdNode[] } = {
             children: [itmdEvent('bus', '30 USD'), itmdEvent('museum', '20 USD')],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
-        // 合計 50
+        // Total 50
         expect(screen.getByText(/50/)).toBeInTheDocument();
     });
 
-    it('データがない場合はダッシュ(—)を表示する', () => {
+    it('shows em dash (—) when data is missing', () => {
         render(<Statistics />);
         expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+    });
+
+    it('shows budget from frontmatter and the difference vs total (1:1)', () => {
+        const root: { children: TestMdNode[] } = {
+            children: [itmdEvent('bus', '100 USD')],
+        };
+        render(<Statistics root={root} frontmatter={{ currency: 'USD', budget: '250 USD' }} />);
+        // Budget 250, Total 100 => 150 left / 40% used
+        expect(screen.getByText(/Budget/i)).toBeInTheDocument();
+        expect(screen.getByText(/250/)).toBeInTheDocument();
+        expect(screen.getByText(/left|over/i)).toBeInTheDocument();
+        expect(screen.getByText(/% used/i)).toBeInTheDocument();
+    });
+
+    it('prioritizes manual rate props to convert budget/total', () => {
+        const root: { children: TestMdNode[] } = {
+            children: [itmdEvent('train', '100 EUR')], // Apply 2.0 from EUR to USD
+        };
+        // Apply manual rate regardless of ratesHook
+        const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
+        mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
+        render(<Statistics root={root} frontmatter={{ currency: 'USD', budget: '200 EUR' }} rate={{ from: 'EUR', to: 'USD', value: 2 }} />);
+        // Total 100 EUR -> 200 USD (may appear in multiple places; use getAllByText)
+        expect(screen.getAllByText(/200/).length).toBeGreaterThan(0);
+        // Budget 200 EUR -> 400 USD, 200 USD left
+        const totalEl = document.querySelector('[aria-live="polite"]');
+        expect(totalEl?.textContent || '').toMatch(/200/);
+        expect(document.body.textContent || '').toMatch(/Budget/);
+        expect(document.body.textContent || '').toMatch(/400/);
     });
 });

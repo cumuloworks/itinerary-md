@@ -9,9 +9,9 @@ interface AirlineLogoProps {
 }
 
 /**
- * フライトコードから航空会社コードを抽出します
- * @param flightCode フライトコード（例: "NH123", "JL456", "3K789"）
- * @returns 航空会社コード（IATA 2文字、英数字）または undefined
+ * Extract airline code from a flight code.
+ * @param flightCode Flight code (e.g., "NH123", "JL456", "3K789").
+ * @returns Airline code (IATA 2 alphanumerics) or undefined.
  */
 const extractAirlineCode = (flightCode: string): string | undefined => {
     if (!flightCode) return undefined;
