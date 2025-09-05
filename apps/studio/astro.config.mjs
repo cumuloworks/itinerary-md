@@ -1,5 +1,6 @@
-// @ts-check
+// @ts-nocheck
 import { defineConfig } from 'astro/config';
+import { fileURLToPath } from 'node:url';
 
 import vercel from '@astrojs/vercel';
 import react from '@astrojs/react';
@@ -8,13 +9,21 @@ import sitemap from '@astrojs/sitemap';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://astro.build/config
+const isDev = process.env.NODE_ENV !== 'production';
 export default defineConfig({
     adapter: vercel(),
     integrations: [react(), sitemap()],
-
+    site: 'https://tripmd.dev',
     vite: {
         resolve: {
-            dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+            // dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+            alias: isDev
+                ? {
+                      '@itinerary-md/editor/style.css': fileURLToPath(new URL('../../packages/editor/dist/style.css', import.meta.url)),
+                      '@itinerary-md/editor': fileURLToPath(new URL('../../packages/editor/src/index.tsx', import.meta.url)),
+                      '@itinerary-md/core': fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url)),
+                  }
+                : {},
         },
         plugins: [
             tailwindcss(),
@@ -24,8 +33,27 @@ export default defineConfig({
                 includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png'],
                 workbox: {
                     navigateFallback: '/index.html',
+                    navigateFallbackDenylist: [
+                        /^\/api(\/|$)/,
+                        /^\/_astro(\/|$)/,
+                        /^\/workbox-.*\.js$/,
+                        /^\/sw\.js$/,
+                        /^\/registerSW\.js$/,
+                        /^\/favicon\.ico$/,
+                        /^\/manifest\.webmanifest$/,
+                        /^\/site\.webmanifest$/,
+                        /^\/apple-touch-icon\.png$/,
+                        /^\/android-chrome-\d+x\d+\.png$/,
+                        /^\/ogp\.png$/,
+                        /\/[^\/?]+\.[^/]+$/, // file-like URLs with extensions
+                    ],
                 },
             }),
         ],
+        server: {
+            fs: {
+                allow: [fileURLToPath(new URL('../../', import.meta.url))],
+            },
+        },
     },
 });

@@ -1,4 +1,3 @@
-import './index.css';
 import { Buffer } from 'buffer';
 import type { FC } from 'react';
 import { Toaster } from 'react-hot-toast';

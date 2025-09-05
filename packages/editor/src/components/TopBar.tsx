@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Select from '@radix-ui/react-select';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
-import { Check, ChevronDown, ChevronsDown, Clipboard, Columns, Eye, EyeOff, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, RotateCcw, Rows, Share2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronsDown, Clipboard, Columns, Eye, EyeOff, FileText, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, RotateCcw, Rows, Share2, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import type { TopbarState, ViewMode } from '../types/itinerary';
 
@@ -15,10 +15,11 @@ interface TopBarProps {
     onCopyMarkdown: () => void;
     onShareUrl: () => void;
     onLoadSample: () => void;
+    onClearAll: () => void;
     className?: string;
 }
 
-const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, className }) => {
+const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, onClearAll, className }) => {
     const tzLabelId = React.useId();
     const currencyLabelId = React.useId();
     const timezoneItems = React.useMemo(() => {
@@ -221,6 +222,10 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                             <DropdownMenu.Item onClick={onLoadSample} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-gray-100">
                                 <FileText size={16} className="mr-2" />
                                 Load Sample
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item onClick={onClearAll} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-gray-100 text-red-600">
+                                <Trash2 size={16} className="mr-2" />
+                                Clear All Contents
                             </DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Portal>

@@ -83,6 +83,7 @@ describe('TopBar', () => {
         onCopyMarkdown: vi.fn(),
         onShareUrl: vi.fn(),
         onLoadSample: vi.fn(),
+        onClearAll: vi.fn(),
     };
 
     beforeEach(() => {

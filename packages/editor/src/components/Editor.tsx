@@ -10,15 +10,15 @@ import { writeTextToClipboard } from '../utils/clipboard';
 import { COMMON_CURRENCIES } from '../utils/currency';
 import { buildShareUrlFromContent } from '../utils/hash';
 import { getTimezoneOptions } from '../utils/timezone';
+import { ClearAllDialog } from './dialog/ClearAllDialog';
 import { ImportDialog } from './dialog/ImportDialog';
 import { LoadSampleDialog } from './dialog/LoadSampleDialog';
 import { MarkdownPreview } from './MarkdownPreview';
 import { MarkdownPreviewErrorBoundary } from './MarkdownPreviewErrorBoundary';
 import { MonacoEditor } from './MonacoEditor';
 import { TopBar } from './TopBar';
-import '../index.css';
 
-interface EditorProps {
+export interface EditorProps {
     storageKey?: string;
     samplePath?: string;
 }
@@ -52,6 +52,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
     });
 
     const latestContent = useLatest(content);
+    const [pendingClearAll, setPendingClearAll] = useState(false);
 
     const handleContentChange = useCallback(
         (newContent: string) => {
@@ -81,6 +82,19 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
         }
     }, [latestContent]);
 
+    const handleOpenClearAll = useCallback(() => {
+        setPendingClearAll(true);
+    }, []);
+
+    const handleCancelClearAll = useCallback(() => {
+        setPendingClearAll(false);
+    }, []);
+
+    const handleConfirmClearAll = useCallback(() => {
+        setContent('');
+        setPendingClearAll(false);
+    }, [setContent]);
+
     const hashImport = useHashImport(
         (hashContent: string) => setContent(hashContent),
         () => saveNow()
@@ -91,6 +105,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
     return (
         <div className="h-full flex flex-col min-h-0 gap-4">
             <ImportDialog open={hashImport.isDialogOpen} onCancel={hashImport.cancelImport} onLoad={hashImport.confirmImport} />
+            <ClearAllDialog open={pendingClearAll} onCancel={handleCancelClearAll} onClear={handleConfirmClearAll} />
             <LoadSampleDialog open={pendingLoadSample} onCancel={cancelLoadSample} onLoad={confirmLoadSample} />
             <TopBar
                 tzSelectId={tzSelectId}
@@ -101,6 +116,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                 onCopyMarkdown={handleCopyMarkdown}
                 onShareUrl={handleShareUrl}
                 onLoadSample={loadSample}
+                onClearAll={handleOpenClearAll}
             />
             <div className={containerClass}>
                 {(topbar.viewMode === 'split' || topbar.viewMode === 'editor') && (
