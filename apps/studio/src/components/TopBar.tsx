@@ -57,7 +57,7 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
     }, [timezoneOptions]);
 
     return (
-        <div className="px-0 md:px-8 w-full">
+        <div className="w-full">
             <Toolbar.Root
                 className={`w-full scrollbar-none inline-flex h-9 items-center gap-2 md:rounded-lg rounded-none border border-gray-300 bg-white/90 backdrop-blur pl-2 pr-1 py-1 whitespace-nowrap overflow-x-auto ${className || ''}`}
                 aria-label="Itinerary controls"

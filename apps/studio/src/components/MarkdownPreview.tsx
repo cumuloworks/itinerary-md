@@ -77,8 +77,8 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             }
             const mdast = mdProcessor.parse(fm.content || content) as unknown as Root;
             const transformed = mdProcessor.runSync(mdast) as unknown as Root & { children?: MdNode[] };
-            const prefixIndex = typeof fm.content === 'string' ? content.indexOf(fm.content) : -1;
-            const frontmatterOffset = prefixIndex > 0 ? (content.slice(0, prefixIndex).match(/\r?\n/g) || []).length : 0;
+            const prefixLength = typeof fm.content === 'string' ? content.length - fm.content.length : 0;
+            const frontmatterOffset = prefixLength > 0 ? (content.slice(0, prefixLength).match(/\r?\n/g) || []).length : 0;
             const lastStaySegmentsByDate = new Map<string, Array<{ text: string; url?: string }>>();
             let currentDate: { date: string; tz?: string } | undefined;
             let hasPastByAttr = false;
