@@ -370,7 +370,7 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
             const lang = typeof (node as any).lang === 'string' ? (node as any).lang : undefined;
             const value = typeof (node as any).value === 'string' ? (node as any).value : '';
             return (
-                <pre key={`pre-${lineStart ?? idx}`} className="bg-gray-50 border border-gray-200 rounded-md overflow-x-auto my-4 ml-20" {...commonDataProps}>
+                <pre key={`pre-${lineStart ?? idx}`} className="bg-gray-50 border border-gray-200 rounded-md overflow-x-auto my-4 ml-20 text-sm" {...commonDataProps}>
                     <code className={lang ? `language-${lang}` : undefined}>{value}</code>
                 </pre>
             );

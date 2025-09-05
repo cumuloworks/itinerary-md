@@ -17,6 +17,20 @@ vi.mock('@radix-ui/react-dropdown-menu', () => ({
             {children}
         </button>
     ),
+    Sub: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    SubTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    SubContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    RadioGroup: ({ children, value, onValueChange }: { children: React.ReactNode; value?: string; onValueChange?: (v: string) => void }) => (
+        <div data-testid="dropdown-radio-group" data-value={value} data-change={typeof onValueChange === 'function'}>
+            {children}
+        </div>
+    ),
+    RadioItem: ({ children, value, onClick }: { children: React.ReactNode; value: string; onClick?: (value: string) => void }) => (
+        <button type="button" data-value={value} onClick={() => onClick?.(value)}>
+            {children}
+        </button>
+    ),
+    ItemIndicator: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }));
 
 vi.mock('@radix-ui/react-select', () => ({

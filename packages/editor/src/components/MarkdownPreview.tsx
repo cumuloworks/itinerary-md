@@ -11,9 +11,9 @@ import { notifyError } from '../core/errors';
 import { isValidIanaTimeZone } from '../utils/timezone';
 import 'highlight.js/styles/github.css';
 import { DateTime } from 'luxon';
-import Statistics from './itinerary/Statistics';
+import { Statistics } from './itinerary/Statistics';
 import { createRenderNode } from './render';
-import Tags from './Tags';
+import { Tags } from './Tags';
 
 interface MarkdownPreviewProps {
     content: string;

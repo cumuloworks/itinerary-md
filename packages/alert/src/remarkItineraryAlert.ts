@@ -26,7 +26,7 @@ export const remarkItineraryAlert: Plugin<[], Root> = () => {
             if (paragraph.children.length === 0) return;
             const p0 = paragraph.children[0] as any;
             if (p0?.type !== 'text' || typeof p0.value !== 'string') return;
-            const m = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/.exec(p0.value);
+            const m = /^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i.exec(p0.value);
             if (!m) return;
             const variant = m[1].toLowerCase() as ItmdAlertNode['variant'];
             const remainingText = p0.value.slice(m[0].length);

@@ -15,6 +15,7 @@ export function encodeToHashBase64(input: string): string {
 
 export function decodeFromHashBase64(hashBase64: string): string | null {
     try {
+        if (!hashBase64) return null;
         const binaryString = atob(hashBase64);
         const bytes = new Uint8Array([...binaryString].map((c) => c.charCodeAt(0)));
         const decompressed = inflate(bytes);

@@ -138,12 +138,12 @@ describe('hash utilities', () => {
             expect(decoded).toBeNull();
         });
 
-        it('returns empty string for empty Base64 input', () => {
-            // atob('') returns an empty string; result is an empty string
+        it('returns null for empty Base64 input', () => {
+            // Raw empty Base64 lacks compression header; decoder returns null
             const decoded = decodeFromHashBase64('');
-            expect(decoded).toBe('');
+            expect(decoded).toBeNull();
 
-            // Base64 of a properly compressed empty string is also valid
+            // Base64 of a properly compressed empty string is valid and round-trips to ''
             const emptyEncoded = encodeToHashBase64('');
             const validDecoded = decodeFromHashBase64(emptyEncoded);
             expect(validDecoded).toBe('');

@@ -106,19 +106,19 @@ describe('Statistics', () => {
         expect(screen.getByText(/200/)).toBeInTheDocument();
     });
 
-    it('sums with 1:1 conversion when rates are unavailable', () => {
+    it('excludes amounts when rates are unavailable (no 1:1 fallback)', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
         const root: { children: TestMdNode[] } = {
             children: [
-                itmdEvent('train', '80 EUR'), // レートなし→1:1 換算で集計
-                itmdEvent('bus', '20 USD'), // 同通貨→集計
+                itmdEvent('train', '80 EUR'), // no rates -> excluded as unconverted
+                itmdEvent('bus', '20 USD'), // same currency -> included
             ],
         };
         render(<Statistics root={root} frontmatter={{ currency: 'USD' }} />);
-        // Total is 100 (80 + 20). Total is shown in aria-live="polite"
+        // Total is 20 (80 は未変換で除外)
         const totalEl = document.querySelector('[aria-live="polite"]');
-        expect(totalEl?.textContent || '').toMatch(/100/);
+        expect(totalEl?.textContent || '').toMatch(/20/);
     });
 
     it('currency normalization/validation: invalid frontmatter/props fall back to USD', () => {
@@ -144,21 +144,21 @@ describe('Statistics', () => {
         expect(screen.getAllByText(/8/).length).toBeGreaterThan(0);
     });
 
-    it('uses 1:1 conversion when one side of rate is missing', () => {
+    it('excludes when either side of rate is missing (no 1:1)', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({
             data: { base_code: 'USD', rates: { USD: 1, EUR: 0.8 } }, // Missing JPY rate
             ready: true,
         });
         const root: { children: TestMdNode[] } = {
-            children: [itmdEvent('train', '100 JPY')], // JPY->EUR (JPY missing) -> 1:1 => 100
+            children: [itmdEvent('train', '100 JPY')], // JPY->EUR (JPY missing) -> excluded as unconverted
         };
         render(<Statistics root={root} frontmatter={{ currency: 'EUR' }} />);
         const totalEl = document.querySelector('[aria-live="polite"]');
-        expect(totalEl?.textContent || '').toMatch(/100/);
+        expect(totalEl?.textContent || '').toMatch('—');
     });
 
-    it('falls back to USD formatting when Intl.NumberFormat throws RangeError', () => {
+    it('does not crash when Intl.NumberFormat throws RangeError and shows em dash if unconverted', () => {
         const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
         mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
         const root: { children: TestMdNode[] } = {
@@ -174,8 +174,8 @@ describe('Statistics', () => {
         }) as unknown as typeof Intl.NumberFormat);
         try {
             render(<Statistics root={root} frontmatter={{ currency: 'EUR' }} />);
-            // If 50 appears, USD fallback formatting succeeded (may appear in multiple places)
-            expect(screen.getAllByText(/50/).length).toBeGreaterThan(0);
+            const totalEl = document.querySelector('[aria-live="polite"]');
+            expect(totalEl?.textContent || '').toBe('—');
         } finally {
             spy.mockRestore();
         }

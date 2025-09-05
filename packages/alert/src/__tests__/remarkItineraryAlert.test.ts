@@ -7,6 +7,17 @@ import { remarkItineraryAlert } from '../remarkItineraryAlert';
 const parse = (md: string): Root => unified().use(remarkParse).parse(md) as unknown as Root;
 
 describe('remarkItineraryAlert', () => {
+    it('allows leading spaces before tag and is case-insensitive', async () => {
+        const md = '>   [!warning]  lorem';
+        const processor = unified()
+            .use(remarkParse)
+            .use(remarkItineraryAlert as any);
+        const tree = (await processor.run(parse(md))) as unknown as Root & { children?: any[] };
+        const n = tree.children?.[0] as any;
+        expect(n?.type).toBe('itmdAlert');
+        expect(n?.variant).toBe('warning');
+        expect(n?.inlineTitle?.[0]?.value).toMatch(/lorem/);
+    });
     it('converts one-line github alert to itmdAlert with inlineTitle', async () => {
         const md = '> [!WARNING] lorem ipsum';
         const processor = unified()

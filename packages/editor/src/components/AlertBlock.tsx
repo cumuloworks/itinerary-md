@@ -21,7 +21,7 @@ function getIconByVariant(variant?: string): LucideIcon {
     return Info; // note/info/default
 }
 
-function getStyleByVariant(variant?: string): { text: string; border: string; bgColor: string; borderColor: string; cardBg: string; cardBorder: string } {
+function getStyleByVariant(variant?: string): { text: string; border: string; bgColor: string } {
     const v = String(variant || '').toLowerCase();
     switch (v) {
         case 'tip':
@@ -29,45 +29,30 @@ function getStyleByVariant(variant?: string): { text: string; border: string; bg
                 text: 'text-emerald-600',
                 border: 'border-emerald-200',
                 bgColor: 'bg-emerald-600',
-                borderColor: 'border-l-emerald-600',
-                cardBg: 'bg-emerald-50',
-                cardBorder: 'border-emerald-200',
             };
         case 'warning':
             return {
                 text: 'text-amber-600',
                 border: 'border-amber-200',
                 bgColor: 'bg-amber-600',
-                borderColor: 'border-l-amber-600',
-                cardBg: 'bg-amber-50',
-                cardBorder: 'border-amber-200',
             };
         case 'caution':
             return {
                 text: 'text-red-600',
                 border: 'border-red-200',
                 bgColor: 'bg-red-600',
-                borderColor: 'border-l-red-600',
-                cardBg: 'bg-red-50',
-                cardBorder: 'border-red-200',
             };
         case 'important':
             return {
                 text: 'text-purple-600',
                 border: 'border-purple-200',
                 bgColor: 'bg-purple-600',
-                borderColor: 'border-l-purple-600',
-                cardBg: 'bg-purple-50',
-                cardBorder: 'border-purple-200',
             };
         default:
             return {
                 text: 'text-gray-600',
                 border: 'border-gray-200',
                 bgColor: 'bg-gray-600',
-                borderColor: 'border-l-gray-600',
-                cardBg: 'bg-gray-50',
-                cardBorder: 'border-gray-200',
             };
     }
 }
@@ -86,7 +71,7 @@ export const AlertBlock: FC<AlertBlockProps> = ({ variant, title, subtitle, chil
                     <Icon size={20} className="text-white" />
                 </div>
             </div>
-            <div className={`flex-1 min-w-0 ${hasBody ? 'p-5' : 'px-5'} ${colors.cardBorder} ${colors.borderColor} -ml-4.5 pl-8`}>
+            <div className={`flex-1 min-w-0 ${hasBody ? 'p-5' : 'px-5'} -ml-4.5 pl-8`}>
                 {title || subtitle ? (
                     <div className="flex items-center gap-2">
                         {title ? <span className={`text-lg font-bold ${colors.text}`}>{title}</span> : null}

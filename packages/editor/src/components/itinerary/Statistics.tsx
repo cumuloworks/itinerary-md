@@ -109,7 +109,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
                 const amt = Number(String(tok.normalized?.amount || tok.amount || ''));
                 if (!Number.isFinite(amt)) continue;
                 let converted: number | null = null;
-                // 1) apply manual rate (priority) 2) API rates 3) 1:1
+                // 1) apply manual rate (priority) 2) API rates 3) mark unconverted (no 1:1)
                 converted = applyManualRate(amt, from, to);
                 if (converted == null) {
                     if (from === to) {
@@ -120,10 +120,10 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
                         if (hasFrom && hasTo) {
                             converted = convertAmountUSDBase(amt, from, to, ratesData.rates);
                         } else {
-                            converted = amt; // 1:1 fallback
+                            converted = null; // unknown rates → mark as unconverted
                         }
                     } else {
-                        converted = amt;
+                        converted = null; // rates unavailable → mark as unconverted
                     }
                 }
                 if (converted != null) eventSum += converted;
@@ -161,7 +161,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
             .trim()
             .slice(0, 3);
         const amt = parsed.amount;
-        // Conversion order (manual → API → 1:1)
+        // Conversion order (manual → API → mark unconverted; no 1:1)
         let converted: number | null = null;
         const manual = rate;
         if (manual && manual.value > 0) {
@@ -179,9 +179,10 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
         }
         if (converted == null) {
             if (from === toCurrency) converted = amt;
-            else if (ratesData?.rates?.[from] && ratesData?.rates?.[toCurrency]) converted = convertAmountUSDBase(amt, from, toCurrency, ratesData.rates) ?? amt;
-            else converted = amt;
+            else if (ratesData?.rates?.[from] && ratesData?.rates?.[toCurrency]) converted = convertAmountUSDBase(amt, from, toCurrency, ratesData.rates) ?? null;
+            else converted = null;
         }
+        if (converted == null) return null;
         const fmt = (() => {
             try {
                 return new Intl.NumberFormat(undefined, { style: 'currency', currency: toCurrency, currencyDisplay: 'narrowSymbol' });
