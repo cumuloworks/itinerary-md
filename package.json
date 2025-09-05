@@ -10,7 +10,7 @@
     ],
     "scripts": {
         "dev": "npm run dev:all",
-        "dev:all": "concurrently \"npm -w packages/core run dev\" \"npm -w apps/studio run dev\"",
+        "dev:all": "concurrently \"npm -w packages/core run dev\" \"npm -w packages/editor run pack:watch\" \"npm -w apps/studio run dev\"",
         "dev:studio": "npm -w apps/studio run dev",
         "typecheck": "npm -ws run typecheck --if-present",
         "lint": "biome check apps/studio/src packages/core/src packages/editor/src apps/studio/test",
@@ -22,7 +22,8 @@
         "test": "npm -ws run test --if-present",
         "test:watch": "npm -ws run test:watch --if-present",
         "coverage": "npm -w apps/studio run coverage",
-        "build": "npm -w packages/core run build && npm -w packages/editor run build && npm -w apps/studio run build",
+        "build": "npm run build:deps && npm -w apps/studio run build",
+        "build:deps": "npm -w packages/core run build && npm -w packages/editor run build",
         "clean": "git clean -xfd -e node_modules",
         "test:all": "npm -ws run test --if-present",
         "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"

@@ -1,10 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import FocusLock from 'react-focus-lock';
 
 const AboutButton: React.FC = () => {
     const [open, setOpen] = useState(false);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
     const dialogContainerRef = useRef<HTMLDivElement | null>(null);
+    const titleId = useId();
+    const descId = useId();
 
     const close = useCallback(() => {
         setOpen(false);
@@ -26,8 +29,10 @@ const AboutButton: React.FC = () => {
 
     useEffect(() => {
         if (open) {
-            const focusTarget = closeButtonRef.current ?? dialogContainerRef.current;
-            focusTarget?.focus();
+            // Focus will be handled by FocusLock's initialFocus, fallback to container
+            if (!closeButtonRef.current) {
+                dialogContainerRef.current?.focus();
+            }
         }
     }, [open]);
 
@@ -43,17 +48,37 @@ const AboutButton: React.FC = () => {
                 ?
             </button>
             {open && (
-                <div aria-modal="true" role="dialog" className="fixed inset-0 z-50 flex items-center justify-center" onKeyDown={onDialogKeyDown} ref={dialogContainerRef} tabIndex={-1}>
-                    <button type="button" aria-label="Close dialog" className="absolute inset-0 bg-black/40" onClick={close} onKeyDown={onDialogKeyDown} />
-                    <div role="document" className="relative bg-white rounded-lg max-w-lg w-[90vw] p-6 shadow-xl">
-                        <h2 className="text-lg font-semibold mb-3">About</h2>
-                        <p className="text-sm text-gray-600 mb-4">TripMD Studio — a playground for composing travel itineraries in Markdown.</p>
-                        <div className="mt-4 flex justify-end gap-2">
-                            <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50" onClick={close} ref={closeButtonRef}>
-                                Close
-                            </button>
+                <div
+                    aria-modal="true"
+                    role="dialog"
+                    aria-labelledby={titleId}
+                    aria-describedby={descId}
+                    className="fixed inset-0 z-50 flex items-center justify-center"
+                    onKeyDown={onDialogKeyDown}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            close();
+                        }
+                    }}
+                    ref={dialogContainerRef}
+                    tabIndex={-1}
+                >
+                    <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
+                    <FocusLock returnFocus={false} shards={dialogContainerRef.current ? [dialogContainerRef.current] : undefined} disabled={!open} as="div" className="relative">
+                        <div role="document" className="relative bg-white rounded-lg max-w-lg w-[90vw] p-6 shadow-xl">
+                            <h2 id={titleId} className="text-lg font-semibold mb-3">
+                                About
+                            </h2>
+                            <p id={descId} className="text-sm text-gray-600 mb-4">
+                                TripMD Studio — a playground for composing travel itineraries in Markdown.
+                            </p>
+                            <div className="mt-4 flex justify-end gap-2">
+                                <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50" onClick={close} ref={closeButtonRef} data-autofocus>
+                                    Close
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    </FocusLock>
                 </div>
             )}
         </div>

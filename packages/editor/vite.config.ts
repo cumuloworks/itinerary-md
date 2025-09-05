@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(({ command }) => {
     const isServe = command === 'serve';
+    const isBuild = command === 'build';
     return {
         plugins: [react(), tailwindcss()],
         resolve: {
@@ -22,7 +23,7 @@ export default defineConfig(({ command }) => {
                 formats: ['es'],
             },
             rollupOptions: {
-                external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', '@itinerary-md/core'],
+                external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
             },
             sourcemap: true,
             emptyOutDir: true,

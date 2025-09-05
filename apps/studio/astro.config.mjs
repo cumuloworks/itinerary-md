@@ -16,15 +16,20 @@ export default defineConfig({
     site: 'https://tripmd.dev',
     vite: {
         resolve: {
-            // dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+            dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
             alias: isDev
                 ? {
-                      '@itinerary-md/editor/style.css': fileURLToPath(new URL('../../packages/editor/dist/style.css', import.meta.url)),
-                      '@itinerary-md/editor': fileURLToPath(new URL('../../packages/editor/src/index.tsx', import.meta.url)),
-                      '@itinerary-md/core': fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url)),
+                      '@itinerary-md/editor': fileURLToPath(new URL('../../packages/editor/dist', import.meta.url)),
+                      '@itinerary-md/core': fileURLToPath(new URL('../../packages/core/dist', import.meta.url)),
                   }
                 : {},
         },
+        optimizeDeps: isDev
+            ? {
+                  include: ['@itinerary-md/editor', '@itinerary-md/core'],
+                  force: true,
+              }
+            : undefined,
         plugins: [
             tailwindcss(),
             VitePWA({
@@ -54,6 +59,9 @@ export default defineConfig({
             fs: {
                 allow: [fileURLToPath(new URL('../../', import.meta.url))],
             },
+            watch: {
+                ignored: ['!**/node_modules/@itinerary-md/**']
+            }
         },
     },
 });

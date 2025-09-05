@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer';
+import './index.css';
 import type { FC } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { Editor as EditorBare } from './components/Editor';
