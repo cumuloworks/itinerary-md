@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "preview": "astro preview"
   },
   "dependencies": {
     "@astrojs/react": "^4.3.0",
@@ -14,8 +13,6 @@
     "@astrojs/vercel": "^8.2.7",
     "@itinerary-md/editor": "^0.1.0",
     "@tailwindcss/vite": "^4.1.13",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.7",
     "astro": "^5.13.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -23,6 +20,8 @@
     "tailwindcss": "^4.1.13"
   },
   "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.7",
     "vite-plugin-pwa": "^1.0.3"
   }
 }

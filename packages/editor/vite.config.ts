@@ -1,11 +1,10 @@
-import { fileURLToPath, URL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ command }) => {
     const isServe = command === 'serve';
-    const isBuild = command === 'build';
     return {
         plugins: [react(), tailwindcss()],
         resolve: {

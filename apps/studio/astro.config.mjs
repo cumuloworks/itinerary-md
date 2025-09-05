@@ -9,27 +9,14 @@ import sitemap from '@astrojs/sitemap';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://astro.build/config
-const isDev = process.env.NODE_ENV !== 'production';
 export default defineConfig({
     adapter: vercel(),
     integrations: [react(), sitemap()],
     site: 'https://tripmd.dev',
     vite: {
         resolve: {
-            dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
-            alias: isDev
-                ? {
-                      '@itinerary-md/editor': fileURLToPath(new URL('../../packages/editor/dist', import.meta.url)),
-                      '@itinerary-md/core': fileURLToPath(new URL('../../packages/core/dist', import.meta.url)),
-                  }
-                : {},
+            dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime']
         },
-        optimizeDeps: isDev
-            ? {
-                  include: ['@itinerary-md/editor', '@itinerary-md/core'],
-                  force: true,
-              }
-            : undefined,
         plugins: [
             tailwindcss(),
             VitePWA({
@@ -57,10 +44,7 @@ export default defineConfig({
         ],
         server: {
             fs: {
-                allow: [fileURLToPath(new URL('../../', import.meta.url))],
-            },
-            watch: {
-                ignored: ['!**/node_modules/@itinerary-md/**']
+                allow: [fileURLToPath(new URL('../../', import.meta.url))]
             }
         },
     },
