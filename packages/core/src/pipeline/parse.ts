@@ -288,11 +288,6 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
     const title = ((): PhrasingContent[] | null => {
         if (titleInline && titleInline.length > 0) return titleInline;
         if (head.title && mdastToString(toParagraph(head.title)).trim() !== '') return head.title;
-        // 省略記法: タイトルが空なら常に eventType をタイトルにする
-        if (head.eventType && head.eventType.trim() !== '') {
-            const cap = head.eventType.slice(0, 1).toUpperCase() + head.eventType.slice(1);
-            return [{ type: 'text', value: cap } as unknown as PhrasingContent];
-        }
         return null;
     })();
     if (titleInline) positions.title = { start: headTitleStartInline, end: headEndInline };

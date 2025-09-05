@@ -59,6 +59,10 @@ interface EventBlockProps {
     >;
 }
 
+function capitalize(s: string): string {
+    return s ? s.slice(0, 1).toUpperCase() + s.slice(1) : s;
+}
+
 const getTypeColors = (type: EventBlockProps['eventData']['type']) => {
     switch (type) {
         case 'flight':
@@ -342,6 +346,11 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
         }
     })();
 
+    const displayTitle = (() => {
+        if (mainTitle && String(mainTitle).trim() !== '') return String(mainTitle);
+        return capitalize(String(eventData.type || ''));
+    })();
+
     const routeOrLocationDisplay = (() => {
         if (eventData.baseType === 'transportation' && eventData.departure && eventData.arrival) {
             const meta = eventData.metadata as Record<string, string>;
@@ -377,13 +386,14 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                         const segments =
                             nameSegments ||
                             (() => {
-                                if (!mainTitle) return undefined;
+                                const titleText = displayTitle;
+                                if (!titleText) return undefined;
                                 const meta = eventData.metadata as Record<string, string>;
                                 const url = meta.name__url;
                                 if (url && isAllowedHref(url)) {
-                                    return [{ text: mainTitle, url }];
+                                    return [{ text: titleText, url }];
                                 }
-                                return [{ text: mainTitle }];
+                                return [{ text: titleText }];
                             })();
 
                         if (segments) {
