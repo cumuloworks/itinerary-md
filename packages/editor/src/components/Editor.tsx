@@ -16,6 +16,7 @@ import { MarkdownPreview } from './MarkdownPreview';
 import { MarkdownPreviewErrorBoundary } from './MarkdownPreviewErrorBoundary';
 import { MonacoEditor } from './MonacoEditor';
 import { TopBar } from './TopBar';
+import '../index.css';
 
 interface EditorProps {
     storageKey?: string;

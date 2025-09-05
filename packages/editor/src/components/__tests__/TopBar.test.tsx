@@ -7,7 +7,7 @@ import { TopBar } from '../TopBar';
 vi.mock('@radix-ui/react-dropdown-menu', () => ({
     Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     Trigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => {
-        const child = asChild && React.isValidElement(children) ? children.props.children : children;
+        const child = asChild && React.isValidElement(children) ? (children as React.ReactElement<{ children?: React.ReactNode }>).props.children : children;
         return <div>{child}</div>;
     },
     Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

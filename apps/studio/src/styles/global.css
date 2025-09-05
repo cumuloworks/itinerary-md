@@ -1,1 +1,38 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap");
 @import "tailwindcss";
+
+@theme {
+    --font-sans: "DM Sans", "Noto Sans JP", system-ui, sans-serif;
+    --font-mono: "DM Mono", ui-monospace, monospace;
+}
+
+:root {
+    line-height: 1.5;
+    font-weight: 400;
+    color: #213547;
+    background-color: #ffffff;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
+
+@layer components {
+    .scrollbar-none {
+        -ms-overflow-style: none;
+        /* IE/Edge(旧) */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+        /* Chrome/Safari */
+    }
+}
+
+* {
+    box-sizing: border-box;
+}

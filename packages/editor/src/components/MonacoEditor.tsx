@@ -10,8 +10,8 @@ interface MonacoEditorProps {
 }
 
 const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave, onCursorLineChange, onChangedLines }) => {
-    const cursorLineChangeRef = useRef<MonacoEditorProps['onCursorLineChange']>();
-    const changedLinesRef = useRef<MonacoEditorProps['onChangedLines']>();
+    const cursorLineChangeRef = useRef<MonacoEditorProps['onCursorLineChange']>(undefined);
+    const changedLinesRef = useRef<MonacoEditorProps['onChangedLines']>(undefined);
 
     useEffect(() => {
         cursorLineChangeRef.current = onCursorLineChange;

@@ -8,8 +8,8 @@
         "moduleResolution": "bundler",
         "baseUrl": ".",
         "paths": {
-            "@itinerary-md/core": ["../../packages/core/src"],
-            "@itinerary-md/core/*": ["../../packages/core/src/*"]
+            "@itinerary-md/core": ["../core/src"],
+            "@itinerary-md/core/*": ["../core/src/*"]
         },
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,

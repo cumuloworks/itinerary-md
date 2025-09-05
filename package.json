@@ -12,11 +12,11 @@
         "dev": "npm -w apps/studio run dev",
         "dev:studio": "npm -w apps/studio run dev",
         "typecheck": "npm -ws run typecheck --if-present",
-        "lint": "biome check apps/studio/src packages/core/src apps/studio/test",
-        "lint:fix": "biome check --write apps/studio/src packages/core/src apps/studio/test",
-        "lint:unsafe": "biome check --write --unsafe apps/studio/src packages/core/src apps/studio/test",
-        "format": "biome format --write apps/studio/src packages/core/src apps/studio/test",
-        "format:check": "biome format --ci apps/studio/src packages/core/src apps/studio/test",
+        "lint": "biome check apps/studio/src packages/core/src packages/editor/src apps/studio/test",
+        "lint:fix": "biome check --write apps/studio/src packages/core/src packages/editor/src apps/studio/test",
+        "lint:unsafe": "biome check --write --unsafe apps/studio/src packages/core/src packages/editor/src apps/studio/test",
+        "format": "biome format --write apps/studio/src packages/core/src packages/editor/src apps/studio/test",
+        "format:check": "biome format --ci apps/studio/src packages/core/src packages/editor/src apps/studio/test",
         "prepare": "husky",
         "test": "npm -ws run test --if-present",
         "test:watch": "npm -ws run test:watch --if-present",
@@ -33,7 +33,13 @@
         "@cumuloworks/configs": "github:cumuloworks/configs",
         "husky": "^9.1.7",
         "license-checker": "^25.0.1",
-        "lint-staged": "^16.1.5"
+        "lint-staged": "^16.1.6",
+        "react": "^19.1.1",
+        "react-dom": "^19.1.1"
+    },
+    "overrides": {
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
     },
     "lint-staged": {
         "*.{ts,tsx,js,jsx}": [

@@ -1,16 +1,60 @@
 ---
-
+import '../styles/global.css';
+import { Editor } from '@itinerary-md/editor';
+import '@itinerary-md/editor/dist/index.css';
+import Header from '../components/Header.astro';
 ---
 
-<html lang="en">
+<html lang="ja">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/site.webmanifest" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<title>TripMD Studio</title>
+		<meta name="theme-color" content="#155dfc" />
+		<meta name="description" content="TripMD Studio is a Markdown editor for composing and sharing travel itineraries." />
+		<link rel="canonical" href="https://tripmd.dev/" />
+		<meta property="og:locale" content="ja_JP" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="TripMD Studio" />
+		<meta property="og:title" content="TripMD Studio" />
+		<meta property="og:description" content="TripMD Studio is a Markdown editor for composing and sharing travel itineraries." />
+		<meta property="og:url" content="https://tripmd.dev/" />
+		<meta property="og:image" content="https://tripmd.dev/ogp.png" />
+		<meta property="og:image:type" content="image/png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="TripMD Studio" />
+		<meta name="twitter:description" content="TripMD Studio is a Markdown editor for composing and sharing travel itineraries." />
+		<meta name="twitter:image" content="https://tripmd.dev/ogp.png" />
+		<script type="application/ld+json">
+			{JSON.stringify({
+				"@context": "https://schema.org",
+				"@type": "SoftwareApplication",
+				name: "TripMD Studio",
+				applicationCategory: "ProductivityApplication",
+				operatingSystem: "Web",
+				description: "TripMD Studio is a Markdown editor for composing and sharing travel itineraries.",
+				url: "https://tripmd.dev/",
+				image: "https://tripmd.dev/ogp.png",
+				offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }
+			})}
+		</script>
 	</head>
-	<body>
-		<h1>Astro</h1>
+	<body class="bg-gray-100">
+        <div class="max-w-screen-2xl mx-auto h-svh overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
+			<Header />
+			<div class="px-0 md:px-8 w-full flex-1 min-h-0">
+				<Editor
+					storageKey="itinerary-md-content"
+					samplePath="/sample.md"
+					client:only="react"
+				/>
+			</div>
+		</div>
 	</body>
 </html>
