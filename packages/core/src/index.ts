@@ -1,2 +1,4 @@
-export * from './remark';
-export { remarkItinerary as default } from './remark';
+export {
+	remarkItinerary,
+	remarkItinerary as default,
+} from "./remark/itinerary.js";
