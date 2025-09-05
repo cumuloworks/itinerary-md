@@ -11,7 +11,12 @@
             "remark-itinerary": ["../core/src"],
             "remark-itinerary/*": ["../core/src/*"],
             "remark-itinerary-alert": ["../alert/src"],
-            "remark-itinerary-alert/*": ["../alert/src/*"]
+            "remark-itinerary-alert/*": ["../alert/src/*"],
+            "@components/*": ["src/components/*"],
+            "@hooks/*": ["src/hooks/*"],
+            "@utils/*": ["src/utils/*"],
+            "@types/*": ["src/types/*"],
+            "@lib/*": ["src/lib/*"]
         },
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,

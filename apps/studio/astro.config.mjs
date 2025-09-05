@@ -21,6 +21,13 @@ export default defineConfig({
                 'decode-named-character-reference/index.dom.js': 'decode-named-character-reference/index.js',
                 // CSS import for editor package during development
                 '@itinerary-md/editor/index.css': fileURLToPath(new URL('../../packages/editor/dist/index.css', import.meta.url)),
+                // Path aliases for cleaner imports
+                '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
+                '@pages': fileURLToPath(new URL('./src/pages', import.meta.url)),
+                '@styles': fileURLToPath(new URL('./src/styles', import.meta.url)),
+                '@types': fileURLToPath(new URL('./src/types', import.meta.url)),
+                '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
+                '@lib': fileURLToPath(new URL('./src/lib', import.meta.url)),
             },
         },
         optimizeDeps: {
