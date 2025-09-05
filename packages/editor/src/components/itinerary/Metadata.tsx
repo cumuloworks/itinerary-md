@@ -1,43 +1,14 @@
-import type { LucideIcon } from 'lucide-react';
-import { Bed, Calendar, Car, Clock, MapPin, Phone, Plane, Star, Tag, Users, Wallet, Wifi } from 'lucide-react';
+//
 import type React from 'react';
 import { useMemo } from 'react';
 import { useRatesUSD } from '../../hooks/useRatesUSD';
 import { convertAmountUSDBase, formatCurrency } from '../../utils/currency';
 import { isAllowedHref } from '../../utils/url';
-import { SegmentedText, type TextSegment } from './SegmentedText';
+import { IconLabelText } from './IconLabelText';
+import { getMetadataConfig } from './iconMaps';
+import type { TextSegment } from './SegmentedText';
 
-const getMetadataConfig = (key: string) => {
-    const iconConfigs: Record<string, { icon: LucideIcon; isSpecial?: boolean }> = {
-        cost: { icon: Wallet, isSpecial: true },
-        price: { icon: Wallet, isSpecial: true },
-        seat: { icon: Users },
-        room: { icon: Bed },
-        guests: { icon: Users },
-        aircraft: { icon: Plane },
-        vehicle: { icon: Car },
-        location: { icon: MapPin },
-        addr: { icon: MapPin },
-        phone: { icon: Phone },
-        wifi: { icon: Wifi },
-        rating: { icon: Star },
-        reservation: { icon: Calendar },
-        checkin: { icon: Clock },
-        checkout: { icon: Clock },
-        tag: { icon: Tag },
-        cuisine: { icon: Tag },
-        note: { icon: Tag },
-        desc: { icon: Tag },
-        text: { icon: Tag },
-    };
-    const fallbackLabel = key
-        .split(/[_\-\s]+/)
-        .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
-    const cfg = iconConfigs[key] || { icon: Tag };
-    return { icon: cfg.icon, label: fallbackLabel, isSpecial: cfg.isSpecial };
-};
+// getMetadataConfig は共通モジュールから利用
 
 export const Meta: React.FC<{
     metadata?: Record<string, string>;
@@ -84,7 +55,7 @@ export const Meta: React.FC<{
 
     if (entries.length === 0) return null;
     return (
-        <div className={`flex flex-wrap gap-x-1`}>
+        <div className={`flex flex-wrap gap-x-2`}>
             {entries.map(([key, value], idx) => {
                 const config = getMetadataConfig(key);
                 const IconComponent = config.icon;
@@ -92,10 +63,7 @@ export const Meta: React.FC<{
                     const display = key === 'cost' ? converted?.cost : key === 'price' ? converted?.price : undefined;
                     if (!display) return null;
                     return (
-                        <div key={key} className="text-emerald-600 text-sm font-bold flex items-center">
-                            <IconComponent size={14} className="mr-1" />
-                            <span>{display}</span>
-                        </div>
+                        <IconLabelText key={key} icon={IconComponent} label={undefined} segments={[{ text: display }]} className="text-emerald-600 text-sm font-bold flex items-center" iconSize={14} iconClassName="mr-1" textClassName="" />
                     );
                 }
                 const segments: TextSegment[] = (() => {
@@ -113,14 +81,7 @@ export const Meta: React.FC<{
                     if (maybeUrl && isAllowedHref(maybeUrl)) return [{ text: value, url: maybeUrl }];
                     return [{ text: value }];
                 })();
-
-                return (
-                    <div key={key} className="text-gray-600 text-sm flex items-center">
-                        <IconComponent size={14} className="mr-1" />
-                        <span className="font-medium">{config.label}:</span>
-                        <SegmentedText segments={segments} className="ml-1" linkClassName="underline text-inherit" />
-                    </div>
-                );
+                return <IconLabelText key={key} icon={IconComponent} label={config.label} segments={segments} />;
             })}
         </div>
     );

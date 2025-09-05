@@ -1,4 +1,4 @@
-import { MapPin as Activity, Bed, Building, Bus, Camera, Car, Coffee, Landmark, Plane, Ship, ShoppingBag, Sparkles, Train, TreePine, UtensilsCrossed } from 'lucide-react';
+//
 import { formatDateTime, getDayOffset } from '../../utils/timezone';
 import { isAllowedHref } from '../../utils/url';
 import { AirlineLogo } from './AirlineLogo';
@@ -245,54 +245,9 @@ const getTypeColors = (type: EventBlockProps['eventData']['type']) => {
     }
 };
 
-const getTypeIcon = (type: EventBlockProps['eventData']['type']) => {
-    switch (type) {
-        case 'flight':
-            return Plane;
-        case 'train':
-            return Train;
-        case 'drive':
-            return Car;
-        case 'ferry':
-            return Ship;
-        case 'bus':
-            return Bus;
-        case 'taxi':
-            return Car;
-        case 'subway':
-            return Train;
-        case 'stay':
-        case 'hotel':
-            return Building;
-        case 'dormitory':
-        case 'hostel':
-            return Bed;
-        case 'ryokan':
-            return Landmark;
-        case 'meal':
-        case 'lunch':
-        case 'dinner':
-        case 'breakfast':
-        case 'brunch':
-            return UtensilsCrossed;
-        case 'activity':
-            return Activity;
-        case 'museum':
-            return Landmark;
-        case 'sightseeing':
-            return Camera;
-        case 'shopping':
-            return ShoppingBag;
-        case 'spa':
-            return Sparkles;
-        case 'park':
-            return TreePine;
-        case 'cafe':
-            return Coffee;
-        default:
-            return Activity;
-    }
-};
+import { getIconForEventType } from './iconMaps';
+
+const getTypeIcon = (type: EventBlockProps['eventData']['type']) => getIconForEventType(type);
 
 const TimePlaceholder: React.FC = () => <span className="font-mono text-lg leading-tight relative inline-block invisible">-----</span>;
 

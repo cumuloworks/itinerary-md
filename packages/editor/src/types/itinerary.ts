@@ -6,6 +6,7 @@ export type TopbarState = {
     viewMode: ViewMode;
     showPast?: boolean;
     autoScroll?: boolean;
+    showMdast?: boolean;
 };
 
 export type QueryParams = {

@@ -20,6 +20,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
         viewMode: 'split',
         showPast: true,
         autoScroll: true,
+        showMdast: false,
     }));
 
     useEffect(() => {
@@ -62,6 +63,8 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
 
             const scroll = searchParams.get('scroll');
             if (scroll) patch.autoScroll = scroll === '1';
+
+            // mdast flag is ephemeral and should not be driven by URL
 
             if (Object.keys(patch).length > 0) {
                 setState((prevState) => ({ ...prevState, ...patch }));

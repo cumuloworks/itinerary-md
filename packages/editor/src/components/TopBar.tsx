@@ -166,6 +166,8 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     </ToggleGroup.Item>
                 </ToggleGroup.Root>
 
+                {/* MDASTトグルはEditorヘッダ内に実装済み */}
+
                 <Toolbar.Button
                     type="button"
                     aria-label={!topbar.showPast ? 'Show past days' : 'Hide past days'}

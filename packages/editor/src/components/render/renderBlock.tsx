@@ -318,7 +318,7 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
             const hProps = getHProps(node);
             const { className: hClass, ...hRest } = hProps as any;
             const hasAlert = typeof hClass === 'string' && (hClass as string).split(/\s+/).includes('markdown-alert');
-            const baseBq = hasAlert ? 'ml-24' : 'my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-24';
+            const baseBq = hasAlert ? 'ml-20' : 'my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-20';
             const bqClass = mergeClassNames(baseBq, hClass as string | undefined);
 
             const renderChildren = () => {

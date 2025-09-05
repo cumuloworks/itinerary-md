@@ -48,6 +48,8 @@
         "pako": "^2.1.0",
         "react-hot-toast": "^2.6.0",
         "react-icons": "^5.5.0",
+        "react-inspector": "6.0.2",
+        "react18-json-view": "^0.2.9",
         "rehype-highlight": "^7.0.2",
         "rehype-react": "^8.0.0",
         "remark-gfm": "^4.0.1",
