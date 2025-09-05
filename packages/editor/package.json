@@ -1,0 +1,79 @@
+{
+    "name": "@itinerary-md/editor",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "license": "UNLICENSED",
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json && vite build",
+        "types:watch": "tsc -w -p tsconfig.build.json",
+        "build:watch": "vite build --watch",
+        "pack:watch": "npm run types:watch & npm run build:watch",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest --run --passWithNoTests",
+        "test:watch": "vitest",
+        "prepack": "npm run build"
+    },
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "default": "./dist/index.js"
+        },
+        "./index.css": "./dist/index.css"
+    },
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "peerDependencies": {
+        "react": ">=18 <19",
+        "react-dom": ">=18 <19"
+    },
+    "dependencies": {
+        "@itinerary-md/core": "^0.1.0",
+        "@monaco-editor/react": "^4.7.0",
+        "@radix-ui/react-dialog": "^1.1.15",
+        "@radix-ui/react-dropdown-menu": "^2.1.16",
+        "@radix-ui/react-select": "^2.2.6",
+        "@radix-ui/react-toggle-group": "^1.1.11",
+        "@radix-ui/react-toolbar": "^1.1.11",
+        "buffer": "^6.0.3",
+        "gray-matter": "^4.0.3",
+        "lucide-react": "^0.542.0",
+        "luxon": "^3.7.1",
+        "mdast-util-to-string": "^4.0.0",
+        "monaco-editor": "^0.52.2",
+        "pako": "^2.1.0",
+        "react-hot-toast": "^2.6.0",
+        "react-icons": "^5.5.0",
+        "rehype-highlight": "^7.0.2",
+        "rehype-react": "^8.0.0",
+        "remark-gfm": "^4.0.1",
+        "remark-github-blockquote-alert": "^2.0.0",
+        "remark-parse": "^11.0.0",
+        "remark-rehype": "^11.1.2",
+        "unified": "^11.0.5",
+        "unist-util-visit": "^5.0.0",
+        "yaml": "^2.8.1"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.2.2",
+        "@testing-library/jest-dom": "^6.8.0",
+        "@testing-library/react": "^16.3.0",
+        "@types/luxon": "^3.7.1",
+        "@types/pako": "^2.0.4",
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.3.7",
+        "@vitejs/plugin-react": "^5.0.2",
+        "@vitest/coverage-v8": "^3.2.4",
+        "jsdom": "^26.1.0",
+        "tailwindcss": "^4.1.13",
+        "typescript": "^5.9.2",
+        "vite": "^6.3.5",
+        "vitest": "^3.2.4"
+    },
+    "engines": {
+        "node": ">=20.19"
+    }
+}

@@ -17,13 +17,14 @@
     ],
     "scripts": {
         "build": "tsc -p tsconfig.build.json",
+        "dev": "tsc -w -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.build.json --noEmit",
         "prepack": "npm run build",
         "test": "vitest --run --passWithNoTests",
         "test:watch": "vitest"
     },
     "dependencies": {
-        "luxon": "^3.4.4",
+        "luxon": "^3.7.1",
         "mdast-util-to-string": "4.0.0",
         "unist-util-visit": "^5.0.0"
     },
@@ -31,10 +32,10 @@
         "unified": "^11.0.0"
     },
     "devDependencies": {
-        "@types/node": "^20.12.12",
+        "@types/node": "^24.3.1",
         "remark-parse": "^11.0.0",
-        "unified": "^11.0.4",
-        "typescript": "^5.2.2",
-        "vitest": "^2.1.9"
+        "unified": "^11.0.5",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4"
     }
 }

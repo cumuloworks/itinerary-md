@@ -173,9 +173,9 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
                 if (!showPastEffective && isPast) {
                     return null;
                 }
-                const dateStrForDisplay = (dateInfo?.date as string | undefined) ?? (startISO ? DateTime.fromISO(startISO).toISODate() || undefined : undefined);
+                const dateStrForDisplay = (dateInfo?.date as string | undefined) ?? (startISO ? DateTime.fromISO(startISO, { zone: displayTimezone }).toISODate() || undefined : undefined);
                 return (
-                    <div key={`e-${lineStart ?? Math.random()}`} className="contents" {...commonDataProps}>
+                    <div key={`e-${lineStart ?? idx}`} className="contents" {...commonDataProps}>
                         <EventBlock
                             eventData={eventData}
                             dateStr={dateStrForDisplay}

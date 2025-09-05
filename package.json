@@ -9,21 +9,21 @@
         "packages/*"
     ],
     "scripts": {
-        "dev": "npm -w apps/studio run dev",
+        "dev": "npm run dev:all",
+        "dev:all": "concurrently \"npm -w packages/core run dev\" \"npm -w packages/editor run pack:watch\" \"npm -w apps/studio run dev\"",
         "dev:studio": "npm -w apps/studio run dev",
         "typecheck": "npm -ws run typecheck --if-present",
-        "lint": "biome check apps/studio/src packages/core/src apps/studio/test",
-        "lint:fix": "biome check --write apps/studio/src packages/core/src apps/studio/test",
-        "lint:unsafe": "biome check --write --unsafe apps/studio/src packages/core/src apps/studio/test",
-        "format": "biome format --write apps/studio/src packages/core/src apps/studio/test",
-        "format:check": "biome format --ci apps/studio/src packages/core/src apps/studio/test",
+        "lint": "biome check apps/studio/src packages/core/src packages/editor/src apps/studio/test",
+        "lint:fix": "biome check --write apps/studio/src packages/core/src packages/editor/src apps/studio/test",
+        "lint:unsafe": "biome check --write --unsafe apps/studio/src packages/core/src packages/editor/src apps/studio/test",
+        "format": "biome format --write apps/studio/src packages/core/src packages/editor/src apps/studio/test",
+        "format:check": "biome format --ci apps/studio/src packages/core/src packages/editor/src apps/studio/test",
         "prepare": "husky",
         "test": "npm -ws run test --if-present",
         "test:watch": "npm -ws run test:watch --if-present",
-        "coverage": "npm -w apps/studio run coverage",
-        "build": "npm -ws run build",
+        "build": "npm run build:deps && npm -w apps/studio run build",
+        "build:deps": "npm -w packages/core run build && npm -w packages/editor run build",
         "clean": "git clean -xfd -e node_modules",
-        "test:all": "npm -ws run test --if-present",
         "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
     },
     "devDependencies": {
@@ -31,9 +31,13 @@
         "@commitlint/cli": "^19.8.1",
         "@commitlint/config-conventional": "^19.8.1",
         "@cumuloworks/configs": "github:cumuloworks/configs",
+        "@vitest/coverage-v8": "^3.2.4",
+        "concurrently": "^9.2.1",
         "husky": "^9.1.7",
+        "jsdom": "^26.1.0",
         "license-checker": "^25.0.1",
-        "lint-staged": "^16.1.5"
+        "lint-staged": "^16.1.6",
+        "vitest": "^3.2.4"
     },
     "lint-staged": {
         "*.{ts,tsx,js,jsx}": [

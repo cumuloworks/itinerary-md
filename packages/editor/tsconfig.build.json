@@ -1,0 +1,32 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "declaration": true,
+        "declarationMap": true,
+        "emitDeclarationOnly": true,
+        "outDir": "dist",
+        "rootDir": "src",
+        "noEmit": false,
+        "paths": {},
+        "typeRoots": ["./types", "../../node_modules/@types"],
+        "types": ["react", "react-dom", "vite/client"]
+    },
+    "include": [
+        "src/index.tsx",
+        "src/components/**/*.tsx",
+        "src/core/**/*.ts",
+        "src/hooks/**/*.ts",
+        "src/types/**/*.ts",
+        "src/utils/**/*.ts",
+        "types"
+    ],
+    "exclude": [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/components/Header.tsx",
+        "src/**/__tests__/**",
+        "test/**",
+        "**/*.test.ts",
+        "**/*.test.tsx"
+    ]
+}

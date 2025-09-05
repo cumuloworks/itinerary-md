@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/apps/studio",
+      "envFile": "${workspaceFolder}/apps/studio/.env",
+      "name": "Development server",
+      "request": "launch",
+      "type": "node-terminal"
+    }
+  ]
+}
