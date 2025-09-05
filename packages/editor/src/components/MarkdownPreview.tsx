@@ -1,10 +1,10 @@
-import { remarkItineraryAlert } from '@itinerary-md/alert';
-import remarkItinerary from '@itinerary-md/core';
 import matter from 'gray-matter';
 import type { PhrasingContent, Root } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import React, { type FC, memo } from 'react';
 import remarkGfm from 'remark-gfm';
+import remarkItinerary from 'remark-itinerary';
+import remarkItineraryAlert from 'remark-itinerary-alert';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { notifyError } from '../core/errors';
@@ -260,7 +260,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             {title && <h1 className="text-4xl font-bold text-gray-900 mt-6 ml-0 tracking-tight">{title}</h1>}
             {description && <p className="text-gray-600 tracking-tight">{description}</p>}
             {Array.isArray(tags) && tags.length > 0 && <Tags tags={tags} />}
-            {isItmd && <Statistics root={root as any} frontmatter={safeParsedFrontmatter} timezone={timezone} currency={currency} rate={rate} />}
+            {isItmd && <Statistics root={root as any} frontmatter={safeParsedFrontmatter} currency={currency} rate={rate} />}
             {reactContent}
         </div>
     );

@@ -14,7 +14,7 @@ type UseInitialContentResult = {
 
 /**
  * Hook to manage loading initial content.
- * Priority: hash -> storage -> sample.md
+ * Priority: hash -> storage -> sample file
  * @param options Options.
  * @returns Content state and operation functions.
  */

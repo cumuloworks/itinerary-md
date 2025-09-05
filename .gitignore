@@ -2,3 +2,4 @@
 dist
 bash.exe.stackdump
 .vercel
+*.tgz

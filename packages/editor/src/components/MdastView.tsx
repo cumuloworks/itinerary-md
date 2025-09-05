@@ -1,8 +1,8 @@
-import remarkItinerary from '@itinerary-md/core';
 import matter from 'gray-matter';
 import type { Root } from 'mdast';
 import { type FC, memo, useMemo } from 'react';
 import ReactJson from 'react18-json-view';
+import remarkItinerary from 'remark-itinerary';
 import 'react18-json-view/src/style.css';
 import remarkGfm from 'remark-gfm';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';

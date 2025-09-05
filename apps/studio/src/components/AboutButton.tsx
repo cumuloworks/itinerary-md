@@ -1,17 +1,27 @@
-import { Info } from 'lucide-react';
+import { Check, Info, Share2, X } from 'lucide-react';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import FocusLock from 'react-focus-lock';
 
 const AboutButton: React.FC = () => {
     const [open, setOpen] = useState(false);
+    const [showThanks, setShowThanks] = useState(false);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
     const dialogContainerRef = useRef<HTMLDivElement | null>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const titleId = useId();
     const descId = useId();
+    const licenseId = useId();
+    const currentYear = new Date().getFullYear();
 
     const close = useCallback(() => {
         setOpen(false);
+        setShowThanks(false); // Reset thanks message when closing
+        // Clear any timer
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
         if (triggerButtonRef.current) {
             triggerButtonRef.current.focus();
         }
@@ -28,6 +38,39 @@ const AboutButton: React.FC = () => {
         [close]
     );
 
+    const copyShareLink = useCallback(async () => {
+        const url = 'https://tripmd.dev';
+        try {
+            await navigator.clipboard.writeText(url);
+        } catch {
+            const temp = document.createElement('textarea');
+            temp.value = url;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+        }
+        setShowThanks(true);
+        // Clear any existing timer
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+        }
+        // Set new timer for auto-return after 3 seconds
+        timerRef.current = setTimeout(() => {
+            setShowThanks(false);
+            timerRef.current = null;
+        }, 3000);
+    }, []);
+
+    const handleReturnToAbout = useCallback(() => {
+        setShowThanks(false);
+        // Clear timer if user clicks to return
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+    }, []);
+
     useEffect(() => {
         if (open) {
             // Focus will be handled by FocusLock's initialFocus, fallback to container
@@ -37,12 +80,21 @@ const AboutButton: React.FC = () => {
         }
     }, [open]);
 
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+            }
+        };
+    }, []);
+
     return (
         <>
             <button
                 type="button"
                 aria-label="About"
-                className="cursor-pointer inline-flex items-center justify-center w-8 h-8 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="cursor-pointer inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:bg-gray-50 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 onClick={() => setOpen(true)}
                 ref={triggerButtonRef}
             >
@@ -67,17 +119,90 @@ const AboutButton: React.FC = () => {
                     <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
                     <FocusLock returnFocus={false} shards={dialogContainerRef.current ? [dialogContainerRef.current] : undefined} disabled={!open} as="div" className="relative">
                         <div role="document" className="relative bg-white rounded-lg max-w-lg w-[90vw] p-6 shadow-xl">
-                            <h2 id={titleId} className="text-lg font-semibold mb-3">
-                                About
-                            </h2>
-                            <p id={descId} className="text-sm text-gray-600 mb-4">
-                                TripMD Studio — a playground for composing travel itineraries in Markdown.
-                            </p>
-                            <div className="mt-4 flex justify-end gap-2">
-                                <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50" onClick={close} ref={closeButtonRef} data-autofocus>
-                                    Close
+                            {showThanks ? (
+                                // Thank you state - show for 3 seconds or until clicked
+                                <button type="button" className="flex flex-col items-center py-8 cursor-pointer w-full focus:outline-none" onClick={handleReturnToAbout} aria-label="Return to About dialog">
+                                    <div className="relative mb-6">
+                                        <div className="w-20 h-20 rounded-full bg-teal-100 flex items-center justify-center">
+                                            <div className="absolute inset-0 rounded-full bg-teal-100 animate-ping opacity-30" />
+                                            <Share2 size={32} className="text-teal-600 relative z-10" />
+                                        </div>
+                                        <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                            <Check size={16} className="text-white" />
+                                        </div>
+                                    </div>
+                                    <h2 id={thanksTitleId} className="text-2xl font-bold text-gray-800 mb-2">
+                                        Thank you!
+                                    </h2>
+                                    <p id={thanksDescId} className="text-lg text-gray-600 mb-4">
+                                        URL Copied to Clipboard
+                                    </p>
+                                    <div className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                                        Click anywhere to return
+                                    </div>
                                 </button>
-                            </div>
+                            ) : (
+                                <>
+                                    {/* Top-right close button */}
+                                    <button
+                                        type="button"
+                                        aria-label="Close"
+                                        className="absolute right-3 top-3 inline-flex items-center justify-center w-8 h-8 rounded text-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        onClick={close}
+                                    >
+                                        <X size={16} />
+                                    </button>
+
+                                    <h2 id={titleId} className="text-lg font-semibold mb-3">
+                                        About
+                                    </h2>
+                                    <p id={descId} className="text-sm text-gray-600 mb-4">
+                                        TripMD Studio — a playground for composing travel itineraries in Markdown.
+                                    </p>
+                                    {/* Issue link (simple hyperlink with short explanation) */}
+                                    <div className="mt-5 text-sm text-gray-700">
+                                        <p className="mb-2">This app is still in its early days. If you find an issue or have a feature idea, please let us know below.</p>
+                                        <a href="https://github.com/cumuloworks/itinerary-md/issues/new/choose" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                            Report an issue or suggest a feature
+                                        </a>
+                                    </div>
+
+                                    {/* Notes / License textarea */}
+                                    <div className="mt-5">
+                                        <label htmlFor={licenseId} className="block text-xs font-medium text-gray-600 mb-1">
+                                            Notes
+                                        </label>
+                                        <textarea
+                                            readOnly
+                                            className="w-full h-24 p-2 text-xs border border-gray-300 rounded bg-gray-50 text-gray-700"
+                                            id={licenseId}
+                                            value={`Privacy & Data
+- Your itinerary content is not sent to our servers. Parsing and preview run locally in your browser.
+- We use Vercel Analytics and Sentry to improve stability and usability. They may collect anonymized usage metrics and error diagnostics (e.g., stack traces, browser/device information). Your document contents are not transmitted.
+
+License
+- This project includes components licensed under MIT.
+- Use of this studio is provided as-is without warranty.`}
+                                        />
+                                    </div>
+
+                                    <div className="mt-4 text-center text-xs text-gray-500">
+                                        © {currentYear}{' '}
+                                        <a href="https://x.com/cumuloworks" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                            Cumuloworks
+                                        </a>
+                                    </div>
+
+                                    <div className="mt-6 flex justify-between items-center gap-2">
+                                        <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1" onClick={copyShareLink}>
+                                            <Share2 size={14} /> Share app
+                                        </button>
+                                        <button type="button" className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50" onClick={close} ref={closeButtonRef} data-autofocus>
+                                            Close
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </FocusLock>
                 </div>

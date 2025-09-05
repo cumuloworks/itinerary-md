@@ -7,6 +7,7 @@ import { useInitialContent } from '../hooks/useInitialContent';
 import { useItinerary } from '../hooks/useItinerary';
 import { useLatest } from '../hooks/useLatest';
 import { useTopbarState } from '../hooks/useTopbarState';
+import { useI18n } from '../i18n';
 import { writeTextToClipboard } from '../utils/clipboard';
 import { COMMON_CURRENCIES } from '../utils/currency';
 import { buildShareUrlFromContent } from '../utils/hash';
@@ -34,9 +35,26 @@ export interface EditorProps {
 const STORAGE_KEY_DEFAULT = 'itinerary-md-content';
 const AUTOSAVE_DELAY = 1000;
 const PREVIEW_DEBOUNCE_DELAY = 300;
-const SAMPLE_PATH_DEFAULT = '/sample.md';
+const SAMPLE_PATH_DEFAULT = '/sample_en.md'; // Default to English sample
+
+function normalizeLang(lang: string): 'en' | 'ja' {
+    const l = (lang || '').toLowerCase();
+    if (l.startsWith('ja')) return 'ja';
+    return 'en';
+}
+
+function getLanguageAwareSamplePath(basePath: string, lang: string): string {
+    const norm = normalizeLang(lang);
+    // Normalize common cases: '/sample.md', '/sample_en.md', '/sample_ja.md'
+    const lower = basePath.toLowerCase();
+    const isSample = lower.endsWith('/sample.md') || lower.endsWith('/sample_en.md') || lower.endsWith('/sample_ja.md');
+    if (!isSample) return basePath;
+    return `/sample_${norm}.md`;
+}
 
 const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT, rate }) => {
+    const { lang } = useI18n();
+    const effectiveSamplePath = useMemo(() => getLanguageAwareSamplePath(samplePath, lang), [samplePath, lang]);
     const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
     const tzSelectId = useId();
 
@@ -45,7 +63,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
 
     const { content, setContent, pendingLoadSample, loadSample, cancelLoadSample, confirmLoadSample } = useInitialContent({
         storageKey,
-        samplePath,
+        samplePath: effectiveSamplePath,
     });
 
     const { saveNow } = useAutosave(content, {

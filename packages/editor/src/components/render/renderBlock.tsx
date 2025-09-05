@@ -84,7 +84,10 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
         }
 
         if (type === 'itmdAlert') {
-            const variant = (node as any)?.variant as string | undefined;
+            const rawVariant = (node as any)?.variant as string | undefined;
+            const v = typeof rawVariant === 'string' ? rawVariant.toLowerCase() : '';
+            const allowedVariants = new Set(['note', 'tip', 'important', 'warning', 'caution']);
+            const variant = allowedVariants.has(v) ? v : 'info';
             const title = (node as any)?.title as string | undefined;
             const inlineTitle = (node as any)?.inlineTitle as any[] | undefined;
             const children = (node as any)?.children as any[] | undefined;
@@ -99,9 +102,21 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
             const contentEls =
                 children?.map((c: any, ci: number) => {
                     const cStart = getLineStart(c);
+                    const cEnd = getLineEnd(c);
+                    const cDate = getNodeDateAttr(c);
                     const key = `alert-c-${cStart ?? ci}`;
                     if (c.type === 'paragraph') {
-                        return <p key={key}>{renderInline(c.children || [])}</p>;
+                        const childDataProps: any = {
+                            ...commonDataProps,
+                            'data-itin-line-start': cStart ? String(cStart) : undefined,
+                            'data-itin-line-end': cEnd ? String(cEnd) : undefined,
+                            'data-itmd-date': cDate,
+                        };
+                        return (
+                            <p key={key} {...childDataProps}>
+                                {renderInline(c.children || [])}
+                            </p>
+                        );
                     }
                     return <React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>;
                 }) || [];

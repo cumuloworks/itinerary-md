@@ -10,7 +10,8 @@ export default defineConfig(({ command }) => {
         resolve: {
             alias: isServe
                 ? {
-                      '@itinerary-md/core': fileURLToPath(new URL('../core/src', import.meta.url)),
+                      'remark-itinerary': fileURLToPath(new URL('../core/src', import.meta.url)),
+                      'remark-itinerary-alert': fileURLToPath(new URL('../alert/src', import.meta.url)),
                   }
                 : {},
         },

@@ -1,14 +1,18 @@
 # itinerary-md
 
-Markdown-based travel itinerary toolkit (monorepo).
+Monorepo for Markdown-based travel itinerary tools.
 
-- Apps: `apps/studio` — React + Vite editor/preview
-- Packages: `@itinerary-md/core` (parsers, remark plugins), `@itinerary-md/statistics` (analysis)
+Packages:
 
-## Quick start
+- `remark-itinerary` — remark plugin and helpers for parsing itinerary syntax
+- `remark-itinerary-alert` — remark plugin for GitHub-style blockquote alerts
 
-```bash
-npm i
-npm run dev    # start Studio
-npm run build  # build all
-```
+Apps:
+
+- `apps/studio` — demo editor/preview app
+
+License:
+
+- `remark-itinerary`: MIT (see `packages/core/LICENSE`)
+- `remark-itinerary-alert`: MIT (see `packages/alert/LICENSE`)
+- Others: UNLICENSED
