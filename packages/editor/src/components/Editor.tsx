@@ -24,6 +24,11 @@ export interface EditorProps {
     storageKey?: string;
     samplePath?: string;
     rate?: { from: string; to: string; value: number };
+    /**
+     * UI language. Example: "en", "ja", or locale like "ja-JP".
+     * If omitted, browser language is used.
+     */
+    language?: string;
 }
 
 const STORAGE_KEY_DEFAULT = 'itinerary-md-content';
