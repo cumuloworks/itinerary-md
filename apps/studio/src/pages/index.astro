@@ -3,6 +3,7 @@ import '../styles/global.css';
 import { Editor } from '@itinerary-md/editor';
 import '@itinerary-md/editor/index.css';
 import Header from '../components/Header.astro';
+import Analytics from '@vercel/analytics/astro'
 ---
 
 <html lang="ja">
@@ -44,6 +45,7 @@ import Header from '../components/Header.astro';
 				offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }
 			})}
 		</script>
+		<Analytics />
 	</head>
 	<body class="bg-gray-100">
         <div class="max-w-screen-2xl mx-auto h-svh overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
