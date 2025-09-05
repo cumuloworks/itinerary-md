@@ -21,7 +21,7 @@
         "test": "npm -ws run test --if-present",
         "test:watch": "npm -ws run test:watch --if-present",
         "coverage": "npm -w apps/studio run coverage",
-        "build": "npm -ws run build",
+        "build": "npm -w packages/core run build && npm -w packages/editor run build && npm -w apps/studio run build",
         "clean": "git clean -xfd -e node_modules",
         "test:all": "npm -ws run test --if-present",
         "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
@@ -31,15 +31,12 @@
         "@commitlint/cli": "^19.8.1",
         "@commitlint/config-conventional": "^19.8.1",
         "@cumuloworks/configs": "github:cumuloworks/configs",
+        "@vitest/coverage-v8": "^3.2.4",
         "husky": "^9.1.7",
+        "jsdom": "^26.1.0",
         "license-checker": "^25.0.1",
         "lint-staged": "^16.1.6",
-        "react": "^19.1.1",
-        "react-dom": "^19.1.1"
-    },
-    "overrides": {
-        "react": "^18.3.1",
-        "react-dom": "^18.3.1"
+        "vitest": "^3.2.4"
     },
     "lint-staged": {
         "*.{ts,tsx,js,jsx}": [

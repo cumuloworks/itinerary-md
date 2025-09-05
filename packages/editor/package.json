@@ -29,8 +29,8 @@
     "types": "dist/index.d.ts",
     "files": ["dist", "public"],
     "peerDependencies": {
-        "react": ">=18 <20",
-        "react-dom": ">=18 <20"
+        "react": ">=18 <19",
+        "react-dom": ">=18 <19"
     },
     "dependencies": {
         "@itinerary-md/core": "^0.1.0",
@@ -55,18 +55,19 @@
         "remark-github-blockquote-alert": "^2.0.0",
         "remark-parse": "^11.0.0",
         "remark-rehype": "^11.1.2",
-        "tailwindcss": "^4.1.13",
+        
         "unified": "^11.0.5",
         "unist-util-visit": "^5.0.0",
         "yaml": "^2.8.1"
     },
     "devDependencies": {
+        "tailwindcss": "^4.1.13",
         "@testing-library/jest-dom": "^6.8.0",
         "@testing-library/react": "^16.3.0",
         "@types/luxon": "^3.7.1",
         "@types/pako": "^2.0.4",
-        "@types/react": "^19.1.12",
-        "@types/react-dom": "^19.1.9",
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.3.7",
         "@vitejs/plugin-react": "^5.0.2",
         "@vitest/coverage-v8": "^3.2.4",
         "jsdom": "^26.1.0",
