@@ -8,7 +8,7 @@
         "build": "tsc -p tsconfig.build.json && vite build",
         "types:watch": "tsc -w -p tsconfig.build.json",
         "build:watch": "vite build --watch",
-        "pack:watch": "npm run types:watch & npm run build:watch",
+        "pack:watch": "concurrently -k -n types,build \"npm:types:watch\" \"npm:build:watch\"",
         "typecheck": "tsc --noEmit",
         "test": "vitest --run --passWithNoTests",
         "test:watch": "vitest",
