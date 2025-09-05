@@ -16,6 +16,10 @@ export default defineConfig({
     vite: {
         resolve: {
             dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+            alias: {
+                // Avoid DOM-specific entry on SSR: always use universal implementation
+                'decode-named-character-reference/index.dom.js': 'decode-named-character-reference/index.js',
+            },
         },
         optimizeDeps: {
             exclude: ['@itinerary-md/editor', '@itinerary-md/core'],

@@ -1,7 +1,8 @@
 {
-    "name": "@itinerary-md/alert",
+    "name": "remark-itinerary-alert",
     "version": "0.1.0",
-    "private": true,
+    "private": false,
+    "license": "MIT",
     "type": "module",
     "main": "dist/index.js",
     "module": "dist/index.js",
@@ -12,8 +13,33 @@
             "import": "./dist/index.js"
         }
     },
+    "sideEffects": false,
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/cumuloworks/itinerary-md.git",
+        "directory": "packages/alert"
+    },
+    "bugs": {
+        "url": "https://github.com/cumuloworks/itinerary-md/issues"
+    },
+    "homepage": "https://github.com/cumuloworks/itinerary-md#readme",
+    "keywords": [
+        "remark",
+        "plugin",
+        "alert",
+        "blockquote",
+        "github"
+    ],
     "scripts": {
-        "build": "tsc -p tsconfig.build.json",
+        "clean": "rimraf dist",
+        "build": "rimraf dist && tsc -p tsconfig.build.json",
+        "prepack": "npm run build",
         "test": "vitest --run --passWithNoTests",
         "test:watch": "vitest"
     },
@@ -23,6 +49,7 @@
     "devDependencies": {
         "@types/mdast": "^4.0.4",
         "@types/unist": "^3.0.3",
+        "rimraf": "^6.0.1",
         "vitest": "^3.2.4",
         "typescript": "^5.4.0"
     }

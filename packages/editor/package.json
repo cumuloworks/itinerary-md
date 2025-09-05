@@ -31,8 +31,8 @@
         "react-dom": ">=18 <19"
     },
     "dependencies": {
-        "@itinerary-md/alert": "^0.1.0",
-        "@itinerary-md/core": "^0.1.0",
+        "remark-itinerary-alert": "^0.1.0",
+        "remark-itinerary": "^0.1.0",
         "@monaco-editor/react": "^4.7.0",
         "@radix-ui/react-dialog": "^1.1.15",
         "@radix-ui/react-dropdown-menu": "^2.1.16",

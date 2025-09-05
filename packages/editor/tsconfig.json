@@ -8,8 +8,10 @@
         "moduleResolution": "bundler",
         "baseUrl": ".",
         "paths": {
-            "@itinerary-md/core": ["../core/src"],
-            "@itinerary-md/core/*": ["../core/src/*"]
+            "remark-itinerary": ["../core/src"],
+            "remark-itinerary/*": ["../core/src/*"],
+            "remark-itinerary-alert": ["../alert/src"],
+            "remark-itinerary-alert/*": ["../alert/src/*"]
         },
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,

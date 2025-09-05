@@ -1,1 +1,1 @@
-export { remarkItineraryAlert } from './remarkItineraryAlert';
+export { remarkItineraryAlert, remarkItineraryAlert as default } from './remarkItineraryAlert';

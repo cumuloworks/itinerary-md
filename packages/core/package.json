@@ -1,9 +1,9 @@
 {
-    "name": "@itinerary-md/core",
+    "name": "remark-itinerary",
     "version": "0.1.0",
-    "private": true,
+    "private": false,
     "type": "module",
-    "license": "UNLICENSED",
+    "license": "MIT",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "exports": {
@@ -12,11 +12,34 @@
             "import": "./dist/index.js"
         }
     },
+    "sideEffects": false,
     "files": [
         "dist"
     ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/cumuloworks/itinerary-md.git",
+        "directory": "packages/core"
+    },
+    "bugs": {
+        "url": "https://github.com/cumuloworks/itinerary-md/issues"
+    },
+    "homepage": "https://github.com/cumuloworks/itinerary-md#readme",
+    "keywords": [
+        "markdown",
+        "remark",
+        "mdast",
+        "itinerary",
+        "travel",
+        "parser",
+        "plugin"
+    ],
     "scripts": {
-        "build": "tsc -p tsconfig.build.json",
+        "clean": "rimraf dist",
+        "build": "rimraf dist && tsc -p tsconfig.build.json",
         "dev": "tsc -w -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.build.json --noEmit",
         "prepack": "npm run build",
@@ -36,6 +59,7 @@
         "remark-parse": "^11.0.0",
         "unified": "^11.0.5",
         "typescript": "^5.9.2",
+        "rimraf": "^6.0.1",
         "vitest": "^3.2.4"
     }
 }
