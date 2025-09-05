@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import FocusLock from 'react-focus-lock';
 
@@ -37,15 +38,15 @@ const AboutButton: React.FC = () => {
     }, [open]);
 
     return (
-        <div className="flex items-center gap-2 p-2">
+        <>
             <button
                 type="button"
                 aria-label="About"
-                className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:bg-gray-50 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="cursor-pointer inline-flex items-center justify-center w-8 h-8 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 onClick={() => setOpen(true)}
                 ref={triggerButtonRef}
             >
-                ?
+                <Info size={16} />
             </button>
             {open && (
                 <div
@@ -81,7 +82,7 @@ const AboutButton: React.FC = () => {
                     </FocusLock>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

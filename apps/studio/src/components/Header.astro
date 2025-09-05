@@ -1,14 +1,24 @@
 ---
-import AboutButton from './AboutButton.tsx';
+import AboutButton from "./AboutButton.tsx";
+import { SiGithub } from "react-icons/si";
 ---
 
 <header class="mb-4 px-8">
-    <div class="flex items-center justify-between">
-        <h1 class="text-4xl leading-tight text-blue-600">
-            <span class="font-semibold">TripMD</span> Studio
+    <div class="flex items-center justify-between gap-4">
+        <h1 class="text-4xl leading-tight text-blue-600 mr-auto">
+            <a href="/" class="select-none cursor-default">
+                <span class="font-semibold">TripMD</span> Studio
+            </a>
         </h1>
-        <AboutButton client:load />
+        <div class="flex items-center gap-2">
+            <a
+                href="https://github.com/cumuloworks/itinerary-md"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <SiGithub client:only="react" />
+            </a>
+            <AboutButton client:only="react" />
+        </div>
     </div>
 </header>
-
-
