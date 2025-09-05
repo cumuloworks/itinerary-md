@@ -194,4 +194,33 @@ describe('Statistics', () => {
         render(<Statistics />);
         expect(screen.getAllByText('—').length).toBeGreaterThan(0);
     });
+
+    it('frontmatterのbudgetを表示し、合計との差分を示す (1:1)', () => {
+        const root: { children: TestMdNode[] } = {
+            children: [itmdEvent('bus', '100 USD')],
+        };
+        render(<Statistics root={root} frontmatter={{ currency: 'USD', budget: '250 USD' }} />);
+        // Budget 250, Total 100 => 150 left / 40% used
+        expect(screen.getByText(/Budget/i)).toBeInTheDocument();
+        expect(screen.getByText(/250/)).toBeInTheDocument();
+        expect(screen.getByText(/left|over/i)).toBeInTheDocument();
+        expect(screen.getByText(/% used/i)).toBeInTheDocument();
+    });
+
+    it('rate props がある場合は手動レートを優先してbudget/合計を換算', () => {
+        const root: { children: TestMdNode[] } = {
+            children: [itmdEvent('train', '100 EUR')], // EUR → USD に 2.0 を適用
+        };
+        // ratesHookは関係なく、手動レートを適用
+        const mockedUseRatesUSD = ratesHook.useRatesUSD as unknown as Mock;
+        mockedUseRatesUSD.mockReturnValue({ data: null, ready: true });
+        render(<Statistics root={root} frontmatter={{ currency: 'USD', budget: '200 EUR' }} rate={{ from: 'EUR', to: 'USD', value: 2 }} />);
+        // Total 100 EUR → 200 USD
+        expect(screen.getByText(/200/)).toBeInTheDocument();
+        // Budget 200 EUR → 400 USD、残りは 200 USD left
+        const totalEl = document.querySelector('[aria-live="polite"]');
+        expect(totalEl?.textContent || '').toMatch(/200/);
+        expect(document.body.textContent || '').toMatch(/Budget/);
+        expect(document.body.textContent || '').toMatch(/400/);
+    });
 });

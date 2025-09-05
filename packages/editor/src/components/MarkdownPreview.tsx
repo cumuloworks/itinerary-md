@@ -14,12 +14,16 @@ import 'remark-github-blockquote-alert/alert.css';
 import { DateTime } from 'luxon';
 import Statistics from './itinerary/Statistics';
 import { createRenderNode } from './render';
+import Tags from './Tags';
 
 interface MarkdownPreviewProps {
     content: string;
     timezone?: string;
     currency?: string;
+    rate?: { from: string; to: string; value: number };
     title?: string;
+    description?: string;
+    tags?: string[];
     showPast?: boolean;
     scrollToRatio?: number;
     activeLine?: number;
@@ -50,7 +54,7 @@ const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | un
 
 const segmentsToPlainText = (segments?: TextSegment[]): string | undefined => (Array.isArray(segments) ? segments.map((s) => s.text).join('') : undefined);
 
-const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, showPast, title, activeLine, autoScroll = true }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
@@ -255,9 +259,11 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
     }, [activeLine, autoScroll]);
 
     return (
-        <div ref={containerRef} className="markdown-preview h-full px-8 py-4 bg-white overflow-auto">
-            {title && <h1 className="text-4xl font-bold text-gray-900 mb-6 mt-6 ml-0">{title}</h1>}
-            {isItmd && <Statistics root={root as any} frontmatter={safeParsedFrontmatter} timezone={timezone} currency={currency} />}
+        <div ref={containerRef} className="markdown-preview h-full px-8 py-4 bg-white overflow-auto space-y-4">
+            {title && <h1 className="text-4xl font-bold text-gray-900 mt-6 ml-0 tracking-tight">{title}</h1>}
+            {description && <p className="text-gray-600 tracking-tight">{description}</p>}
+            {Array.isArray(tags) && tags.length > 0 && <Tags tags={tags} />}
+            {isItmd && <Statistics root={root as any} frontmatter={safeParsedFrontmatter} timezone={timezone} currency={currency} rate={rate} />}
             {reactContent}
         </div>
     );

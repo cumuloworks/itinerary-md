@@ -21,6 +21,7 @@ import { TopBar } from './TopBar';
 export interface EditorProps {
     storageKey?: string;
     samplePath?: string;
+    rate?: { from: string; to: string; value: number };
 }
 
 const STORAGE_KEY_DEFAULT = 'itinerary-md-content';
@@ -28,7 +29,7 @@ const AUTOSAVE_DELAY = 1000;
 const PREVIEW_DEBOUNCE_DELAY = 300;
 const SAMPLE_PATH_DEFAULT = '/sample.md';
 
-const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT }) => {
+const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT, rate }) => {
     const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
     const tzSelectId = useId();
 
@@ -47,7 +48,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
 
     const [topbar, updateTopbar] = useTopbarState();
 
-    const { previewContent, frontmatterTitle } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
+    const { previewContent, frontmatterTitle, frontmatterDescription, frontmatterTags } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
         timezone: topbar.timezone,
     });
 
@@ -139,7 +140,18 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                         <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Preview</div>
                         <div className="h-[calc(100%-41px)] min-h-0">
                             <MarkdownPreviewErrorBoundary>
-                                <MarkdownPreview content={previewContent} title={frontmatterTitle} timezone={topbar.timezone} currency={topbar.currency} showPast={topbar.showPast} activeLine={editedLine} autoScroll={topbar.autoScroll} />
+                                <MarkdownPreview
+                                    content={previewContent}
+                                    title={frontmatterTitle}
+                                    description={frontmatterDescription}
+                                    tags={frontmatterTags}
+                                    timezone={topbar.timezone}
+                                    currency={topbar.currency}
+                                    rate={rate}
+                                    showPast={topbar.showPast}
+                                    activeLine={editedLine}
+                                    autoScroll={topbar.autoScroll}
+                                />
                             </MarkdownPreviewErrorBoundary>
                         </div>
                     </div>

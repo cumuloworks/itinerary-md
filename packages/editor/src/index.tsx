@@ -22,6 +22,7 @@ if (typeof window !== 'undefined') {
 export interface EditorProps {
     storageKey?: string;
     samplePath?: string;
+    rate?: { from: string; to: string; value: number };
 }
 
 export const Editor: FC<EditorProps> = (props) => {

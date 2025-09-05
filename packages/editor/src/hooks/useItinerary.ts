@@ -8,6 +8,8 @@ import { useDebouncedValue } from './useDebouncedValue';
 type UseItineraryResult = {
     previewContent: string;
     frontmatterTitle?: string;
+    frontmatterDescription?: string;
+    frontmatterTags?: string[];
     summary: ItinerarySummary;
 };
 
@@ -23,10 +25,10 @@ export function useItinerary(rawContent: string, previewDelay = 300, _opts?: { t
 
     const lastSuccessfulParseRef = useRef<{
         frontmatterTitle?: string;
+        frontmatterDescription?: string;
+        frontmatterTags?: string[];
         summary: ItinerarySummary;
-    }>({ frontmatterTitle: undefined, summary: {} });
-
-    // 旧: events は UI 側で直接使わないため削除
+    }>({ frontmatterTitle: undefined, frontmatterDescription: undefined, frontmatterTags: undefined, summary: {} });
 
     const frontmatterTitle = useMemo(() => {
         if (!previewContent.trim()) {
@@ -70,9 +72,58 @@ export function useItinerary(rawContent: string, previewDelay = 300, _opts?: { t
         }
     }, [previewContent]);
 
+    const frontmatterDescription = useMemo(() => {
+        if (!previewContent.trim()) {
+            lastSuccessfulParseRef.current.frontmatterDescription = undefined;
+            return undefined;
+        }
+        try {
+            const parsed = matter(previewContent, { language: 'yaml', engines: { yaml: (s: string) => YAML.parse(s) } });
+            const description = typeof parsed.data?.description === 'string' ? (parsed.data.description as string) : undefined;
+            lastSuccessfulParseRef.current.frontmatterDescription = description;
+            return description;
+        } catch {
+            return lastSuccessfulParseRef.current.frontmatterDescription;
+        }
+    }, [previewContent]);
+
+    const frontmatterTags = useMemo(() => {
+        if (!previewContent.trim()) {
+            lastSuccessfulParseRef.current.frontmatterTags = undefined;
+            return undefined;
+        }
+        try {
+            const parsed = matter(previewContent, { language: 'yaml', engines: { yaml: (s: string) => YAML.parse(s) } });
+            const raw = (parsed.data as any)?.tags as unknown;
+            let tags: string[] | undefined;
+            if (Array.isArray(raw)) {
+                tags = raw
+                    .filter((v) => typeof v === 'string')
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0);
+            } else if (typeof raw === 'string') {
+                // カンマ区切りの文字列にも対応
+                tags = raw
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0);
+            } else {
+                tags = undefined;
+            }
+            // 重複排除
+            if (tags) tags = Array.from(new Set(tags));
+            lastSuccessfulParseRef.current.frontmatterTags = tags;
+            return tags;
+        } catch {
+            return lastSuccessfulParseRef.current.frontmatterTags;
+        }
+    }, [previewContent]);
+
     return {
         previewContent,
         frontmatterTitle,
+        frontmatterDescription,
+        frontmatterTags,
         summary,
     };
 }

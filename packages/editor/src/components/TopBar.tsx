@@ -219,11 +219,11 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Portal>
                         <DropdownMenu.Content align="end" sideOffset={4} className="z-50 min-w-[160px] overflow-auto rounded-md border border-gray-200 bg-white p-1 shadow-md">
-                            <DropdownMenu.Item onClick={onLoadSample} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-gray-100">
+                            <DropdownMenu.Item onClick={onLoadSample} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-gray-100">
                                 <FileText size={16} className="mr-2" />
                                 Load Sample
                             </DropdownMenu.Item>
-                            <DropdownMenu.Item onClick={onClearAll} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-gray-100 text-red-600">
+                            <DropdownMenu.Item onClick={onClearAll} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-gray-100 text-red-600">
                                 <Trash2 size={16} className="mr-2" />
                                 Clear All Contents
                             </DropdownMenu.Item>
