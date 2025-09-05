@@ -43,5 +43,8 @@
         "*.{ts,tsx,js,jsx}": [
             "biome check --write"
         ]
+    },
+    "overrides": {
+        "path-to-regexp": "^7.3.0"
     }
 }
