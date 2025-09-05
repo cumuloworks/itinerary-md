@@ -168,7 +168,7 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     </ToggleGroup.Item>
                 </ToggleGroup.Root>
 
-                {/* MDASTトグルはEditorヘッダ内に実装済み */}
+                {/* MDAST toggle is implemented in the Editor header */}
 
                 <Toolbar.Button
                     type="button"

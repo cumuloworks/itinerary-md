@@ -51,8 +51,8 @@ export const fetchRatesUSD = async (): Promise<RatesUSDBase> => {
 };
 
 /**
- * アプリ起動時にレートを事前フェッチする
- * TTLを考慮してキャッシュが期限切れの場合も新しいレートを取得
+ * Pre-fetch currency rates during app startup.
+ * If the cache is expired (TTL), fetch fresh rates.
  */
 export const initializeRates = async (): Promise<void> => {
     try {
@@ -66,8 +66,8 @@ export const initializeRates = async (): Promise<void> => {
 };
 
 /**
- * キャッシュされたレートを同期的に取得
- * initializeRates()でアプリ起動時に事前フェッチされている前提
+ * Get cached rates synchronously.
+ * Assumes initializeRates() has pre-fetched at app startup.
  */
 export const getRatesUSD = (): RatesUSDBase | null => {
     return getCachedRatesUSD();

@@ -14,7 +14,7 @@ export type ItmdAlertNode = {
 
 /**
  * remarkItineraryAlert
- * GitHub風 blockquote alert (e.g. > [!NOTE]) を itmdAlert ノードに変換
+ * Convert GitHub-style blockquote alerts (e.g. > [!NOTE]) into itmdAlert nodes
  */
 export const remarkItineraryAlert: Plugin<[], Root> = () => {
     return (tree: Root) => {

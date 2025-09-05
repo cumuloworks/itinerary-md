@@ -13,7 +13,7 @@ function colorForTag(tag: string): { bg: string; border: string; text: string } 
     const base = tag.toLowerCase();
     const bg = colorHash.hsl(base);
     const border = borderHash.hsl(base);
-    // color-hash の hsl() は [h, s, l] を返す
+    // color-hash hsl() returns [h, s, l]
     const bgCss = `hsl(${bg[0]} ${Math.round(bg[1] * 100)}% ${Math.round(bg[2] * 100)}%)`;
     const borderCss = `hsl(${border[0]} ${Math.round(border[1] * 100)}% ${Math.round(border[2] * 100)}%)`;
     return { bg: bgCss, border: borderCss, text: textColor };

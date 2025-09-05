@@ -8,8 +8,8 @@ interface UseRatesUSDResult {
 }
 
 /**
- * 為替レートの取得とロード状態を管理するHook
- * レートが利用可能になったときにコンポーネントを再レンダリングする
+ * Hook to manage currency rates and readiness state.
+ * Triggers re-render when rates become available.
  */
 export function useRatesUSD(): UseRatesUSDResult {
     const [ratesState, setRatesState] = useState<UseRatesUSDResult>(() => {

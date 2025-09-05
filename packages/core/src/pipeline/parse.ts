@@ -5,7 +5,6 @@ import type { Services } from '../services';
 import type { EventTime } from '../types';
 import type { LexTokens } from './lex';
 
-// Minimal paragraph helper to avoid any-casts when calling mdastToString
 type ParagraphNode = { type: 'paragraph'; children: PhrasingContent[] };
 const toParagraph = (children: PhrasingContent[]): ParagraphNode => ({ type: 'paragraph', children });
 
@@ -40,13 +39,10 @@ export function parseTimeSpan(line: string): { time: TimeSpan; consumed: number 
     if (!m) return { time: null, consumed: 0 } as const;
     const startRaw = (m[1] ?? '').trim();
     const endRaw = (m[2] ?? '').trim();
-    // 空ブラケットは none として許容
     if (startRaw === '') return { time: { kind: 'none' }, consumed: m[0].length } as const;
-    // マーカー（am/pm）: 大文字小文字非依存
     const ls = startRaw.toLowerCase();
     const marker = ls === 'am' || ls === 'pm' ? (ls as 'am' | 'pm') : null;
     if (marker) return { time: { kind: 'marker', marker }, consumed: m[0].length } as const;
-    // 時刻トークン
     const start = parseTimeToken(startRaw);
     const end = endRaw ? parseTimeToken(endRaw) : null;
     if (start && end)
@@ -59,14 +55,10 @@ export function parseTimeSpan(line: string): { time: TimeSpan; consumed: number 
             time: { kind: 'point', start: { hh: start.hh, mm: start.mm, tz: start.tz ?? null, dayOffset: start.dayOffset ?? null } },
             consumed: m[0].length,
         } as const;
-    // 無効な内容（例: [!NOTE]）は時間としては未検出扱い
     return { time: null, consumed: 0 } as const;
 }
 
-// ヘッダ抽出時、改行が単語内に入るケースを許容するため、テキストノード内の改行のみ除去する
-// 改行正規化（統一仕様）:
-// - 単語中（前後が英数字）の改行は削除
-// - それ以外の改行はスペース化（CommonMark のソフト改行挙動に寄せる）
+// Normalize soft breaks in text nodes
 function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingContent[] {
     const isWordChar = (ch: string | undefined): boolean => !!ch && /[A-Za-z0-9]/.test(ch);
     const getFirstTextChar = (arr: PhrasingContent[], fromIdx: number): string | undefined => {
@@ -75,7 +67,7 @@ function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingConte
             if (n.type === 'text' && typeof n.value === 'string') {
                 if (n.value.length > 0) return n.value[0];
             }
-            // 非テキストの場合はスキップして次へ
+            // Skip non-text nodes
         }
         return undefined;
     };
@@ -102,10 +94,9 @@ function normalizeSoftBreaksInTextNodes(nodes: PhrasingContent[]): PhrasingConte
             const prevChar = i > 0 ? t.value[i - 1] : getLastTextChar(arr, idx - 1);
             const nextChar = i < t.value.length - 1 ? t.value[i + 1] : getFirstTextChar(arr, idx + 1);
             if (isWordChar(prevChar) && isWordChar(nextChar)) {
-                // 単語中の改行は削除
-                // 何も追加しない
+                // Remove break within a word
             } else {
-                // それ以外はスペース
+                // Otherwise insert a space
                 out += ' ';
             }
         }
@@ -118,23 +109,22 @@ function splitHeadAndDestUsingSeps(line: string, tokens: LexTokens, consumed: nu
     type SepKind = 'doublecolon' | 'at' | 'from';
     const seps = (tokens.seps || []).filter((s) => s.kind === 'doublecolon' || s.kind === 'at' || s.kind === 'from') as Array<{ kind: SepKind; index: number }>;
 
-    // トークン列から、使用可能な最初のセパレータを決定
     let chosen: { kind: SepKind; rawIdx: number } | null = null;
     const sorted = seps.filter((s) => s.index >= consumed).sort((a, b) => a.index - b.index);
     for (const s of sorted) {
-        const rawIdxWord = tokens.map(s.index); // 実文字列における先頭位置
+        const rawIdxWord = tokens.map(s.index);
         if (s.kind === 'from') {
-            // 既存挙動に合わせて ' from '（前後スペース必須）かつ後続に ' to ' が存在する場合のみ有効化
+            // Enable only when ' from ' (spaces required) and a following ' to ' exist
             const hasLeadingSpace = rawIdxWord > 0 && lower[rawIdxWord - 1] === ' ';
             const hasTrailingSpace = lower[rawIdxWord + 4] === ' ';
             if (!(hasLeadingSpace && hasTrailingSpace)) continue;
             const toIdx = lower.indexOf(' to ', rawIdxWord + 5);
             if (toIdx < 0) continue;
-            // head 側の rawIdx は先行スペースの位置に合わせる
+            // Align rawIdx to the leading space
             chosen = { kind: 'from', rawIdx: rawIdxWord - 1 };
             break;
         }
-        // '::' / 'at' はそのまま採用
+        // Use '::' / 'at' as-is
         chosen = { kind: s.kind, rawIdx: rawIdxWord };
         break;
     }
@@ -165,7 +155,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
     const { headRaw, destRaw, sep } = splitHeadAndDestUsingSeps(line, tokens, ts.consumed);
     const head = parseHead(headRaw);
 
-    // mdast インラインから部分インラインを切り出す簡易ヘルパ（部分一致は text ノードで代替）
+    // Slice partial inline nodes from mdast (partial matches replaced with text nodes)
     const hasInline = Array.isArray(mdInline) && mdInline.length > 0;
     const inlineFullText = hasInline ? mdastToString(toParagraph(mdInline)) : tokens.raw.trim();
     const sliceInline = (start: number, end: number): PhrasingContent[] => {
@@ -176,8 +166,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
     };
     const pickInline = (start: number, end: number): PhrasingContent[] => normalizeSoftBreaksInTextNodes(sliceInline(start, end).filter((n) => mdastToString(toParagraph([n])).trim() !== ''));
 
-    // 絶対オフセットの算出
-    // inlineFullText 基準のオフセットを算出（mdInlineに対する位置）
+    // Compute absolute offsets relative to inlineFullText
     const consumedInline = ((): number => {
         const m = inlineFullText.match(/^\[(.*?)\](?:\s*-\s*\[(.*?)\])?\s*/);
         return m ? m[0].length : 0;
@@ -200,7 +189,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
 
     let destination: ParsedHeader['destination'] = null;
     const positions: NonNullable<ParsedHeader['positions']> = {};
-    // time positions（角括弧内の中身範囲を absolute offset で保持）
+    // time positions using absolute offsets
     const tm = inlineFullText.match(/^\[(.*?)\](?:\s*-\s*\[(.*?)\])?/);
     if (tm) {
         const matchStr = tm[0];
@@ -219,14 +208,14 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         }
     }
     if (destRaw) {
-        // 先に headEnd 以降での一致を探し、見つからなければ全文から検索
+        // First search after headEnd; otherwise search entire text
         let destStartInline = inlineFullText.indexOf(destRaw, headEndInline);
         if (destStartInline < 0) destStartInline = inlineFullText.indexOf(destRaw);
         const destEndInline = destStartInline >= 0 ? destStartInline + destRaw.length : inlineFullText.length;
         const idx = destRaw.lastIndexOf(' - ');
         const lowerDest = destRaw.toLowerCase();
         let handledFromTo = false;
-        // 明示的に 'from' セパレータが使われた場合は 'X to Y' を優先
+        // If explicit 'from' is used, prefer 'X to Y'
         if (!destination && sep === 'from') {
             const toIdxRel = lowerDest.indexOf(' to ');
             if (toIdxRel >= 0) {
@@ -243,7 +232,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
                 handledFromTo = true;
             }
         }
-        // 一般的な ' from X to Y ' 構文の検出（前後スペース必須）
+        // Detect generic ' from X to Y ' pattern
         if (!destination && !handledFromTo) {
             const fromIdxRel = lowerDest.indexOf(' from ');
             if (fromIdxRel >= 0) {
@@ -283,8 +272,7 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         }
     }
 
-    // タイトル最終決定: no-sep かつ dashPair のときは title=null（ルート解釈）。
-    // それ以外では、mdInline から抽出できなければ text ベースの head.title をフォールバックに使う。
+    // Final title: fallback to text-based head.title if not extractable from mdInline.
     const title = ((): PhrasingContent[] | null => {
         if (titleInline && titleInline.length > 0) return titleInline;
         if (head.title && mdastToString(toParagraph(head.title)).trim() !== '') return head.title;

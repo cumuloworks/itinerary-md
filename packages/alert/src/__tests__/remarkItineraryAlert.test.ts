@@ -23,7 +23,7 @@ describe('remarkItineraryAlert', () => {
     });
 
     it('keeps subsequent blockquote paragraphs as children', async () => {
-        // 段落区切り（空行）を入れると blockquote 内に複数 paragraph ができる
+        // Inserting blank lines creates multiple paragraphs inside a blockquote
         const md = '> [!TIP]\n>\n> line1\n>\n> line2';
         const processor = unified()
             .use(remarkParse)

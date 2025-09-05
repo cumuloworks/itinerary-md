@@ -4,7 +4,7 @@ import { MarkdownPreview } from '../MarkdownPreview';
 
 describe('MarkdownPreview (github blockquote alert)', () => {
     it('renders one-line alert title; body may be empty when inline text is omitted by plugin', () => {
-        // 現行仕様: itmd ドキュメントでは AlertBlock に変換され、タイトル/サブタイトルが表示される
+        // Current behavior: in itmd documents it is converted to AlertBlock and the title/subtitle are rendered
         const md = `---\ntype: itmd\n---\n\n> [!CAUTION] lorem ipsum dolor sit amet`;
         render(<MarkdownPreview content={md} timezone={'UTC'} />);
         expect(screen.getByText(/CAUTION/i)).toBeInTheDocument();
@@ -13,12 +13,12 @@ describe('MarkdownPreview (github blockquote alert)', () => {
     it('does not duplicate body when one-line followed by non-empty paragraph', () => {
         const md = `---\ntype: itmd\n---\n\n> [!CAUTION] lorem ipsum dolor sit amet\n> Tickets`;
         const { container } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
-        // タイトルとサブタイトル
+        // Title and subtitle
         expect(screen.getByText(/CAUTION/i)).toBeInTheDocument();
-        // サブタイトルは1回のみ（本文へ複製されない）
+        // Subtitle appears only once (not duplicated into body)
         const text = container.textContent || '';
         expect((text.match(/lorem ipsum dolor sit amet/gi) || []).length).toBe(1);
-        // 2 行目の本文が表示される
+        // Second-line body is rendered
         expect(screen.getByText(/Tickets/)).toBeInTheDocument();
     });
     it('renders multi-line alert body', () => {
@@ -112,12 +112,12 @@ describe('MarkdownPreview (itmd pipeline rendering)', () => {
 > - seat: [40A](https://example.com/)
 > - seat: [50A](https://example.com/)`;
         const { getAllByText } = render(<MarkdownPreview content={md} timezone={'UTC'} />);
-        // それぞれ個別にレンダリングされる（順序保持）
+        // Each is rendered separately (order preserved)
         const a40 = getAllByText('40A');
         const a50 = getAllByText('50A');
         expect(a40.length).toBeGreaterThan(0);
         expect(a50.length).toBeGreaterThan(0);
-        // seat ラベルが2回分存在するか（重複キーが collapse されない）
+        // There are two seat labels (duplicate keys are not collapsed)
         const seatLabels = getAllByText('seat:');
         expect(seatLabels.length).toBeGreaterThan(1);
     });

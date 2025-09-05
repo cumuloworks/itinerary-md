@@ -3,7 +3,7 @@ import * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TopBar } from '../TopBar';
 
-// Radix UIのモック
+// Mock for Radix UI
 vi.mock('@radix-ui/react-dropdown-menu', () => ({
     Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     Trigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => {
@@ -90,31 +90,31 @@ describe('TopBar', () => {
         vi.clearAllMocks();
     });
 
-    describe('レンダリング', () => {
-        it('すべてのコントロールをレンダリングする', () => {
+    describe('Rendering', () => {
+        it('renders all controls', () => {
             render(<TopBar {...mockProps} />);
 
-            // タイムゾーン関連
+            // Timezone controls
             expect(screen.getByText('TZ')).toBeInTheDocument();
             expect(screen.getByText('Device TZ')).toBeInTheDocument();
 
-            // 通貨関連
+            // Currency controls
             expect(screen.getByText('Cur')).toBeInTheDocument();
 
-            // ビューモード
+            // View mode
             expect(screen.getByTestId('toggle-group')).toBeInTheDocument();
 
-            // トグルボタン
+            // Toggle buttons
             expect(screen.getByText('Hide Past: OFF')).toBeInTheDocument();
             expect(screen.getByText('Auto Scroll: ON')).toBeInTheDocument();
 
-            // アクションボタン
+            // Action buttons
             expect(screen.getByTitle('Copy Markdown')).toBeInTheDocument();
             expect(screen.getByTitle('Share via URL')).toBeInTheDocument();
             expect(screen.getByText('Load Sample')).toBeInTheDocument();
         });
 
-        it('カスタムクラス名を適用する', () => {
+        it('applies custom class name', () => {
             const { container } = render(<TopBar {...mockProps} className="custom-class" />);
 
             const toolbar = container.querySelector('.custom-class');
@@ -122,14 +122,14 @@ describe('TopBar', () => {
         });
     });
 
-    describe('タイムゾーン機能', () => {
-        it('現在のタイムゾーンを表示する', () => {
+    describe('Timezone features', () => {
+        it('shows current timezone', () => {
             render(<TopBar {...mockProps} />);
             const selects = screen.getAllByTestId('select-root');
             expect(selects[0]).toHaveAttribute('data-value', 'UTC');
         });
 
-        it('デバイスのタイムゾーンにリセットする', () => {
+        it('resets to device timezone', () => {
             const originalIntl = global.Intl;
             global.Intl = {
                 ...originalIntl,
@@ -151,22 +151,22 @@ describe('TopBar', () => {
             global.Intl = originalIntl;
         });
 
-        it('タイムゾーンをオフセット順にソートする', () => {
-            // このテストは実装の詳細に依存するため、
-            // 実際のRadix UIコンポーネントのテストが必要
+        it('sorts timezones by offset', () => {
+            // This test depends on implementation details,
+            // so real Radix UI component tests are required
             expect(mockProps.timezoneOptions).toContain('UTC');
             expect(mockProps.timezoneOptions).toContain('Asia/Tokyo');
         });
     });
 
-    describe('通貨機能', () => {
-        it('現在の通貨を表示する', () => {
+    describe('Currency features', () => {
+        it('shows current currency', () => {
             render(<TopBar {...mockProps} />);
             const selects = screen.getAllByTestId('select-root');
             expect(selects[1]).toHaveAttribute('data-value', 'USD');
         });
 
-        it('利用可能な通貨オプションを持つ', () => {
+        it('has available currency options', () => {
             render(<TopBar {...mockProps} />);
             expect(mockProps.currencyOptions).toContain('USD');
             expect(mockProps.currencyOptions).toContain('EUR');
@@ -174,13 +174,13 @@ describe('TopBar', () => {
         });
     });
 
-    describe('ビューモード', () => {
-        it('現在のビューモードを表示する', () => {
+    describe('View mode', () => {
+        it('shows current view mode', () => {
             render(<TopBar {...mockProps} />);
             expect(screen.getByTestId('toggle-group')).toHaveAttribute('data-value', 'split');
         });
 
-        it('異なるビューモードに対応する', () => {
+        it('supports different view modes', () => {
             const { rerender } = render(<TopBar {...mockProps} />);
 
             rerender(<TopBar {...mockProps} topbar={{ ...mockProps.topbar, viewMode: 'editor' }} />);
@@ -191,18 +191,18 @@ describe('TopBar', () => {
         });
     });
 
-    describe('過去を表示トグル', () => {
-        it('showPastがtrueのときOFFを表示', () => {
+    describe('Hide past toggle', () => {
+        it('shows OFF when showPast is true', () => {
             render(<TopBar {...mockProps} />);
             expect(screen.getByText('Hide Past: OFF')).toBeInTheDocument();
         });
 
-        it('showPastがfalseのときONを表示', () => {
+        it('shows ON when showPast is false', () => {
             render(<TopBar {...mockProps} topbar={{ ...mockProps.topbar, showPast: false }} />);
             expect(screen.getByText('Hide Past: ON')).toBeInTheDocument();
         });
 
-        it('クリックでshowPastをトグル', () => {
+        it('toggles showPast on click', () => {
             render(<TopBar {...mockProps} />);
 
             const button = screen.getByTitle('Hide past days');
@@ -214,18 +214,18 @@ describe('TopBar', () => {
         });
     });
 
-    describe('自動スクロール', () => {
-        it('autoScrollがtrueのときONを表示', () => {
+    describe('Auto scroll', () => {
+        it('shows ON when autoScroll is true', () => {
             render(<TopBar {...mockProps} />);
             expect(screen.getByText('Auto Scroll: ON')).toBeInTheDocument();
         });
 
-        it('autoScrollがfalseのときOFFを表示', () => {
+        it('shows OFF when autoScroll is false', () => {
             render(<TopBar {...mockProps} topbar={{ ...mockProps.topbar, autoScroll: false }} />);
             expect(screen.getByText('Auto Scroll: OFF')).toBeInTheDocument();
         });
 
-        it('クリックでautoScrollをトグル', () => {
+        it('toggles autoScroll on click', () => {
             render(<TopBar {...mockProps} />);
 
             const button = screen.getByTitle('Disable auto scroll');
@@ -237,8 +237,8 @@ describe('TopBar', () => {
         });
     });
 
-    describe('アクション', () => {
-        it('Markdownコピーボタンをクリック', () => {
+    describe('Actions', () => {
+        it('clicks Copy Markdown button', () => {
             render(<TopBar {...mockProps} />);
 
             const button = screen.getByTitle('Copy Markdown');
@@ -247,7 +247,7 @@ describe('TopBar', () => {
             expect(mockProps.onCopyMarkdown).toHaveBeenCalled();
         });
 
-        it('URL共有ボタンをクリック', () => {
+        it('clicks Share via URL button', () => {
             render(<TopBar {...mockProps} />);
 
             const button = screen.getByTitle('Share via URL');
@@ -256,7 +256,7 @@ describe('TopBar', () => {
             expect(mockProps.onShareUrl).toHaveBeenCalled();
         });
 
-        it('サンプル読み込みオプション', () => {
+        it('clicks Load Sample option', () => {
             render(<TopBar {...mockProps} />);
 
             const loadSampleButton = screen.getByText('Load Sample');
@@ -266,8 +266,8 @@ describe('TopBar', () => {
         });
     });
 
-    describe('アクセシビリティ', () => {
-        it('適切なaria-labelを持つ', () => {
+    describe('Accessibility', () => {
+        it('has appropriate aria-labels', () => {
             render(<TopBar {...mockProps} />);
 
             expect(screen.getByLabelText('Copy Markdown')).toBeInTheDocument();
@@ -276,7 +276,7 @@ describe('TopBar', () => {
             expect(screen.getByLabelText('Disable auto scroll')).toBeInTheDocument();
         });
 
-        it('タイムゾーンセレクトが正しいIDを持つ', () => {
+        it('timezone select has the correct ID', () => {
             render(<TopBar {...mockProps} />);
 
             const select = document.getElementById('tz-select');
@@ -284,24 +284,24 @@ describe('TopBar', () => {
         });
     });
 
-    describe('エッジケース', () => {
-        it('空のタイムゾーンオプションを処理', () => {
+    describe('Edge cases', () => {
+        it('handles empty timezone options', () => {
             render(<TopBar {...mockProps} timezoneOptions={[]} />);
             expect(screen.getByText('TZ')).toBeInTheDocument();
         });
 
-        it('空の通貨オプションを処理', () => {
+        it('handles empty currency options', () => {
             render(<TopBar {...mockProps} currencyOptions={[]} />);
             expect(screen.getByText('Cur')).toBeInTheDocument();
         });
 
-        it('無効なタイムゾーンフォーマットを処理', () => {
+        it('handles invalid timezone formats', () => {
             render(<TopBar {...mockProps} timezoneOptions={['Invalid/Zone', 'UTC']} />);
-            // エラーをスローしない
+            // Should not throw an error
             expect(screen.getByText('TZ')).toBeInTheDocument();
         });
 
-        it('Intl APIが利用できない場合', () => {
+        it('works without Intl API', () => {
             const originalIntl = global.Intl;
             delete (global as { Intl?: typeof Intl }).Intl;
 
@@ -313,8 +313,8 @@ describe('TopBar', () => {
         });
     });
 
-    describe('メモ化', () => {
-        it('不要な再レンダリングを防ぐ', () => {
+    describe('Memoization', () => {
+        it('prevents unnecessary re-renders', () => {
             const renderSpy = vi.fn();
 
             const TestWrapper = (props: Parameters<typeof TopBar>[0]) => {
@@ -326,10 +326,10 @@ describe('TopBar', () => {
 
             expect(renderSpy).toHaveBeenCalledTimes(1);
 
-            // 同じpropsで再レンダリング
+            // Re-render with the same props
             rerender(<TestWrapper {...mockProps} />);
 
-            // メモ化により再レンダリングされない（親コンポーネントは再レンダリング）
+            // Memoization prevents re-rendering (parent component re-renders)
             expect(renderSpy).toHaveBeenCalledTimes(2);
         });
     });

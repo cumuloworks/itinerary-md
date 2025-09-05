@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { useLatest } from '../useLatest';
 
 describe('useLatest', () => {
-    describe('基本動作', () => {
-        it('初期値を参照として返す', () => {
+    describe('Basic behavior', () => {
+        it('returns the initial value by reference', () => {
             const { result } = renderHook(() => useLatest('initial'));
             expect(result.current.current).toBe('initial');
         });
 
-        it('値が更新されても同じ参照を維持する', () => {
+        it('keeps the same reference even when value updates', () => {
             const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 'first' } });
 
             const firstRef = result.current;
@@ -18,11 +18,11 @@ describe('useLatest', () => {
             rerender({ value: 'second' });
             const secondRef = result.current;
 
-            expect(firstRef).toBe(secondRef); // 参照は同じ
-            expect(result.current.current).toBe('second'); // 値は更新
+            expect(firstRef).toBe(secondRef); // same reference
+            expect(result.current.current).toBe('second'); // value updated
         });
 
-        it('値の更新を即座に反映する', () => {
+        it('reflects value updates immediately', () => {
             const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 1 } });
 
             expect(result.current.current).toBe(1);
@@ -35,8 +35,8 @@ describe('useLatest', () => {
         });
     });
 
-    describe('様々な型での動作', () => {
-        it('文字列型を処理する', () => {
+    describe('Behavior with various types', () => {
+        it('handles strings', () => {
             const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 'hello' } });
 
             expect(result.current.current).toBe('hello');
@@ -45,7 +45,7 @@ describe('useLatest', () => {
             expect(result.current.current).toBe('world');
         });
 
-        it('数値型を処理する', () => {
+        it('handles numbers', () => {
             const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 42 } });
 
             expect(result.current.current).toBe(42);
@@ -54,7 +54,7 @@ describe('useLatest', () => {
             expect(result.current.current).toBe(100);
         });
 
-        it('真偽値を処理する', () => {
+        it('handles booleans', () => {
             const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: true } });
 
             expect(result.current.current).toBe(true);
@@ -63,7 +63,7 @@ describe('useLatest', () => {
             expect(result.current.current).toBe(false);
         });
 
-        it('オブジェクトを処理する', () => {
+        it('handles objects', () => {
             const obj1 = { key: 'value1' };
             const obj2 = { key: 'value2' };
 
@@ -75,7 +75,7 @@ describe('useLatest', () => {
             expect(result.current.current).toBe(obj2);
         });
 
-        it('配列を処理する', () => {
+        it('handles arrays', () => {
             const arr1 = [1, 2, 3];
             const arr2 = [4, 5, 6];
 
@@ -87,7 +87,7 @@ describe('useLatest', () => {
             expect(result.current.current).toBe(arr2);
         });
 
-        it('関数を処理する', () => {
+        it('handles functions', () => {
             const fn1 = () => 'first';
             const fn2 = () => 'second';
 
@@ -99,7 +99,7 @@ describe('useLatest', () => {
             expect(result.current.current).toBe(fn2);
         });
 
-        it('null と undefined を処理する', () => {
+        it('handles null and undefined', () => {
             const { result, rerender } = renderHook(({ value }) => useLatest(value as string | null | undefined), { initialProps: { value: null as string | null | undefined } });
 
             expect(result.current.current).toBe(null);
@@ -112,15 +112,15 @@ describe('useLatest', () => {
         });
     });
 
-    describe('useEventパターンのユースケース', () => {
-        it('コールバック内で最新の値にアクセスできる', () => {
-            // テスト用のカスタムフックを作成
+    describe('Use cases with useEvent pattern', () => {
+        it('accesses the latest value inside a callback', () => {
+            // Create a custom hook for the test
             function useTestHook() {
                 const [count, setCount] = React.useState(0);
                 const countRef = useLatest(count);
 
                 const handleClick = () => {
-                    // 古いクロージャではなく最新の値を参照
+                    // Refer to the latest value, not a stale closure
                     return countRef.current;
                 };
 
@@ -129,19 +129,19 @@ describe('useLatest', () => {
 
             const { result } = renderHook(() => useTestHook());
 
-            // 初期値を確認
+            // Check initial value
             expect(result.current.handleClick()).toBe(0);
 
-            // カウントを更新
+            // Update count
             act(() => {
                 result.current.setCount(5);
             });
 
-            // ハンドラは最新の値を返す
+            // Handler returns the latest value
             expect(result.current.handleClick()).toBe(5);
         });
 
-        it('複数の値を個別に追跡する', () => {
+        it('tracks multiple values individually', () => {
             const { result, rerender } = renderHook(
                 ({ value1, value2 }) => ({
                     ref1: useLatest(value1),
@@ -163,8 +163,8 @@ describe('useLatest', () => {
         });
     });
 
-    describe('パフォーマンスと安定性', () => {
-        it('高頻度の更新でも安定して動作する', () => {
+    describe('Performance and stability', () => {
+        it('works stably even with high-frequency updates', () => {
             const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 0 } });
 
             for (let i = 1; i <= 1000; i++) {
@@ -173,17 +173,17 @@ describe('useLatest', () => {
             }
         });
 
-        it('同じ値への更新も正しく処理する', () => {
+        it('handles updates to the same value correctly', () => {
             const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 'same' } });
 
             const ref = result.current;
 
             rerender({ value: 'same' });
-            expect(result.current).toBe(ref); // 参照は同じ
-            expect(result.current.current).toBe('same'); // 値も同じ
+            expect(result.current).toBe(ref); // same reference
+            expect(result.current.current).toBe('same'); // same value
         });
 
-        it('大きなオブジェクトも効率的に処理する', () => {
+        it('handles large objects efficiently', () => {
             const largeObject = {
                 data: Array(10000)
                     .fill(0)
@@ -203,22 +203,22 @@ describe('useLatest', () => {
         });
     });
 
-    describe('エッジケース', () => {
-        it('初期値が undefined でも動作する', () => {
+    describe('Edge cases', () => {
+        it('works when initial value is undefined', () => {
             const { result } = renderHook(() => useLatest(undefined));
             expect(result.current.current).toBe(undefined);
         });
 
-        it('循環参照を持つオブジェクトも処理できる', () => {
+        it('handles objects with circular references', () => {
             const obj: { a: number; self?: unknown } = { a: 1 };
-            obj.self = obj; // 循環参照
+            obj.self = obj; // circular reference
 
             const { result } = renderHook(() => useLatest(obj));
             expect(result.current.current).toBe(obj);
             expect(result.current.current.self).toBe(obj);
         });
 
-        it('Symbol 型も処理できる', () => {
+        it('handles Symbol type', () => {
             const sym1 = Symbol('test1');
             const sym2 = Symbol('test2');
 
@@ -230,7 +230,7 @@ describe('useLatest', () => {
             expect(result.current.current).toBe(sym2);
         });
 
-        it('Date オブジェクトも処理できる', () => {
+        it('handles Date objects', () => {
             const date1 = new Date('2024-01-01');
             const date2 = new Date('2024-12-31');
 
@@ -242,7 +242,7 @@ describe('useLatest', () => {
             expect(result.current.current).toBe(date2);
         });
 
-        it('Map と Set も処理できる', () => {
+        it('handles Map and Set', () => {
             const map = new Map([['key', 'value']]);
             const set = new Set([1, 2, 3]);
 
@@ -255,8 +255,8 @@ describe('useLatest', () => {
         });
     });
 
-    describe('TypeScript 型の保持', () => {
-        it('ジェネリック型を正しく推論する', () => {
+    describe('TypeScript typing preservation', () => {
+        it('infers generics correctly', () => {
             interface CustomType {
                 id: number;
                 name: string;
@@ -265,13 +265,13 @@ describe('useLatest', () => {
             const value: CustomType = { id: 1, name: 'test' };
             const { result } = renderHook(() => useLatest(value));
 
-            // TypeScript で型が正しく推論されることを確認
+            // Ensure TypeScript infers types correctly
             const ref: React.MutableRefObject<CustomType> = result.current;
             expect(ref.current.id).toBe(1);
             expect(ref.current.name).toBe('test');
         });
 
-        it('Union 型も正しく処理する', () => {
+        it('handles union types correctly', () => {
             type UnionType = string | number | boolean;
 
             const { result, rerender } = renderHook(({ value }) => useLatest<UnionType>(value), { initialProps: { value: 'string' as UnionType } });

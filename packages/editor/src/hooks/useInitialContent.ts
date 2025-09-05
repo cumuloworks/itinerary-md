@@ -13,10 +13,10 @@ type UseInitialContentResult = {
 };
 
 /**
- * 初期コンテンツの読み込みを管理するHook
- * 優先度: hash -> storage -> sample.md
- * @param options オプション
- * @returns コンテンツ状態と操作関数
+ * Hook to manage loading initial content.
+ * Priority: hash -> storage -> sample.md
+ * @param options Options.
+ * @returns Content state and operation functions.
  */
 export function useInitialContent(options: UseInitialContentOptions): UseInitialContentResult {
     const { storageKey, samplePath } = options;

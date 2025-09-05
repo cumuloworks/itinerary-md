@@ -7,7 +7,7 @@ import { assembleEvents } from '../assemble';
 describe('assemble', () => {
     const sv = makeDefaultServices({ tzFallback: 'Asia/Tokyo' });
 
-    it('blockquote が itmdEvent に置換される（先頭段落がヘッダ）', () => {
+    it('replaces blockquote with itmdEvent (first paragraph is header)', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -21,7 +21,7 @@ describe('assemble', () => {
         expect((out.children?.[0] as any).type).toBe('itmdEvent');
     });
 
-    it('blockquote 内の list をイベントの子として保持（子要素は children に残しつつ body に抽出）', () => {
+    it('keeps list inside blockquote as event children (remain in children and extracted into body)', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -41,7 +41,7 @@ describe('assemble', () => {
         expect(Array.isArray((evt as any).body)).toBe(true);
     });
 
-    it('blockquote の外の段落はそのまま残る', () => {
+    it('keeps paragraphs outside blockquote as is', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -58,7 +58,7 @@ describe('assemble', () => {
         expect((out.children?.[1] as any).type).toBe('paragraph');
     });
 
-    it('blockquote 内の連続 list から meta を抽出して body へ（リンク保持）', () => {
+    it('extracts meta from consecutive lists inside blockquote into body (preserve links)', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -89,7 +89,7 @@ describe('assemble', () => {
         expect(evt.type).toBe('itmdEvent');
         const pos = evt.position;
         expect(pos).toBeDefined();
-        // body.kv 抽出（RichInline保持）
+        // Extract body.kv (keep RichInline)
         const body = (evt as any).body as Array<any>;
         expect(Array.isArray(body)).toBe(true);
         const metas = body.filter((s) => s?.kind === 'meta');
@@ -101,7 +101,7 @@ describe('assemble', () => {
         expect(mdastToString({ type: 'paragraph', children: get('note') } as unknown as Parent)).toBe('use audio guide');
     });
 
-    it('meta price/cost を正規化し、node.data.itmdPrice に格納（通貨と金額のみ）', () => {
+    it('normalizes meta price/cost and stores into node.data.itmdPrice (currency and amount only)', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -134,7 +134,7 @@ describe('assemble', () => {
         expect(p2?.price?.tokens?.[0]?.normalized?.amount).toBe('10.5');
     });
 
-    it('blockquote 内のヘッダ段落が複数行でも、blockquote 外の list は対象外', () => {
+    it('for multi-line header within blockquote, lists outside blockquote are excluded', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -167,7 +167,7 @@ describe('assemble', () => {
         expect(evt.meta).toBeUndefined();
     });
 
-    it('blockquote 内 list の key: value を body.meta に抽出（順序保持）', () => {
+    it('extracts key: value from lists inside blockquote into body.meta (order preserved)', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -196,7 +196,7 @@ describe('assemble', () => {
         expect(mdastToString({ type: 'paragraph', children: get('note') } as unknown as Parent)).toBe('hello');
     });
 
-    it('meta: 先頭の "- key: value" のハイフン/空白は無視して key 化、値はリンク保持', () => {
+    it('meta: ignore leading "- key: value" hyphen/space when keying; preserve links in value', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -235,7 +235,7 @@ describe('assemble', () => {
         expect(priceInline.some((n) => isLink(n) && n.url === 'https://pay.example')).toBe(true);
     });
 
-    it('meta: list の段落が無い場合でも listItem 全体テキストから key:value を抽出', () => {
+    it('meta: extract key:value from entire listItem text even without paragraph', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -256,7 +256,7 @@ describe('assemble', () => {
         expect(mdastToString({ type: 'paragraph', children: noteV } as unknown as Parent)).toBe('plain');
     });
 
-    it('meta: 値にコロンが含まれても先頭のコロンだけを区切りとして扱う', () => {
+    it('meta: treat only the first colon as separator even if value contains colons', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -291,7 +291,7 @@ describe('assemble', () => {
         expect(mdastToString({ type: 'paragraph', children: noteV } as unknown as Parent)).toBe('value: with: colons');
     });
 
-    it('body: 段落→KVリスト→段落→混在リスト（非KV+KV）を順序保持し、非KVは list.items に入る', () => {
+    it('body: preserve order paragraph → KV list → paragraph → mixed list (non-KV + KV); put non-KV into list.items', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -360,13 +360,13 @@ describe('assemble', () => {
         const body = (evt as any).body as Array<any>;
         expect(Array.isArray(body)).toBe(true);
 
-        // 期待順序: [meta(seat,class)], inline('ABCDE'), [meta(seat)], list(items=['item','item'])
+        // Expected order: [meta(seat,class)], inline('ABCDE'), [meta(seat)], list(items=['item','item'])
         const kinds = body.map((s) => s.kind);
         expect(kinds).toContain('meta');
         expect(kinds).toContain('inline');
         expect(kinds).toContain('list');
 
-        // 先頭の meta には seat と class が含まれる
+        // The first meta includes seat and class
         const firstMeta = body.find((s) => s.kind === 'meta');
         const entries1 = (firstMeta.entries || []) as Array<{ key: string; value: PhrasingContent[] }>;
         const keys1 = entries1.map((e) => e.key).sort();
@@ -374,11 +374,11 @@ describe('assemble', () => {
         const seatInline = entries1.find((e) => e.key === 'seat')?.value ?? [];
         expect(mdastToString({ type: 'paragraph', children: seatInline } as unknown as Parent)).toBe('50A');
 
-        // inline 段落 'ABCDE'
+        // Inline paragraph 'ABCDE'
         const inlineSeg = body.find((s) => s.kind === 'inline');
         expect(mdastToString({ type: 'paragraph', children: (inlineSeg.content || []) as PhrasingContent[] } as unknown as Parent)).toBe('ABCDE');
 
-        // 後段は list と meta が交互に出るため、list は2つに分割される（各1件）
+        // Since list and meta alternate later, the list splits into two (one item each)
         const listSegs = body.filter((s) => s.kind === 'list');
         expect(listSegs.length).toBe(2);
         const items0 = (listSegs[0].items || []) as PhrasingContent[][];
@@ -389,7 +389,7 @@ describe('assemble', () => {
         expect(mdastToString({ type: 'paragraph', children: items1[0] } as unknown as Parent)).toBe('item');
     });
 
-    it('list: meta と 非KV が交互に並ぶ場合でも出現順を保持する', () => {
+    it('list: preserve appearance order even when meta and non-KV alternate', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -414,7 +414,7 @@ describe('assemble', () => {
         const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
         expect(evt.type).toBe('itmdEvent');
         const body = (evt as any).body as Array<any>;
-        // 期待: meta(meta1) → list(['list item']) → meta(meta2)
+        // Expectation: meta(meta1) → list(['list item']) → meta(meta2)
         expect(body[0].kind).toBe('meta');
         expect((body[0].entries || []).map((e: any) => e.key)).toEqual(['meta1']);
         expect(body[1].kind).toBe('list');
@@ -423,7 +423,7 @@ describe('assemble', () => {
         expect((body[2].entries || []).map((e: any) => e.key)).toEqual(['meta2']);
     });
 
-    it('body: ordered list の ordered/start を保持する', () => {
+    it('body: retain ordered/start on ordered list', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -458,7 +458,7 @@ describe('assemble', () => {
         expect(mdastToString({ type: 'paragraph', children: items[1] } as unknown as Parent)).toBe('second');
     });
 
-    it('meta: 同一キーが連続する場合でも順序通りに複数 entries として保持', () => {
+    it('meta: preserve duplicates of the same key as multiple entries in order', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -512,7 +512,7 @@ describe('assemble', () => {
         expect(mdastToString({ type: 'paragraph', children: entries[1].value } as unknown as Parent)).toBe('50A');
     });
 
-    it('ヘッダ段落が複数行でも meta は blockquote 内 list からのみ抽出', () => {
+    it('even if header paragraph spans multiple lines, meta is extracted only from lists inside blockquote', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -542,7 +542,7 @@ describe('assemble', () => {
         expect(evt.meta).toBeUndefined();
     });
 
-    it('blockquote の外側にある空行や list は無視される', () => {
+    it('ignores blank lines or lists outside the blockquote', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -565,7 +565,7 @@ describe('assemble', () => {
         expect((out.children?.[2] as any).type).toBe('list');
     });
 
-    it('先頭段落内で改行により語が分断されても from/to を正しく抽出', () => {
+    it('extracts from/to correctly even if words are split by newline in header paragraph', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -593,7 +593,7 @@ describe('assemble', () => {
         expect(toText).toBe('London');
     });
 
-    it('type が無い "[]" だけのときは変換しない（blockquote のまま）', () => {
+    it('does not convert when only "[]" without type (keep as blockquote)', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -607,7 +607,7 @@ describe('assemble', () => {
         expect((out.children?.[0] as any).type).toBe('blockquote');
     });
 
-    it('[!NOTE] のようなアドモニションは変換しない（blockquote のまま）', () => {
+    it('does not convert admonitions like [!NOTE] (keep as blockquote)', () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -621,7 +621,7 @@ describe('assemble', () => {
         expect((out.children?.[0] as any).type).toBe('blockquote');
     });
 
-    it("'[' だけのときは変換しない（blockquote のまま）", () => {
+    it("does not convert when only '[' (keep as blockquote)", () => {
         const tree: Root = {
             type: 'root',
             children: [
@@ -635,7 +635,7 @@ describe('assemble', () => {
         expect((out.children?.[0] as any).type).toBe('blockquote');
     });
 
-    it('"[] flight" まで入力した時点で itmdEvent へ変換', () => {
+    it('converts to itmdEvent when input reaches "[] flight"', () => {
         const tree: Root = {
             type: 'root',
             children: [

@@ -1,4 +1,4 @@
-// 日付は itmdHeading ノードから取得する
+// Dates are obtained from itmdHeading nodes
 import { ArrowDown, BedDouble, FerrisWheel, Plane } from 'lucide-react';
 import React from 'react';
 import { useRatesUSD } from '../../hooks/useRatesUSD';
@@ -58,7 +58,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
     const summary = React.useMemo(() => extractHeadingDates(root?.children), [root]);
 
     const { total, totalFormatted, breakdownFormatted, toCurrency } = React.useMemo(() => {
-        // 通貨コードを props/frontmatter から抽出し、文字列化→大文字化→トリム→3文字化→検証
+        // Extract currency code from props/frontmatter, stringify → uppercase → trim → 3 chars → validate
         const rawCurrency = (currency ?? (typeof frontmatter?.currency === 'string' ? (frontmatter?.currency as string) : undefined)) as unknown;
         const normalizedCandidate = String(rawCurrency ?? 'USD')
             .toUpperCase()
@@ -100,7 +100,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
             for (const p of prices) {
                 const tok = Array.isArray(p.price?.tokens) ? p.price.tokens[0] : undefined;
                 if (!tok || tok.kind !== 'money') continue;
-                // 入力側通貨も正規化・検証し、不正なら表示通貨にフォールバック
+                // Normalize and validate source currency; if invalid, fall back to display currency
                 const fromCandidate = String(tok.normalized?.currency || tok.currency || to)
                     .toUpperCase()
                     .trim()
@@ -109,7 +109,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
                 const amt = Number(String(tok.normalized?.amount || tok.amount || ''));
                 if (!Number.isFinite(amt)) continue;
                 let converted: number | null = null;
-                // 1) 手動rate適用（優先） 2) API rates 3) 1:1
+                // 1) apply manual rate (priority) 2) API rates 3) 1:1
                 converted = applyManualRate(amt, from, to);
                 if (converted == null) {
                     if (from === to) {
@@ -120,7 +120,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
                         if (hasFrom && hasTo) {
                             converted = convertAmountUSDBase(amt, from, to, ratesData.rates);
                         } else {
-                            converted = amt; // 1:1 フォールバック
+                            converted = amt; // 1:1 fallback
                         }
                     } else {
                         converted = amt;
@@ -134,7 +134,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
             else if (baseType === 'activity') activity += eventSum;
             else if (baseType === 'stay') stay += eventSum;
         }
-        // Intl.NumberFormat は RangeError の可能性があるため try/catch で USD にフォールバック
+        // Intl.NumberFormat may throw RangeError; fall back to USD via try/catch
         let formatter: Intl.NumberFormat;
         try {
             formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: toCurrency, currencyDisplay: 'narrowSymbol' });
@@ -150,7 +150,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
     }, [root, frontmatter, currency, ratesData, rate]);
 
     const budgetDisplay = React.useMemo(() => {
-        // frontmatter.budget から金額とコードを抽出
+        // Extract amount and code from frontmatter.budget
         const raw = frontmatter?.budget as unknown;
         let parsed: { amount: number | null; currency?: string; raw: string } | null = null;
         if (typeof raw === 'number') parsed = parseAmountWithCurrency(String(raw), undefined);
@@ -161,7 +161,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
             .trim()
             .slice(0, 3);
         const amt = parsed.amount;
-        // 変換（手動→API→1:1）
+        // Conversion order (manual → API → 1:1)
         let converted: number | null = null;
         const manual = rate;
         if (manual && manual.value > 0) {

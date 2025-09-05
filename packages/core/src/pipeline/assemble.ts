@@ -4,7 +4,6 @@ import type { Position } from 'unist';
 import { normalizePriceLine } from '../domain/price';
 import { sliceInlineNodes } from '../mdast';
 import type { Services } from '../services';
-// TZ検証は services.tz に集約
 import type { ITMDHeadingNode } from '../types';
 import { buildEventNode } from './build';
 import { lexLine } from './lex';
@@ -44,7 +43,6 @@ export function assembleEvents(root: Root, sv: Services): Root {
             currentDateTz = (d?.timezone as string | undefined) || currentDateTz;
             currentTzValid = d?.tzValid ?? currentTzValid;
             currentTzWasInvalidOnHeading = !!d?.tzInvalidOnHeading;
-            // replace heading node with synthetic itmdHeading node for renderer
             if (d?.date) {
                 const headingNode: ITMDHeadingNode = {
                     type: 'itmdHeading',
@@ -56,7 +54,6 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 } as ITMDHeadingNode;
                 children[i] = headingNode as unknown as Parent['children'][number];
             } else {
-                // non-date H2 resets current date context
                 currentDateISO = undefined;
                 currentDateTz = undefined;
                 currentTzValid = undefined;
@@ -64,7 +61,6 @@ export function assembleEvents(root: Root, sv: Services): Root {
             }
             continue;
         }
-        // annotate non-heading nodes with current date context if available
         if (currentDateISO && node && (node as { type?: string }).type !== 'heading' && (node as { type?: string }).type !== 'blockquote') {
             const dataPrev = ((node as unknown as { data?: Record<string, unknown> }).data || {}) as Record<string, unknown>;
             const hPropsPrev = getHProps(dataPrev as any);
@@ -86,27 +82,23 @@ export function assembleEvents(root: Root, sv: Services): Root {
         const nlIdx = paraText.indexOf('\n');
         const firstLineText = nlIdx >= 0 ? paraText.slice(0, nlIdx) : paraText;
         const firstTrim = firstLineText.trimStart();
-        // 中央集約: itmd 変換のゲート判定（空/マーカー/時刻のみ許容）
         const gate = parseTimeSpan(firstTrim);
         if (gate.consumed === 0) continue;
 
-        // 先頭段落全体をヘッダとして解釈（改行を含む）
         const tokens = lexLine(paraText, {}, sv);
         const parsed = parseHeader(tokens, inline, sv);
         const normalized = normalizeHeader(parsed, { baseTz: currentDateTz ?? sv.policy.tzFallback ?? undefined, dateISO: currentDateISO }, sv);
         const { header, warnings } = validateHeader(normalized, sv);
 
-        // イベントタイプが無い場合は ITMD へ変換しない（例: "> []" 単独は非変換）
         if (!header.eventType || String(header.eventType).trim() === '') {
             continue;
         }
 
-        // body 構築: 先頭段落以外の段落は inline として、list は key:value を meta として、それ以外やコロン無しは inline として順序保持
         const bodySegs: Array<
             { kind: 'inline'; content: PhrasingContent[] } | { kind: 'meta'; entries: Array<{ key: string; value: PhrasingContent[] }> } | { kind: 'list'; items: PhrasingContent[][]; ordered?: boolean; start?: number | null }
         > = [];
         for (const nodeAbs of blockChildren) {
-            if (nodeAbs === firstPara) continue; // ヘッダ段落は除外
+            if (nodeAbs === firstPara) continue; // exclude header paragraph
             const t = (nodeAbs as unknown as { type?: string }).type;
             if (t === 'paragraph') {
                 const inlinePara = ((nodeAbs as unknown as Parent & { type: 'paragraph' }).children ?? []) as unknown as PhrasingContent[];
@@ -114,7 +106,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 continue;
             }
             if (t === 'list') {
-                // リスト内の meta(キー:値) と 非KV を、出現順でグルーピングして bodySegs に積む
+                // Group list meta (key:value) and non-KV items in appearance order into bodySegs
                 type GroupState = null | { kind: 'meta'; entries: Array<{ key: string; value: PhrasingContent[] }> } | { kind: 'list'; items: PhrasingContent[][]; ordered?: boolean; start?: number | null };
                 let group: GroupState = null;
                 const flush = () => {
@@ -152,7 +144,6 @@ export function assembleEvents(root: Root, sv: Services): Root {
                         }
                     } else {
                         const inlineNodes = inlineLi.length > 0 ? inlineLi : ([{ type: 'text', value: textTrimmed }] as any);
-                        // 先頭の "- " をテキスト先頭から除去（テスト互換）。RichInline内リンク等は保持
                         if (Array.isArray(inlineNodes) && inlineNodes.length > 0) {
                             const first = inlineNodes[0] as unknown as { type?: string; value?: string };
                             if (first && first.type === 'text' && typeof first.value === 'string' && first.value.startsWith('- ')) {
@@ -171,7 +162,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
             }
         }
 
-        // children: blockquote 全体（先頭 paragraph を含む）
+        // children: the entire blockquote (including the first paragraph)
         const childrenOut: Parent['children'] = blockChildren;
         const combinedPos = bq.position as Position | undefined;
         const built = buildEventNode(header, childrenOut as any, combinedPos, sv);

@@ -11,37 +11,37 @@ describe('useDebouncedValue', () => {
         vi.useRealTimers();
     });
 
-    describe('基本動作', () => {
-        it('初期値を即座に返す', () => {
+    describe('Basic behavior', () => {
+        it('returns initial value immediately', () => {
             const { result } = renderHook(() => useDebouncedValue('initial', 500));
             expect(result.current).toBe('initial');
         });
 
-        it('指定時間後に値を更新する', () => {
+        it('updates value after the specified delay', () => {
             const { result, rerender } = renderHook(({ value, delay }) => useDebouncedValue(value, delay), { initialProps: { value: 'first', delay: 500 } });
 
             expect(result.current).toBe('first');
 
-            // 値を変更
+            // Change value
             rerender({ value: 'second', delay: 500 });
-            expect(result.current).toBe('first'); // まだ更新されない
+            expect(result.current).toBe('first'); // not updated yet
 
-            // 時間を進める
+            // Advance time
             act(() => {
                 vi.advanceTimersByTime(499);
             });
-            expect(result.current).toBe('first'); // まだ更新されない
+            expect(result.current).toBe('first'); // not updated yet
 
             act(() => {
                 vi.advanceTimersByTime(1);
             });
-            expect(result.current).toBe('second'); // 更新される
+            expect(result.current).toBe('second'); // updated
         });
 
-        it('複数の値変更をデバウンスする', () => {
+        it('debounces multiple value changes', () => {
             const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 200), { initialProps: { value: 'first' } });
 
-            // 連続して値を変更
+            // Change values consecutively
             rerender({ value: 'second' });
             act(() => {
                 vi.advanceTimersByTime(100);
@@ -52,32 +52,32 @@ describe('useDebouncedValue', () => {
             });
             rerender({ value: 'fourth' });
 
-            expect(result.current).toBe('first'); // まだ最初の値
+            expect(result.current).toBe('first'); // still initial value
 
-            // 最後の変更から200ms後
+            // 200ms after the last change
             act(() => {
                 vi.advanceTimersByTime(200);
             });
-            expect(result.current).toBe('fourth'); // 最後の値に更新
+            expect(result.current).toBe('fourth'); // updated to last value
         });
     });
 
-    describe('delay パラメータ', () => {
-        it('delay が 0 の場合は即座に更新', () => {
+    describe('delay parameter', () => {
+        it('updates immediately when delay is 0', () => {
             const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 0), { initialProps: { value: 'first' } });
 
             rerender({ value: 'second' });
-            expect(result.current).toBe('second'); // 即座に更新
+            expect(result.current).toBe('second'); // updates immediately
         });
 
-        it('負の delay も即座に更新', () => {
+        it('updates immediately when delay is negative', () => {
             const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, -100), { initialProps: { value: 'first' } });
 
             rerender({ value: 'second' });
-            expect(result.current).toBe('second'); // 即座に更新
+            expect(result.current).toBe('second'); // updates immediately
         });
 
-        it('delay を動的に変更できる', () => {
+        it('supports dynamic delay changes', () => {
             const { result, rerender } = renderHook(({ value, delay }) => useDebouncedValue(value, delay), { initialProps: { value: 'first', delay: 1000 } });
 
             rerender({ value: 'second', delay: 1000 });
@@ -85,7 +85,7 @@ describe('useDebouncedValue', () => {
                 vi.advanceTimersByTime(500);
             });
 
-            // delay を短くする
+            // Shorten delay
             rerender({ value: 'second', delay: 100 });
             act(() => {
                 vi.advanceTimersByTime(100);
@@ -94,8 +94,8 @@ describe('useDebouncedValue', () => {
         });
     });
 
-    describe('型の処理', () => {
-        it('数値型の値をデバウンスする', () => {
+    describe('Type handling', () => {
+        it('debounces numeric values', () => {
             const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 100), { initialProps: { value: 42 } });
 
             rerender({ value: 100 });
@@ -107,7 +107,7 @@ describe('useDebouncedValue', () => {
             expect(result.current).toBe(100);
         });
 
-        it('オブジェクト型の値をデバウンスする', () => {
+        it('debounces object values', () => {
             const obj1 = { key: 'value1' };
             const obj2 = { key: 'value2' };
 
@@ -122,7 +122,7 @@ describe('useDebouncedValue', () => {
             expect(result.current).toBe(obj2);
         });
 
-        it('配列型の値をデバウンスする', () => {
+        it('debounces array values', () => {
             const arr1 = [1, 2, 3];
             const arr2 = [4, 5, 6];
 
@@ -137,7 +137,7 @@ describe('useDebouncedValue', () => {
             expect(result.current).toBe(arr2);
         });
 
-        it('null と undefined を処理できる', () => {
+        it('handles null and undefined', () => {
             const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 100), { initialProps: { value: null as string | null } });
 
             expect(result.current).toBe(null);
@@ -150,8 +150,8 @@ describe('useDebouncedValue', () => {
         });
     });
 
-    describe('クリーンアップ', () => {
-        it('アンマウント時にタイマーをクリアする', () => {
+    describe('Cleanup', () => {
+        it('clears timer on unmount', () => {
             const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
             const { rerender, unmount } = renderHook(({ value }) => useDebouncedValue(value, 500), { initialProps: { value: 'first' } });
@@ -163,7 +163,7 @@ describe('useDebouncedValue', () => {
             clearTimeoutSpy.mockRestore();
         });
 
-        it('値が変更される度に前のタイマーをクリアする', () => {
+        it('clears previous timer on each value change', () => {
             const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
             const { rerender } = renderHook(({ value }) => useDebouncedValue(value, 500), { initialProps: { value: 'first' } });
@@ -172,14 +172,14 @@ describe('useDebouncedValue', () => {
             rerender({ value: 'third' });
             rerender({ value: 'fourth' });
 
-            // 各値変更でclearTimeoutが呼ばれる
+            // clearTimeout is called for each value change
             expect(clearTimeoutSpy.mock.calls.length).toBeGreaterThan(0);
             clearTimeoutSpy.mockRestore();
         });
     });
 
-    describe('エッジケース', () => {
-        it('同じ値への変更でもデバウンス処理が動作する', () => {
+    describe('Edge cases', () => {
+        it('debounces even when changing to the same value', () => {
             const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 100), { initialProps: { value: 'same' } });
 
             rerender({ value: 'same' });
@@ -191,7 +191,7 @@ describe('useDebouncedValue', () => {
             expect(result.current).toBe('same');
         });
 
-        it('非常に長い遅延時間も処理できる', () => {
+        it('handles very long delay', () => {
             const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 10000), { initialProps: { value: 'first' } });
 
             rerender({ value: 'second' });
@@ -207,10 +207,10 @@ describe('useDebouncedValue', () => {
             expect(result.current).toBe('second');
         });
 
-        it('高頻度の値変更でもメモリリークしない', () => {
+        it('does not leak memory under high-frequency updates', () => {
             const { rerender } = renderHook(({ value }) => useDebouncedValue(value, 10), { initialProps: { value: 0 } });
 
-            // 1000回の高速更新
+            // 1000 rapid updates
             for (let i = 1; i <= 1000; i++) {
                 rerender({ value: i });
             }
@@ -219,7 +219,7 @@ describe('useDebouncedValue', () => {
                 vi.advanceTimersByTime(10);
             });
 
-            // エラーなく完了することを確認
+            // Ensure finishes without errors
             expect(true).toBe(true);
         });
     });

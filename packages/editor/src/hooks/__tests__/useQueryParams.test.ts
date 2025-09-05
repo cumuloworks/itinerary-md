@@ -17,44 +17,44 @@ describe('useQueryParams', () => {
         (window as { location?: Location }).location = originalLocation;
     });
 
-    describe('パラメータの解析', () => {
-        it('空のクエリパラメータで空のオブジェクトを返す', () => {
+    describe('Parsing parameters', () => {
+        it('returns empty object for empty query params', () => {
             window.location.search = '';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({});
         });
 
-        it('タイムゾーンパラメータを解析する', () => {
+        it('parses timezone parameter', () => {
             window.location.search = '?tz=Asia/Tokyo';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({ tz: 'Asia/Tokyo' });
         });
 
-        it('通貨パラメータを大文字に変換する', () => {
+        it('uppercases currency parameter', () => {
             window.location.search = '?cur=usd';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({ cur: 'USD' });
         });
 
-        it('有効な通貨コード（3文字の大文字）のみ受け付ける', () => {
+        it('accepts only valid 3-letter uppercase currency codes', () => {
             window.location.search = '?cur=US';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({});
         });
 
-        it('有効なビューモードを解析する', () => {
+        it('parses valid view mode', () => {
             window.location.search = '?view=editor';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({ view: 'editor' });
         });
 
-        it('無効なビューモードを無視する', () => {
+        it('ignores invalid view mode', () => {
             window.location.search = '?view=invalid';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({});
         });
 
-        it('複数のパラメータを同時に解析する', () => {
+        it('parses multiple parameters together', () => {
             window.location.search = '?tz=Europe/London&cur=gbp&view=preview';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({
@@ -65,34 +65,34 @@ describe('useQueryParams', () => {
         });
     });
 
-    describe('ビューモードの検証', () => {
-        it('split モードを受け付ける', () => {
+    describe('Validating view mode', () => {
+        it('accepts split mode', () => {
             window.location.search = '?view=split';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.view).toBe('split');
         });
 
-        it('editor モードを受け付ける', () => {
+        it('accepts editor mode', () => {
             window.location.search = '?view=editor';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.view).toBe('editor');
         });
 
-        it('preview モードを受け付ける', () => {
+        it('accepts preview mode', () => {
             window.location.search = '?view=preview';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.view).toBe('preview');
         });
 
-        it('大文字小文字を区別する', () => {
+        it('is case-sensitive', () => {
             window.location.search = '?view=SPLIT';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.view).toBeUndefined();
         });
     });
 
-    describe('通貨コードの検証', () => {
-        it('正しい形式の通貨コードを受け付ける', () => {
+    describe('Validating currency codes', () => {
+        it('accepts properly formatted currency codes', () => {
             const currencies = ['USD', 'EUR', 'JPY', 'GBP', 'AUD', 'CAD', 'CHF', 'CNY'];
             for (const currency of currencies) {
                 window.location.search = `?cur=${currency.toLowerCase()}`;
@@ -101,36 +101,36 @@ describe('useQueryParams', () => {
             }
         });
 
-        it('2文字の通貨コードを拒否する', () => {
+        it('rejects 2-letter currency codes', () => {
             window.location.search = '?cur=US';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.cur).toBeUndefined();
         });
 
-        it('4文字以上の通貨コードを拒否する', () => {
+        it('rejects 4+ letter currency codes', () => {
             window.location.search = '?cur=USDT';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.cur).toBeUndefined();
         });
 
-        it('数字を含む通貨コードを拒否する', () => {
+        it('rejects currency codes containing digits', () => {
             window.location.search = '?cur=US1';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.cur).toBeUndefined();
         });
 
-        it('特殊文字を含む通貨コードを拒否する', () => {
+        it('rejects currency codes containing special characters', () => {
             window.location.search = '?cur=US$';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.cur).toBeUndefined();
         });
     });
 
-    describe('エラーハンドリング', () => {
-        it('URLSearchParams のエラーを処理する', () => {
+    describe('Error handling', () => {
+        it('handles errors from URLSearchParams', () => {
             const originalSearch = window.location.search;
 
-            // searchを読み取り時にエラーを投げるようにモック
+            // Mock reading search to throw an error
             Object.defineProperty(window.location, 'search', {
                 get() {
                     throw new Error('Location error');
@@ -141,7 +141,7 @@ describe('useQueryParams', () => {
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({});
 
-            // 元に戻す
+            // Restore
             Object.defineProperty(window.location, 'search', {
                 value: originalSearch,
                 writable: true,
@@ -149,69 +149,67 @@ describe('useQueryParams', () => {
             });
         });
 
-        it('window が undefined の場合を処理する', () => {
-            // useQueryParamsはブラウザ環境を前提としているため、
-            // windowがundefinedの場合のテストは実際には不要
-            // 代わりに空のsearchパラメータの場合をテスト
+        it('handles when window is undefined (conceptually)', () => {
+            // useQueryParams assumes a browser; instead test empty search case
             window.location.search = '';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({});
         });
 
-        it('不正な形式のクエリ文字列を処理する', () => {
+        it('handles invalid query string format', () => {
             window.location.search = '?&&==&&';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({});
         });
     });
 
-    describe('特殊なケース', () => {
-        it('重複するパラメータは最初の値を使用する', () => {
+    describe('Special cases', () => {
+        it('uses the first value for duplicated parameters', () => {
             window.location.search = '?tz=Asia/Tokyo&tz=Europe/London';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.tz).toBe('Asia/Tokyo');
         });
 
-        it('空の値のパラメータを無視する', () => {
+        it('ignores parameters with empty values', () => {
             window.location.search = '?tz=&cur=&view=';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({});
         });
 
-        it('null 値を持つパラメータを処理する', () => {
+        it('handles parameters with null values', () => {
             window.location.search = '?tz=null&cur=null';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({ tz: 'null' }); // cur は無効なのでなし
         });
 
-        it('エンコードされたパラメータをデコードする', () => {
+        it('decodes encoded parameters', () => {
             window.location.search = '?tz=Asia%2FTokyo';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.tz).toBe('Asia/Tokyo');
         });
 
-        it('関係ないパラメータを無視する', () => {
+        it('ignores unrelated parameters', () => {
             window.location.search = '?tz=UTC&other=value&random=123';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current).toEqual({ tz: 'UTC' });
         });
 
-        it('スペースを含むタイムゾーンを処理する', () => {
+        it('handles timezones containing spaces', () => {
             window.location.search = '?tz=America/New_York';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.tz).toBe('America/New_York');
         });
 
-        it('特殊文字を含むタイムゾーンを処理する', () => {
-            // URLSearchParamsは+をスペースに変換するため、エンコードされた形式を使用
+        it('handles timezones containing special characters', () => {
+            // URLSearchParams converts + to space; use encoded form
             window.location.search = '?tz=Etc/GMT%2B9';
             const { result } = renderHook(() => useQueryParams());
             expect(result.current.tz).toBe('Etc/GMT+9');
         });
     });
 
-    describe('パフォーマンス', () => {
-        it('多数のパラメータを効率的に処理する', () => {
+    describe('Performance', () => {
+        it('handles many parameters efficiently', () => {
             const params = [];
             for (let i = 0; i < 100; i++) {
                 params.push(`param${i}=value${i}`);
@@ -227,7 +225,7 @@ describe('useQueryParams', () => {
             });
         });
 
-        it('非常に長いパラメータ値を処理する', () => {
+        it('handles very long parameter values', () => {
             const longValue = 'A'.repeat(1000);
             window.location.search = `?tz=${longValue}`;
             const { result } = renderHook(() => useQueryParams());

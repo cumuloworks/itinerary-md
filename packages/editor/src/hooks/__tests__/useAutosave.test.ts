@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vite
 import { notifyError, safeLocalStorage } from '../../core/errors';
 import { useAutosave } from '../useAutosave';
 
-// モック
+// Mocks
 vi.mock('../../core/errors', () => ({
     notifyError: vi.fn(),
     safeLocalStorage: {
@@ -24,8 +24,8 @@ describe('useAutosave', () => {
         vi.useRealTimers();
     });
 
-    describe('自動保存の基本動作', () => {
-        it('指定時間後に値を保存する', () => {
+    describe('Basic autosave behavior', () => {
+        it('saves the value after the specified delay', () => {
             const onSuccess = vi.fn();
             renderHook(() =>
                 useAutosave('test-value', {
@@ -45,7 +45,7 @@ describe('useAutosave', () => {
             expect(onSuccess).toHaveBeenCalled();
         });
 
-        it('値が変更されたときのみ保存する', () => {
+        it('saves only when the value changes', () => {
             const { rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 500 }), { initialProps: { value: 'initial' } });
 
             act(() => {
@@ -53,14 +53,14 @@ describe('useAutosave', () => {
             });
             expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
 
-            // 同じ値で再レンダリング
+            // Re-render with the same value
             rerender({ value: 'initial' });
             act(() => {
                 vi.advanceTimersByTime(500);
             });
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1); // 変化なし
+            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1); // no change
 
-            // 異なる値で再レンダリング
+            // Re-render with a different value
             rerender({ value: 'changed' });
             act(() => {
                 vi.advanceTimersByTime(500);
@@ -68,7 +68,7 @@ describe('useAutosave', () => {
             expect(safeLocalStorage.set).toHaveBeenCalledTimes(2);
         });
 
-        it('連続した変更をデバウンスする', () => {
+        it('debounces successive changes', () => {
             const { rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 500 }), { initialProps: { value: 'first' } });
 
             rerender({ value: 'second' });
@@ -92,8 +92,8 @@ describe('useAutosave', () => {
         });
     });
 
-    describe('saveNow 関数', () => {
-        it('即座に保存を実行する', () => {
+    describe('saveNow function', () => {
+        it('executes save immediately', () => {
             const onSuccess = vi.fn();
             const { result } = renderHook(() =>
                 useAutosave('test-value', {
@@ -113,7 +113,7 @@ describe('useAutosave', () => {
             expect(onSuccess).toHaveBeenCalled();
         });
 
-        it('ペンディング中のタイマーをクリアする', () => {
+        it('clears pending timer', () => {
             const { result, rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 1000 }), { initialProps: { value: 'initial' } });
 
             rerender({ value: 'changed' });
@@ -124,14 +124,14 @@ describe('useAutosave', () => {
 
             expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'changed');
 
-            // タイマーが進んでも再度保存されない
+            // Should not save again even after the timer advances
             act(() => {
                 vi.advanceTimersByTime(1000);
             });
             expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
         });
 
-        it('同じ値の場合は保存をスキップする', () => {
+        it('skips saving when the value is unchanged', () => {
             const { result } = renderHook(() => useAutosave('same-value', { key: 'test-key', delay: 1000 }));
 
             act(() => {
@@ -142,24 +142,24 @@ describe('useAutosave', () => {
             act(() => {
                 result.current.saveNow();
             });
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1); // 変化なし
+            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1); // no change
         });
     });
 
-    describe('beforeunload イベント', () => {
-        it('ページ離脱前に保存を実行する', () => {
+    describe('beforeunload event', () => {
+        it('saves before leaving the page', () => {
             renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 5000 }));
 
-            // beforeunloadイベントをディスパッチ
+            // Dispatch beforeunload event
             act(() => {
                 window.dispatchEvent(new Event('beforeunload'));
             });
 
-            // saveNowが内部的に呼ばれてlocalStorageに保存される
+            // saveNow is called internally and saved to localStorage
             expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'test-value');
         });
 
-        it('アンマウント時にイベントリスナーを削除する', () => {
+        it('removes event listener on unmount', () => {
             const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
             const { unmount } = renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 1000 }));
@@ -171,8 +171,8 @@ describe('useAutosave', () => {
         });
     });
 
-    describe('エラーハンドリング', () => {
-        it('保存失敗時にエラーコールバックを呼ぶ', () => {
+    describe('Error handling', () => {
+        it('calls error callback when save fails', () => {
             (safeLocalStorage.set as Mock).mockReturnValue(false);
             const onError = vi.fn();
 
@@ -191,7 +191,7 @@ describe('useAutosave', () => {
             expect(onError).toHaveBeenCalled();
         });
 
-        it('デフォルトのエラーハンドラーを使用する', () => {
+        it('uses default error handler', () => {
             (safeLocalStorage.set as Mock).mockReturnValue(false);
 
             renderHook(() =>
@@ -208,13 +208,13 @@ describe('useAutosave', () => {
             expect(notifyError).toHaveBeenCalledWith('Failed to save');
         });
 
-        it('保存成功後のコールバックエラーを処理する', () => {
+        it('handles errors thrown by onSuccess callback', () => {
             const onSuccess = vi.fn().mockImplementation(() => {
                 throw new Error('Callback error');
             });
 
-            // コールバックがエラーを投げる場合、現在の実装では実際にエラーが発生する
-            // これは実装がエラーハンドリングを行っていないためです
+            // If the callback throws, the current implementation actually throws
+            // because it does not handle errors
             renderHook(() =>
                 useAutosave('test-value', {
                     key: 'test-key',
@@ -223,20 +223,20 @@ describe('useAutosave', () => {
                 })
             );
 
-            // エラーが投げられることを期待
+            // Expect an error to be thrown
             expect(() => {
                 act(() => {
                     vi.advanceTimersByTime(100);
                 });
             }).toThrow('Callback error');
 
-            // onSuccessは呼ばれている
+            // onSuccess has been called
             expect(onSuccess).toHaveBeenCalled();
         });
     });
 
-    describe('delay パラメータ', () => {
-        it('負の delay を 0 として扱う', () => {
+    describe('delay parameter', () => {
+        it('treats negative delay as 0', () => {
             const onSuccess = vi.fn();
             renderHook(() =>
                 useAutosave('test-value', {
@@ -254,7 +254,7 @@ describe('useAutosave', () => {
             expect(onSuccess).toHaveBeenCalled();
         });
 
-        it('delay を動的に変更できる', () => {
+        it('supports dynamic delay changes', () => {
             const { rerender } = renderHook(({ delay }) => useAutosave('test-value', { key: 'test-key', delay }), { initialProps: { delay: 1000 } });
 
             rerender({ delay: 500 });
@@ -267,8 +267,8 @@ describe('useAutosave', () => {
         });
     });
 
-    describe('クリーンアップ', () => {
-        it('アンマウント時にタイマーをクリアする', () => {
+    describe('Cleanup', () => {
+        it('clears timer on unmount', () => {
             const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
             const { unmount } = renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 1000 }));
@@ -279,7 +279,7 @@ describe('useAutosave', () => {
             clearTimeoutSpy.mockRestore();
         });
 
-        it('値変更時に前のタイマーをクリアする', () => {
+        it('clears previous timer when value changes', () => {
             const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
             const { rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 1000 }), { initialProps: { value: 'first' } });
@@ -292,8 +292,8 @@ describe('useAutosave', () => {
         });
     });
 
-    describe('エッジケース', () => {
-        it('空文字列を保存できる', () => {
+    describe('Edge cases', () => {
+        it('saves an empty string', () => {
             renderHook(() => useAutosave('', { key: 'test-key', delay: 100 }));
 
             act(() => {
@@ -303,7 +303,7 @@ describe('useAutosave', () => {
             expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', '');
         });
 
-        it('非常に長い文字列を保存できる', () => {
+        it('saves a very long string', () => {
             const longString = 'a'.repeat(100000);
             renderHook(() => useAutosave(longString, { key: 'test-key', delay: 100 }));
 
@@ -314,7 +314,7 @@ describe('useAutosave', () => {
             expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', longString);
         });
 
-        it('特殊文字を含む文字列を保存できる', () => {
+        it('saves a string containing special characters', () => {
             const specialString = '{"key": "value"}\n\t\r\\';
             renderHook(() => useAutosave(specialString, { key: 'test-key', delay: 100 }));
 
@@ -325,7 +325,7 @@ describe('useAutosave', () => {
             expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', specialString);
         });
 
-        it('高頻度の saveNow 呼び出しを処理できる', () => {
+        it('handles high-frequency saveNow calls', () => {
             const { result } = renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 1000 }));
 
             act(() => {
@@ -334,7 +334,7 @@ describe('useAutosave', () => {
                 }
             });
 
-            // 1回だけ保存される（同じ値なので）
+            // Saved only once (same value)
             expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
         });
     });

@@ -8,7 +8,7 @@ import { IconLabelText } from './IconLabelText';
 import { getMetadataConfig } from './iconMaps';
 import type { TextSegment } from './SegmentedText';
 
-// getMetadataConfig は共通モジュールから利用
+// getMetadataConfig is consumed from a shared module
 
 export const Meta: React.FC<{
     metadata?: Record<string, string>;

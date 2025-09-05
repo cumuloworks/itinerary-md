@@ -71,7 +71,7 @@ const getTypeColors = (type: EventBlockProps['eventData']['type'], baseType: Eve
     const key = String(type || 'activity');
     const [h] = colorHash.hsl(key);
 
-    // 静的パレット（Tailwindのクラス名を文字列リテラルで保持）
+    // Static palette (keep Tailwind class names as string literals)
     const PALETTE: Record<string, { text: string; border: string; cardBg: string; borderLeft: string; iconBg: string }> = {
         purple: { text: 'text-purple-600', border: 'border-purple-600', cardBg: 'bg-purple-50', borderLeft: 'border-l-purple-600', iconBg: 'bg-purple-600' },
         red: { text: 'text-red-600', border: 'border-red-600', cardBg: 'bg-red-50', borderLeft: 'border-l-red-600', iconBg: 'bg-red-600' },
@@ -91,14 +91,14 @@ const getTypeColors = (type: EventBlockProps['eventData']['type'], baseType: Eve
     const families = (() => {
         switch (baseType) {
             case 'stay':
-                // 単一色（紫系）
+                // Single color (purple family)
                 return ['purple'];
             case 'transportation':
-                // 赤〜黄系を増やす
+                // Prefer red-to-yellow spectrum
                 return ['red', 'orange', 'amber', 'yellow'];
             case 'activity':
             default:
-                // 残りは活動系（黄緑〜青）。sky は外し、emerald を追加
+                // The rest are activity-like (yellow-green to blue). Exclude sky, include emerald
                 return ['amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'blue', 'pink', 'gray'];
         }
     })();

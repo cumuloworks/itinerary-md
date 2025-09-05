@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MonacoEditor } from '../MonacoEditor';
 
-// Monaco Editorのシンプルなモック
+// Simple mock for Monaco Editor
 vi.mock('@monaco-editor/react', () => ({
     default: ({ value, language, options, height }: { value: string; language: string; options?: Record<string, unknown>; height: string }) => (
         <div data-testid="monaco-editor" data-language={language} data-height={height}>
@@ -22,30 +22,30 @@ describe('MonacoEditor', () => {
         vi.clearAllMocks();
     });
 
-    describe('基本レンダリング', () => {
-        it('エディタをレンダリングする', () => {
+    describe('Basic rendering', () => {
+        it('renders the editor', () => {
             render(<MonacoEditor value="test content" onChange={mockOnChange} onSave={mockOnSave} />);
 
             expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
         });
 
-        it('正しい言語設定でレンダリングする', () => {
+        it('renders with correct language setting', () => {
             render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
 
             const editor = screen.getByTestId('monaco-editor');
             expect(editor).toHaveAttribute('data-language', 'mdx');
         });
 
-        it('値を表示する', () => {
+        it('displays the provided value', () => {
             const content = '## Title\n\nParagraph content';
             render(<MonacoEditor value={content} onChange={mockOnChange} onSave={mockOnSave} />);
 
             const valueElement = screen.getByTestId('editor-value');
-            // 改行は実際のレンダリングで削除されるため、改行なしで比較
+            // Newlines are removed in actual rendering, but compare as-is here
             expect(valueElement.textContent).toBe(content);
         });
 
-        it('正しいオプションを設定する', () => {
+        it('sets correct options', () => {
             render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
 
             const optionsElement = screen.getByTestId('editor-options');
@@ -67,23 +67,23 @@ describe('MonacoEditor', () => {
         });
     });
 
-    describe('プロパティの検証', () => {
-        it('必要なプロパティが定義されている', () => {
+    describe('Props validation', () => {
+        it('defines required props', () => {
             render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} onCursorLineChange={mockOnCursorLineChange} onChangedLines={mockOnChangedLines} />);
 
-            // コンポーネントが正常にレンダリングされることを確認
+            // Verify the component renders normally
             expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
         });
 
-        it('オプショナルプロパティなしでも動作する', () => {
+        it('works without optional props', () => {
             expect(() => {
                 render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
             }).not.toThrow();
         });
     });
 
-    describe('値の更新', () => {
-        it('値の更新を反映する', () => {
+    describe('Value updates', () => {
+        it('reflects value updates', () => {
             const { rerender } = render(<MonacoEditor value="initial" onChange={mockOnChange} onSave={mockOnSave} />);
 
             let valueElement = screen.getByTestId('editor-value');
@@ -96,8 +96,8 @@ describe('MonacoEditor', () => {
         });
     });
 
-    describe('エッジケース', () => {
-        it('非常に長いコンテンツを処理する', () => {
+    describe('Edge cases', () => {
+        it('handles very long content', () => {
             const longContent = 'line\n'.repeat(1000);
 
             render(<MonacoEditor value={longContent} onChange={mockOnChange} onSave={mockOnSave} />);
@@ -106,7 +106,7 @@ describe('MonacoEditor', () => {
             expect(valueElement.textContent).toBe(longContent);
         });
 
-        it('特殊文字を含むコンテンツを処理する', () => {
+        it('handles content containing special characters', () => {
             const specialContent = '日本語\n한국어\n🎉\n<script>alert(1)</script>';
 
             render(<MonacoEditor value={specialContent} onChange={mockOnChange} onSave={mockOnSave} />);
@@ -115,7 +115,7 @@ describe('MonacoEditor', () => {
             expect(valueElement.textContent).toBe(specialContent);
         });
 
-        it('空のコンテンツを処理する', () => {
+        it('handles empty content', () => {
             render(<MonacoEditor value="" onChange={mockOnChange} onSave={mockOnSave} />);
 
             const valueElement = screen.getByTestId('editor-value');
@@ -123,19 +123,19 @@ describe('MonacoEditor', () => {
         });
     });
 
-    describe('コンポーネント設定', () => {
-        it('正しい高さが設定される', () => {
+    describe('Component settings', () => {
+        it('applies correct height', () => {
             render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
 
             const editor = screen.getByTestId('monaco-editor');
             expect(editor).toHaveAttribute('data-height', '100%');
         });
 
-        it('Monacoのテーマが設定される', () => {
-            // テーマはpropsで渡されないが、実装内で固定値が使用される
+        it('applies Monaco theme', () => {
+            // Theme is not passed via props; implementation uses a fixed value
             render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
 
-            // コンポーネントが正常にレンダリングされることを確認
+            // Verify the component renders normally
             expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
         });
     });

@@ -1,9 +1,9 @@
 import { deflate, inflate } from 'pako';
 
 /**
- * ハッシュにエンコードするためのユーティリティ
- * - 文字列 <-> 圧縮base64
- * - URLのハッシュ生成/読取/クリア
+ * Utilities for encoding data into URL hash.
+ * - String <-> compressed base64
+ * - Generate/read/clear URL hash
  */
 
 export function encodeToHashBase64(input: string): string {
