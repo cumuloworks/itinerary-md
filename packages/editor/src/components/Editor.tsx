@@ -1,5 +1,6 @@
 import { type FC, memo, useCallback, useId, useMemo, useState } from "react";
 import { notifyError, notifySuccess } from "../core/errors";
+import type { Telemetry } from "../core/telemetry";
 import { useAutosave } from "../hooks/useAutosave";
 import { useHashImport } from "../hooks/useHashImport";
 import { useInitialContent } from "../hooks/useInitialContent";
@@ -28,6 +29,8 @@ export interface EditorProps {
 	 * If omitted, browser language is used.
 	 */
 	language?: string;
+	/** Optional telemetry adapter for error reporting (not used directly here) */
+	telemetry?: Telemetry;
 }
 
 const STORAGE_KEY_DEFAULT = "itinerary-md-content";

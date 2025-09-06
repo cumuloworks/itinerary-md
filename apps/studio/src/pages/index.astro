@@ -1,9 +1,16 @@
 ---
 import '../styles/global.css';
-import { Editor } from '@itinerary-md/editor';
 import '@itinerary-md/editor/index.css';
+import EditorIsland from '../components/EditorIsland';
+import { initSentryBrowserOnce } from '../sentry.client';
 import Header from '../components/Header.astro';
 import Analytics from '@vercel/analytics/astro'
+
+initSentryBrowserOnce();
+
+void EditorIsland;
+void Header;
+void Analytics;
 ---
 
 <html lang="ja">
@@ -51,11 +58,7 @@ import Analytics from '@vercel/analytics/astro'
         <div class="max-w-screen-2xl mx-auto h-svh overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
 			<Header />
 			<div class="px-0 md:px-8 w-full flex-1 min-h-0">
-				<Editor
-					storageKey="itinerary-md-content"
-					samplePath="/sample_en.md"
-					client:only="react"
-				/>
+				<EditorIsland client:only="react" />
 			</div>
 		</div>
 	</body>

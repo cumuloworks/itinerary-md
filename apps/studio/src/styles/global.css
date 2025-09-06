@@ -2,37 +2,37 @@
 @import "tailwindcss";
 
 @theme {
-    --font-sans: "DM Sans", "Noto Sans JP", system-ui, sans-serif;
-    --font-mono: "DM Mono", ui-monospace, monospace;
+	--font-sans: "DM Sans", "Noto Sans JP", system-ui, sans-serif;
+	--font-mono: "DM Mono", ui-monospace, monospace;
 }
 
 :root {
-    line-height: 1.5;
-    font-weight: 400;
-    color: #213547;
-    background-color: #ffffff;
+	line-height: 1.5;
+	font-weight: 400;
+	color: #213547;
+	background-color: #ffffff;
 
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	-webkit-text-size-adjust: 100%;
 }
 
 @layer components {
-    .scrollbar-none {
-        -ms-overflow-style: none;
-        /* IE/Edge (legacy) */
-        scrollbar-width: none;
-        /* Firefox */
-    }
+	.scrollbar-none {
+		-ms-overflow-style: none;
+		/* IE/Edge (legacy) */
+		scrollbar-width: none;
+		/* Firefox */
+	}
 
-    .scrollbar-none::-webkit-scrollbar {
-        display: none;
-        /* Chrome/Safari */
-    }
+	.scrollbar-none::-webkit-scrollbar {
+		display: none;
+		/* Chrome/Safari */
+	}
 }
 
 * {
-    box-sizing: border-box;
+	box-sizing: border-box;
 }
