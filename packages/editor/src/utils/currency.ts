@@ -11,6 +11,20 @@ const RATES_TTL_MS = 12 * 60 * 60 * 1000;
 
 export const COMMON_CURRENCIES: CurrencyCode[] = ['USD', 'EUR', 'JPY', 'GBP', 'AUD', 'CAD', 'CHF', 'CNY', 'KRW', 'SGD', 'THB', 'HKD'];
 
+export const VALID_CODE = /^[A-Z]{3}$/;
+
+export const normalizeCurrencyCode = (value: unknown, fallback: CurrencyCode = 'USD'): CurrencyCode => {
+    try {
+        const raw = String(value ?? '')
+            .toUpperCase()
+            .trim()
+            .slice(0, 3);
+        return VALID_CODE.test(raw) ? (raw as CurrencyCode) : fallback;
+    } catch {
+        return fallback;
+    }
+};
+
 export const getCachedRatesUSD = (): RatesUSDBase | null => {
     try {
         const raw = localStorage.getItem(RATES_STORAGE_KEY);

@@ -11,7 +11,9 @@ describe('useLatest', () => {
         });
 
         it('keeps the same reference even when value updates', () => {
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 'first' } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: 'first' },
+            });
 
             const firstRef = result.current;
 
@@ -23,7 +25,9 @@ describe('useLatest', () => {
         });
 
         it('reflects value updates immediately', () => {
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 1 } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: 1 },
+            });
 
             expect(result.current.current).toBe(1);
 
@@ -37,7 +41,9 @@ describe('useLatest', () => {
 
     describe('Behavior with various types', () => {
         it('handles strings', () => {
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 'hello' } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: 'hello' },
+            });
 
             expect(result.current.current).toBe('hello');
 
@@ -46,7 +52,9 @@ describe('useLatest', () => {
         });
 
         it('handles numbers', () => {
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 42 } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: 42 },
+            });
 
             expect(result.current.current).toBe(42);
 
@@ -55,7 +63,9 @@ describe('useLatest', () => {
         });
 
         it('handles booleans', () => {
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: true } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: true },
+            });
 
             expect(result.current.current).toBe(true);
 
@@ -67,7 +77,9 @@ describe('useLatest', () => {
             const obj1 = { key: 'value1' };
             const obj2 = { key: 'value2' };
 
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: obj1 } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: obj1 },
+            });
 
             expect(result.current.current).toBe(obj1);
 
@@ -79,7 +91,9 @@ describe('useLatest', () => {
             const arr1 = [1, 2, 3];
             const arr2 = [4, 5, 6];
 
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: arr1 } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: arr1 },
+            });
 
             expect(result.current.current).toBe(arr1);
 
@@ -91,7 +105,9 @@ describe('useLatest', () => {
             const fn1 = () => 'first';
             const fn2 = () => 'second';
 
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: fn1 } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: fn1 },
+            });
 
             expect(result.current.current).toBe(fn1);
 
@@ -165,7 +181,9 @@ describe('useLatest', () => {
 
     describe('Performance and stability', () => {
         it('works stably even with high-frequency updates', () => {
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 0 } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: 0 },
+            });
 
             for (let i = 1; i <= 1000; i++) {
                 rerender({ value: i });
@@ -174,7 +192,9 @@ describe('useLatest', () => {
         });
 
         it('handles updates to the same value correctly', () => {
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 'same' } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: 'same' },
+            });
 
             const ref = result.current;
 
@@ -193,7 +213,9 @@ describe('useLatest', () => {
                     })),
             };
 
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: largeObject } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: largeObject },
+            });
 
             expect(result.current.current).toBe(largeObject);
 
@@ -222,7 +244,9 @@ describe('useLatest', () => {
             const sym1 = Symbol('test1');
             const sym2 = Symbol('test2');
 
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: sym1 } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: sym1 },
+            });
 
             expect(result.current.current).toBe(sym1);
 
@@ -234,7 +258,9 @@ describe('useLatest', () => {
             const date1 = new Date('2024-01-01');
             const date2 = new Date('2024-12-31');
 
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: date1 } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: date1 },
+            });
 
             expect(result.current.current).toBe(date1);
 
@@ -246,7 +272,9 @@ describe('useLatest', () => {
             const map = new Map([['key', 'value']]);
             const set = new Set([1, 2, 3]);
 
-            const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: map as Map<string, string> | Set<number> } });
+            const { result, rerender } = renderHook(({ value }) => useLatest(value), {
+                initialProps: { value: map as Map<string, string> | Set<number> },
+            });
 
             expect(result.current.current).toBe(map);
 

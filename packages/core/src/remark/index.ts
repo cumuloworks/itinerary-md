@@ -1,1 +1,1 @@
-export { remarkItinerary } from "./itinerary.js";
+export { remarkItinerary } from './itinerary.js';

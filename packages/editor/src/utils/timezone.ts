@@ -1,6 +1,8 @@
 import { DateTime } from 'luxon';
 export function getTimezoneOptions(): string[] {
-    const intl = Intl as unknown as { supportedValuesOf?: (key: string) => string[] };
+    const intl = Intl as unknown as {
+        supportedValuesOf?: (key: string) => string[];
+    };
     return intl.supportedValuesOf?.('timeZone') ?? ['UTC', 'Asia/Tokyo', 'America/Los_Angeles', 'America/New_York', 'Europe/London', 'Europe/Paris', 'Asia/Singapore'];
 }
 
@@ -38,7 +40,15 @@ export function coerceTimezoneWithToast(tz: unknown, fallback: string, source: s
 
 export type TimeFormat = 'HH:mm' | 'HH:mm:ss' | 'full';
 
-export function formatDateTime(date: Date, displayTz: string, options: { showDate?: boolean; showTimezone?: boolean; format?: TimeFormat } = {}): string {
+export function formatDateTime(
+    date: Date,
+    displayTz: string,
+    options: {
+        showDate?: boolean;
+        showTimezone?: boolean;
+        format?: TimeFormat;
+    } = {}
+): string {
     const { showDate = false, showTimezone = false, format = 'HH:mm' } = options;
     const dt = DateTime.fromJSDate(date).setZone(displayTz);
     let result = '';

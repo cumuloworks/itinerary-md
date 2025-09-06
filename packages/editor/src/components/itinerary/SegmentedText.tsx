@@ -1,5 +1,5 @@
 import type React from 'react';
-import { isAllowedHref } from '../../utils/url';
+import { renderInline } from '../render/renderInline';
 
 export type TextSegment = {
     text: string;
@@ -20,46 +20,19 @@ export const SegmentedText: React.FC<SegmentedTextProps> = ({ segments, fallback
         return <span className={className}>{fallbackText}</span>;
     }
 
-    if (segments.length === 1) {
-        const seg = segments[0];
+    const nodes = segments.map((seg) => {
         if (seg.kind === 'code') {
-            return <code className={`${className} bg-gray-100 px-1 py-0.5 rounded text-sm`}>{seg.text}</code>;
+            return { type: 'inlineCode', value: seg.text } as const;
         }
-        if (seg.url && isAllowedHref(seg.url)) {
-            return (
-                <a href={seg.url} target="_blank" rel="noopener noreferrer" className={`${className} ${linkClassName}`}>
-                    {seg.text}
-                </a>
-            );
+        if (seg.url) {
+            return {
+                type: 'link',
+                url: seg.url,
+                children: [{ type: 'text', value: seg.text }],
+            } as const;
         }
-        return <span className={className}>{seg.text}</span>;
-    }
+        return { type: 'text', value: seg.text } as const;
+    });
 
-    const counts: Record<string, number> = {};
-    return (
-        <span className={className}>
-            {segments.map((seg) => {
-                const base = `${seg.text}|${seg.url ?? ''}|${seg.kind ?? 'text'}`;
-                counts[base] = (counts[base] || 0) + 1;
-                const key = `${base}#${counts[base]}`;
-
-                if (seg.kind === 'code') {
-                    return (
-                        <code key={key} className="bg-gray-100 px-1 py-0.5 rounded text-sm">
-                            {seg.text}
-                        </code>
-                    );
-                }
-
-                if (seg.url && isAllowedHref(seg.url)) {
-                    return (
-                        <a key={key} href={seg.url} target="_blank" rel="noopener noreferrer" className={linkClassName}>
-                            {seg.text}
-                        </a>
-                    );
-                }
-                return <span key={key}>{seg.text}</span>;
-            })}
-        </span>
-    );
+    return <span className={className}>{renderInline(nodes as any[], { linkClassName })}</span>;
 };

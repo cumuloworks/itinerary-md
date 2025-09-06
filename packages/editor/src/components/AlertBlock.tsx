@@ -21,7 +21,11 @@ function getIconByVariant(variant?: string): LucideIcon {
     return Info; // note/info/default
 }
 
-function getStyleByVariant(variant?: string): { text: string; border: string; bgColor: string } {
+function getStyleByVariant(variant?: string): {
+    text: string;
+    border: string;
+    bgColor: string;
+} {
     const v = String(variant || '').toLowerCase();
     switch (v) {
         case 'tip':

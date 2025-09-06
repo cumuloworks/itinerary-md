@@ -302,7 +302,7 @@ describe('currency utilities', () => {
             });
 
             it('returns null for expired cache', () => {
-                const oldTime = Date.now() - 13 * 60 * 60 * 1000; // 13時間前
+                const oldTime = Date.now() - 13 * 60 * 60 * 1000; // 13 hours ago
                 localStorage.setItem(
                     'itinerary-md-rates-usd',
                     JSON.stringify({
@@ -342,12 +342,14 @@ describe('currency utilities', () => {
             });
 
             it('ignores localStorage errors', () => {
-                const setItemMock = vi.fn().mockImplementation(() => {
+                const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
                     throw new Error('Storage error');
                 });
-                localStorage.setItem = setItemMock;
-
-                expect(() => setCachedRatesUSD(mockRates)).not.toThrow();
+                try {
+                    expect(() => setCachedRatesUSD(mockRates)).not.toThrow();
+                } finally {
+                    spy.mockRestore();
+                }
             });
         });
 

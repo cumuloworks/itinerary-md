@@ -1,11 +1,13 @@
 import React from 'react';
 import { notifyError } from '../core/errors';
+import { type Telemetry, TelemetryContext } from '../core/telemetry';
 
 type Props = { children: React.ReactNode };
 type State = { hasError: boolean };
 
 export class ErrorBoundary extends React.Component<Props, State> {
     state: State = { hasError: false };
+    static contextType = TelemetryContext;
 
     static getDerivedStateFromError() {
         return { hasError: true };
@@ -13,6 +15,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
     componentDidCatch(error: unknown) {
         console.error('[ErrorBoundary]', error);
+        const telemetry = this.context as Telemetry | undefined;
+        try {
+            telemetry?.captureException?.(error, { component: 'ErrorBoundary' });
+        } catch {}
         notifyError('An error occurred while rendering the page');
     }
 

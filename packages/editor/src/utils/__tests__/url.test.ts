@@ -166,9 +166,9 @@ describe('url utilities', () => {
             expect(url).toBe('https://www.google.com/maps/search/?api=1&query=Tokyo%20Station');
         });
 
-        it('encode Japanese place names', () => {
-            const url = buildGoogleMapsSearchUrl('東京駅');
-            expect(url).toBe('https://www.google.com/maps/search/?api=1&query=%E6%9D%B1%E4%BA%AC%E9%A7%85');
+        it('encode non-ASCII place names', () => {
+            const url = buildGoogleMapsSearchUrl('München');
+            expect(url).toBe('https://www.google.com/maps/search/?api=1&query=M%C3%BCnchen');
         });
 
         it('encode place names with special characters', () => {
@@ -217,7 +217,7 @@ describe('url utilities', () => {
         it('handle place names with emoji', () => {
             const url = buildGoogleMapsSearchUrl('🗼 Tokyo Tower');
             expect(url).toContain('Tokyo%20Tower');
-            expect(url).toContain('%F0%9F%97%BC'); // 🗼のURLエンコード
+            expect(url).toContain('%F0%9F%97%BC'); // URL encoding for 🗼
         });
 
         it('handle very long place names', () => {

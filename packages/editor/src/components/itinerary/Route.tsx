@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react';
 import type React from 'react';
 import { Location } from './Location';
 import type { TextSegment } from './SegmentedText';
@@ -18,10 +19,16 @@ export const Route: React.FC<RouteProps> = ({ departure, arrival, departureUrl, 
 
     const arrSegments = arrivalSegments || (arrival ? (arrivalUrl ? [{ text: arrival, url: arrivalUrl }] : [{ text: arrival }]) : undefined);
 
+    const showArrow = Boolean(depSegments?.length) && Boolean(arrSegments?.length);
+
     return (
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2 flex-wrap">
             <Location segments={depSegments} />
-            <span className="text-gray-400">→</span>
+            {showArrow && (
+                <span className="text-gray-400">
+                    <ArrowRight size={16} />
+                </span>
+            )}
             <Location segments={arrSegments} />
         </span>
     );

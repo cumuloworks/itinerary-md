@@ -30,8 +30,18 @@ describe('parseHeader', () => {
         expect(header.destination?.kind).toBe('dashPair');
         expect(header.title).toBeNull();
         const d = header.destination as Extract<typeof header.destination, { kind: 'dashPair' }>;
-        expect(mdastToString({ type: 'paragraph', children: d.from ?? [] } as unknown as Parent)).toBe('A');
-        expect(mdastToString({ type: 'paragraph', children: d.to ?? [] } as unknown as Parent)).toBe('B');
+        expect(
+            mdastToString({
+                type: 'paragraph',
+                children: d.from ?? [],
+            } as unknown as Parent)
+        ).toBe('A');
+        expect(
+            mdastToString({
+                type: 'paragraph',
+                children: d.to ?? [],
+            } as unknown as Parent)
+        ).toBe('B');
     });
 
     it('link preservation: keep link in single(::) at', () => {
@@ -39,7 +49,12 @@ describe('parseHeader', () => {
         const tokens = lexLine(line, {}, sv);
         const mdInline = [
             { type: 'text', value: '[08:00] lunch :: Visit ' },
-            { type: 'link', url: 'https://cafe.example', title: null, children: [{ type: 'text', value: 'Cafe' }] },
+            {
+                type: 'link',
+                url: 'https://cafe.example',
+                title: null,
+                children: [{ type: 'text', value: 'Cafe' }],
+            },
         ] as unknown as PhrasingContent[];
         const header = parseHeader(tokens, mdInline, sv);
         expect(header.destination?.kind).toBe('single');
@@ -54,9 +69,19 @@ describe('parseHeader', () => {
         const tokens = lexLine(line, {}, sv);
         const mdInline = [
             { type: 'text', value: '[08:00] flight :: ' },
-            { type: 'link', url: 'https://a.example', title: null, children: [{ type: 'text', value: 'NRT' }] },
+            {
+                type: 'link',
+                url: 'https://a.example',
+                title: null,
+                children: [{ type: 'text', value: 'NRT' }],
+            },
             { type: 'text', value: ' - ' },
-            { type: 'link', url: 'https://b.example', title: null, children: [{ type: 'text', value: 'MAD' }] },
+            {
+                type: 'link',
+                url: 'https://b.example',
+                title: null,
+                children: [{ type: 'text', value: 'MAD' }],
+            },
         ] as unknown as PhrasingContent[];
         const header = parseHeader(tokens, mdInline, sv);
         expect(header.destination?.kind).toBe('dashPair');
@@ -71,9 +96,19 @@ describe('parseHeader', () => {
         const tokens = lexLine(line, {}, sv);
         const mdInline = [
             { type: 'text', value: '[am] flight JL from ' },
-            { type: 'link', url: 'https://tokyo.example', title: null, children: [{ type: 'text', value: 'Tokyo' }] },
+            {
+                type: 'link',
+                url: 'https://tokyo.example',
+                title: null,
+                children: [{ type: 'text', value: 'Tokyo' }],
+            },
             { type: 'text', value: ' to ' },
-            { type: 'link', url: 'https://london.example', title: null, children: [{ type: 'text', value: 'London' }] },
+            {
+                type: 'link',
+                url: 'https://london.example',
+                title: null,
+                children: [{ type: 'text', value: 'London' }],
+            },
         ] as unknown as PhrasingContent[];
         const header = parseHeader(tokens, mdInline, sv);
         expect(header.destination?.kind).toBe('fromTo');
@@ -84,13 +119,23 @@ describe('parseHeader', () => {
     });
 
     it('destination: from ... to ... yields fromTo (link preserved)', () => {
-        const line = '[am@Asia/Tokyo] - [18:45@Europe/London] flight JL043 [公式サイト](https://www.jal.co.jp/) from [Tokyo Haneda (HND)](https://haneda-airport.jp/) to [London Heathrow (LHR)](https://www.heathrow.com/)';
+        const line = '[am@Asia/Tokyo] - [18:45@Europe/London] flight JL043 [Official site](https://www.jal.co.jp/) from [Tokyo Haneda (HND)](https://haneda-airport.jp/) to [London Heathrow (LHR)](https://www.heathrow.com/)';
         const tokens = lexLine(line, {}, sv);
         const header = parseHeader(tokens, [], sv);
         expect(header.destination?.kind).toBe('fromTo');
         const d = header.destination as Extract<typeof header.destination, { kind: 'fromTo' }>;
-        expect(mdastToString({ type: 'paragraph', children: d.from ?? [] } as unknown as Parent)).toContain('Tokyo Haneda (HND)');
-        expect(mdastToString({ type: 'paragraph', children: d.to ?? [] } as unknown as Parent)).toContain('London Heathrow (LHR)');
+        expect(
+            mdastToString({
+                type: 'paragraph',
+                children: d.from ?? [],
+            } as unknown as Parent)
+        ).toContain('Tokyo Haneda (HND)');
+        expect(
+            mdastToString({
+                type: 'paragraph',
+                children: d.to ?? [],
+            } as unknown as Parent)
+        ).toContain('London Heathrow (LHR)');
     });
 
     it('extracts time: point/range/marker/none', () => {
@@ -139,14 +184,26 @@ describe('parseHeader', () => {
         const h = parseHeader(tokens, [], sv);
         expect(h.destination).toBeNull();
         // title becomes 'A - B' after excluding eventType
-        expect(h.title && mdastToString({ type: 'paragraph', children: (h.title ?? []) as PhrasingContent[] } as unknown as Parent)).toBe('A - B');
+        expect(
+            h.title &&
+                mdastToString({
+                    type: 'paragraph',
+                    children: (h.title ?? []) as PhrasingContent[],
+                } as unknown as Parent)
+        ).toBe('A - B');
     });
 
     it('interprets from-to in header; title is up to before "from"', () => {
         const tokens = lexLine('[am] activity walk from Park to Museum', {}, sv);
         const h = parseHeader(tokens, [], sv);
         expect(h.destination?.kind).toBe('fromTo');
-        expect(h.title && mdastToString({ type: 'paragraph', children: h.title as PhrasingContent[] } as unknown as Parent)).toContain('walk');
+        expect(
+            h.title &&
+                mdastToString({
+                    type: 'paragraph',
+                    children: h.title as PhrasingContent[],
+                } as unknown as Parent)
+        ).toContain('walk');
     });
 
     it('with multiple dashes, split from/to at the last " - " (requires ::)', () => {
@@ -154,7 +211,12 @@ describe('parseHeader', () => {
         const h = parseHeader(tokens, [], sv);
         expect(h.destination?.kind).toBe('dashPair');
         const d = h.destination as Extract<typeof h.destination, { kind: 'dashPair' }>;
-        expect(mdastToString({ type: 'paragraph', children: d.from } as unknown as Parent)).toBe('A - B');
+        expect(
+            mdastToString({
+                type: 'paragraph',
+                children: d.from,
+            } as unknown as Parent)
+        ).toBe('A - B');
         expect(mdastToString({ type: 'paragraph', children: d.to } as unknown as Parent)).toBe('C');
     });
 

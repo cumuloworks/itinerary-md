@@ -97,6 +97,8 @@ TripMD is a framework that leverages the simplicity and flexibility of Markdown 
 
 # Syntax Reference
 
+Note: Titles (`title`), locations (`destination`), and body segments (`body`) support Markdown inline elements (links, emphasis, code, etc.).
+
 A systematic explanation of TripMD syntax.
 
 ## 1. Basic Event Line Structure
@@ -186,8 +188,6 @@ All other event types:
 
 ### Activity
 
-Write the title after `::`. Links are supported.
-
 ```markdown
 > [14:00] museum :: [Example Museum](https://example.com)
 > - note: Using official app with `skip-the-line`
@@ -195,7 +195,7 @@ Write the title after `::`. Links are supported.
 
 ### Accommodation
 
-Describe accommodation with links, followed by `::` and area or notes.
+Write the accommodation name, and optionally add area or notes after `::`.
 
 ```markdown
 > [15:00] hotel :: Example Paris

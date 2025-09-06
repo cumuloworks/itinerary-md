@@ -179,7 +179,7 @@ describe('useQueryParams', () => {
         it('handles parameters with null values', () => {
             window.location.search = '?tz=null&cur=null';
             const { result } = renderHook(() => useQueryParams());
-            expect(result.current).toEqual({ tz: 'null' }); // cur は無効なのでなし
+            expect(result.current).toEqual({ tz: 'null' }); // cur is invalid and omitted
         });
 
         it('decodes encoded parameters', () => {

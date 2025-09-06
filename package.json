@@ -12,6 +12,7 @@
         "dev": "npm run dev:all",
         "dev:all": "concurrently \"npm -w packages/core run dev\" \"npm -w packages/editor run pack:watch\" \"npm -w apps/studio run dev\"",
         "dev:studio": "npm -w apps/studio run dev",
+        "preview": "npm -w apps/studio run preview",
         "typecheck": "npm -ws run typecheck --if-present",
         "lint": "biome check apps/studio/src packages/core/src packages/editor/src",
         "lint:fix": "biome check --write apps/studio/src packages/core/src packages/editor/src",
@@ -27,10 +28,10 @@
         "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.2.2",
+        "@biomejs/biome": "^2.2.3",
         "@commitlint/cli": "^19.8.1",
         "@commitlint/config-conventional": "^19.8.1",
-        "@cumuloworks/configs": "github:cumuloworks/configs",
+        "@cumuloworks/configs": "^1.0.5",
         "@vitest/coverage-v8": "^3.2.4",
         "concurrently": "^9.2.1",
         "husky": "^9.1.7",

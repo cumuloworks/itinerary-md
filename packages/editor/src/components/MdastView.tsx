@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
+import { normalizeCurrencyCode } from '../utils/currency';
 
 interface MdastViewProps {
     content: string;
@@ -134,8 +135,8 @@ const MdastViewComponent: FC<MdastViewProps> = ({ content, timezone, currency })
     const tree = useMemo(() => {
         try {
             const fm = matter(content);
-            const fmTimezone = typeof (fm.data as any)?.timezone === 'string' ? (fm.data as any).timezone : undefined;
-            const fmCurrency = typeof (fm.data as any)?.currency === 'string' ? (fm.data as any).currency : undefined;
+            const fmTimezoneRaw = typeof (fm.data as any)?.timezone === 'string' ? (fm.data as any).timezone : undefined;
+            const fmCurrencyRaw = typeof (fm.data as any)?.currency === 'string' ? (fm.data as any).currency : undefined;
             const fmType =
                 typeof (fm.data as any)?.type === 'string'
                     ? String((fm.data as any).type)
@@ -144,13 +145,17 @@ const MdastViewComponent: FC<MdastViewProps> = ({ content, timezone, currency })
                     : undefined;
             const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
 
-            const tzFallback = fmTimezone || timezone;
+            const tzFallback = fmTimezoneRaw || timezone;
             const mdProcessor = (unified as any)()
                 .use(remarkParse)
                 .use(remarkGfm)
                 .use(remarkGithubBlockquoteAlert as any);
             if (isItmdDoc) {
-                (mdProcessor as any).use(remarkItinerary as any, { tzFallback, currencyFallback: (fmCurrency as string) || currency });
+                const normalizedCurrency = normalizeCurrencyCode(fmCurrencyRaw || currency, currency || 'USD');
+                (mdProcessor as any).use(remarkItinerary as any, {
+                    tzFallback,
+                    currencyFallback: normalizedCurrency,
+                });
             }
             const mdast = mdProcessor.parse(fm.content || content) as unknown as Root;
             const transformed = mdProcessor.runSync(mdast) as unknown as Root;
@@ -170,7 +175,10 @@ const MdastViewComponent: FC<MdastViewProps> = ({ content, timezone, currency })
                         enableClipboard={false}
                         collapsed={({ depth }: { depth: number }) => depth > 3}
                         displayArrayIndex={false}
-                        style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', fontSize: 12 }}
+                        style={{
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                            fontSize: 12,
+                        }}
                     />
                 </div>
             ) : (

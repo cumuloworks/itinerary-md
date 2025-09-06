@@ -6,29 +6,25 @@ import vercel from '@astrojs/vercel';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import sitemap from '@astrojs/sitemap';
+import sentry from '@sentry/astro';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://astro.build/config
 export default defineConfig({
     adapter: vercel(),
-    integrations: [react(), sitemap()],
+    integrations: [
+        sentry({
+            sourceMapsUploadOptions: {
+                project: "itinerary-md-studio",
+                org: "cumuloworks",
+                authToken: process.env.SENTRY_AUTH_TOKEN,
+            },
+        }),
+        react(), 
+        sitemap()
+    ],
     site: 'https://tripmd.dev',
     vite: {
-        resolve: {
-            dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
-            alias: {
-                // Avoid DOM-specific entry on SSR: always use universal implementation
-                'decode-named-character-reference/index.dom.js': 'decode-named-character-reference/index.js',
-                // CSS import for editor package during development
-                '@itinerary-md/editor/index.css': fileURLToPath(new URL('../../packages/editor/dist/index.css', import.meta.url)),
-            },
-        },
-        optimizeDeps: {
-            exclude: ['@itinerary-md/editor', 'remark-itinerary'],
-        },
-        ssr: {
-            noExternal: ['@itinerary-md/editor', 'remark-itinerary'],
-        },
         plugins: [
             // Force full reload when local workspace packages are rebuilt
             {
@@ -47,8 +43,30 @@ export default defineConfig({
             tailwindcss(),
             VitePWA({
                 registerType: 'autoUpdate',
-                injectRegister: 'auto',
+                injectRegister: 'script',
                 includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png'],
+                manifest: {
+                    name: 'TripMD Studio',
+                    short_name: 'TripMD Studio',
+                    description: 'TripMD Studio is a Markdown editor for composing and sharing travel itineraries.',
+                    start_url: '/',
+                    scope: '/',
+                    display: 'standalone',
+                    background_color: '#ffffff',
+                    theme_color: '#155dfc',
+                    icons: [
+                        {
+                            src: '/android-chrome-192x192.png',
+                            sizes: '192x192',
+                            type: 'image/png'
+                        },
+                        {
+                            src: '/android-chrome-512x512.png',
+                            sizes: '512x512',
+                            type: 'image/png'
+                        }
+                    ]
+                },
                 workbox: {
                     navigateFallback: '/index.html',
                     navigateFallbackDenylist: [
@@ -65,13 +83,55 @@ export default defineConfig({
                         /^\/ogp\.png$/,
                         /\/[^\/?]+\.[^/]+$/, // file-like URLs with extensions
                     ],
+                    // Runtime caching for better offline experience
+                    runtimeCaching: [
+                        {
+                            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'google-fonts-cache',
+                                expiration: {
+                                    maxEntries: 10,
+                                    maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                                }
+                            }
+                        },
+                        {
+                            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'gstatic-fonts-cache',
+                                expiration: {
+                                    maxEntries: 10,
+                                    maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                                }
+                            }
+                        },
+                        {
+                            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'images-cache',
+                                expiration: {
+                                    maxEntries: 50,
+                                    maxAgeSeconds: 60 * 60 * 24 * 30 // <== 30 days
+                                }
+                            }
+                        },
+                        {
+                            urlPattern: /\/sample_.*\.md$/,
+                            handler: 'StaleWhileRevalidate',
+                            options: {
+                                cacheName: 'sample-files-cache',
+                                expiration: {
+                                    maxEntries: 10,
+                                    maxAgeSeconds: 60 * 60 * 24 * 7 // <== 7 days
+                                }
+                            }
+                        }
+                    ]
                 },
             }),
         ],
-        server: {
-            fs: {
-                allow: [fileURLToPath(new URL('../../', import.meta.url)), fileURLToPath(new URL('../../packages/editor/dist', import.meta.url))],
-            },
-        },
     },
 });

@@ -1,9 +1,15 @@
 ---
 import '../styles/global.css';
-import { Editor } from '@itinerary-md/editor';
 import '@itinerary-md/editor/index.css';
+import { Editor } from '@itinerary-md/editor';
+import Analytics from '@vercel/analytics/astro';
 import Header from '../components/Header.astro';
-import Analytics from '@vercel/analytics/astro'
+import { reactTelemetryAdapter } from '../telemetry-adapter';
+
+void Editor;
+void Header;
+void Analytics;
+void reactTelemetryAdapter;
 ---
 
 <html lang="ja">
@@ -11,7 +17,7 @@ import Analytics from '@vercel/analytics/astro'
 		<meta charset="utf-8" />
 		<link rel="icon" href="/favicon.ico" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-		<link rel="manifest" href="/site.webmanifest" />
+		<link rel="manifest" href="/manifest.webmanifest" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="generator" content={Astro.generator} />
 		<title>TripMD Studio</title>
@@ -46,17 +52,31 @@ import Analytics from '@vercel/analytics/astro'
 			})}
 		</script>
 		<Analytics />
+		<script>
+			if ('serviceWorker' in navigator) {
+				window.addEventListener('load', () => {
+					navigator.serviceWorker.register('/sw.js', { scope: '/' })
+						.then((registration) => {
+							console.log('SW registered: ', registration);
+						})
+						.catch((registrationError) => {
+							console.log('SW registration failed: ', registrationError);
+						});
+				});
+			}
+		</script>
 	</head>
 	<body class="bg-gray-100">
         <div class="max-w-screen-2xl mx-auto h-svh overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
 			<Header />
-			<div class="px-0 md:px-8 w-full flex-1 min-h-0">
-				<Editor
-					storageKey="itinerary-md-content"
-					samplePath="/sample_en.md"
-					client:only="react"
-				/>
-			</div>
+		<div class="px-0 md:px-8 w-full flex-1 min-h-0">
+			<Editor 
+				client:only="react" 
+				storageKey="itinerary-md-content"
+				samplePath="/sample_en.md"
+				telemetry={reactTelemetryAdapter}
+			/>
+		</div>
 		</div>
 	</body>
 </html>

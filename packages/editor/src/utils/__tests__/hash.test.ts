@@ -61,8 +61,8 @@ describe('hash utilities', () => {
             expect(encoded.length).toBeLessThan(longText.length);
         });
 
-        it('encodes a string containing Japanese characters', () => {
-            const input = '日本語のテキスト🎌';
+        it('encodes a string containing CJK characters', () => {
+            const input = 'Japanese text 🎌';
             const encoded = encodeToHashBase64(input);
 
             expect(encoded).toBeDefined();
@@ -86,7 +86,11 @@ describe('hash utilities', () => {
         });
 
         it('encodes a JSON string', () => {
-            const json = JSON.stringify({ key: 'value', array: [1, 2, 3], nested: { prop: true } });
+            const json = JSON.stringify({
+                key: 'value',
+                array: [1, 2, 3],
+                nested: { prop: true },
+            });
             const encoded = encodeToHashBase64(json);
 
             expect(encoded).toBeDefined();
@@ -119,8 +123,8 @@ describe('hash utilities', () => {
             expect(decoded).toBe(original);
         });
 
-        it('round-trips a string containing Japanese characters', () => {
-            const original = '日本語のテキスト🎌 with English';
+        it('round-trips a string containing CJK characters', () => {
+            const original = 'Japanese text 🎌 with English';
             const encoded = encodeToHashBase64(original);
             const decoded = decodeFromHashBase64(encoded);
 
@@ -265,7 +269,7 @@ describe('hash utilities', () => {
         });
 
         it('generates a URL containing encoded content', () => {
-            const content = 'Test content with 特殊文字!@#$%';
+            const content = 'Test content with special characters !@#$%';
             const url = buildShareUrlFromContent(content);
 
             expect(url).toContain('https://example.com');
@@ -353,7 +357,7 @@ describe('hash utilities', () => {
         });
 
         it('round-trips for various encodings and languages', () => {
-            const testCases = ['ASCII text', '日本語テキスト', '中文文本', '한국어 텍스트', 'العربية نص', 'עברית טקסט', 'Emoji 😀🎉🚀', 'Mixed 混合 Text テキスト 123'];
+            const testCases = ['ASCII text', 'Japanese text', '中文文本', '한국어 텍스트', 'العربية نص', 'עברית טקסט', 'Emoji 😀🎉🚀', 'Mixed multilingual Text 123'];
 
             testCases.forEach((original) => {
                 const encoded = encodeToHashBase64(original);

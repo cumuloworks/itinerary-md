@@ -198,9 +198,7 @@ const AboutButton: React.FC<AboutButtonProps> = ({ shareUrl }) => {
                                     <p id={thanksDescId} className="text-lg text-gray-600 mb-4">
                                         URL Copied to Clipboard
                                     </p>
-                                    <div className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                                        Click anywhere to return
-                                    </div>
+                                    <div className="text-sm text-gray-500 hover:text-gray-700 transition-colors">Click anywhere to return</div>
                                 </button>
                             ) : errorMessage ? (
                                 <button type="button" className="flex flex-col items-center py-8 cursor-pointer w-full focus:outline-none" onClick={handleReturnToAbout} aria-label="Return to About dialog">
@@ -252,6 +250,9 @@ const AboutButton: React.FC<AboutButtonProps> = ({ shareUrl }) => {
                                             value={`Privacy & Data
 - Your itinerary content is not sent to our servers. Parsing and preview run locally in your browser.
 - We use Vercel Analytics and Sentry to improve stability and usability. They may collect anonymized usage metrics and error diagnostics (e.g., stack traces, browser/device information). Your document contents are not transmitted.
+
+Currency & Rates
+- Exchange rates are updated from https://open.er-api.com (USD-based). The latest rates are cached locally for up to 12 hours. Converted amounts are approximate and for planning only. Please confirm final prices with the actual provider.
 
 License
 - This project includes components licensed under MIT.

@@ -74,7 +74,10 @@ const SYMBOL_TO_CODE: Record<string, string> = {
 
 function inferScaleByCurrency(code: string): number {
     try {
-        const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: code.toUpperCase() });
+        const fmt = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: code.toUpperCase(),
+        });
         const ro = fmt.resolvedOptions();
         // In most environments maximumFractionDigits equals the currency minor unit
         return typeof ro.maximumFractionDigits === 'number' ? ro.maximumFractionDigits : 2;
@@ -178,7 +181,11 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
                 type: 'itmdPrice',
                 rawLine,
                 tokens: [],
-                flags: { hasMath: false, crossCurrency: false, hasNumberOnlyTerm: true },
+                flags: {
+                    hasMath: false,
+                    crossCurrency: false,
+                    hasNumberOnlyTerm: true,
+                },
                 summary: { currencies: [], moneyCount: 0 },
                 data: { normalized: true, needsEvaluation: true },
                 warnings: ['unrecognized'],
@@ -204,7 +211,11 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
                     type: 'itmdPrice',
                     rawLine,
                     tokens,
-                    flags: { hasMath: false, crossCurrency: false, hasNumberOnlyTerm: false },
+                    flags: {
+                        hasMath: false,
+                        crossCurrency: false,
+                        hasNumberOnlyTerm: false,
+                    },
                     summary: { currencies: [cur], moneyCount: 1 },
                     data: { normalized: true, needsEvaluation: true },
                     warnings: warnings.length ? warnings.slice() : undefined,
@@ -216,7 +227,11 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
                 type: 'itmdPrice',
                 rawLine,
                 tokens,
-                flags: { hasMath: false, crossCurrency: false, hasNumberOnlyTerm: true },
+                flags: {
+                    hasMath: false,
+                    crossCurrency: false,
+                    hasNumberOnlyTerm: true,
+                },
                 summary: { currencies: [], moneyCount: 0 },
                 data: { normalized: true, needsEvaluation: true },
                 warnings,
@@ -234,7 +249,11 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
         };
     }
 
-    const groups = (match.groups || {}) as { code?: string; sym?: string; num?: string };
+    const groups = (match.groups || {}) as {
+        code?: string;
+        sym?: string;
+        num?: string;
+    };
     const code = groups.code?.toUpperCase();
     const sym = groups.sym;
     const rawNum = groups.num;
@@ -267,7 +286,10 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
         rawLine,
         tokens,
         flags: { hasMath: false, crossCurrency: false, hasNumberOnlyTerm: false },
-        summary: { currencies: currency ? [normalized.currency] : [], moneyCount: 1 },
+        summary: {
+            currencies: currency ? [normalized.currency] : [],
+            moneyCount: 1,
+        },
         data: { normalized: true, needsEvaluation: true },
         warnings: warnings.length ? warnings.slice() : undefined,
     };

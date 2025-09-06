@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast';
+import { captureException } from './telemetry';
 
 export class AppError extends Error {
     code?: string;
@@ -55,11 +56,13 @@ export function registerGlobalErrorHandlers() {
     window.addEventListener('error', (ev) => {
         const err = normalizeError(ev.error ?? ev.message);
         console.error('[global error]', err);
+        captureException(err, { source: 'window.error' });
         notifyError('An unexpected error has occurred');
     });
     window.addEventListener('unhandledrejection', (ev) => {
         const err = normalizeError(ev.reason);
         console.error('[unhandledrejection]', err);
+        captureException(err, { source: 'unhandledrejection' });
         notifyError('An error occurred during processing');
     });
 }

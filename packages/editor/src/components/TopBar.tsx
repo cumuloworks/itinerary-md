@@ -51,9 +51,19 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                 const minsAbs = (Math.abs(offsetMinutes) % 60).toString().padStart(2, '0');
                 const signStr = offsetMinutes >= 0 ? '+' : '-';
                 const offsetLabel = `GMT${signStr}${hoursAbs}${minsAbs !== '00' ? `:${minsAbs}` : ''}`;
-                return { tz, offsetMinutes, offsetLabel, label: `${tz} (${offsetLabel})` };
+                return {
+                    tz,
+                    offsetMinutes,
+                    offsetLabel,
+                    label: `${tz} (${offsetLabel})`,
+                };
             } catch {
-                return { tz, offsetMinutes: 0, offsetLabel: 'GMT+00', label: `${tz} (GMT+00)` };
+                return {
+                    tz,
+                    offsetMinutes: 0,
+                    offsetLabel: 'GMT+00',
+                    label: `${tz} (GMT+00)`,
+                };
             }
         };
         return timezoneOptions.map(toOffsetInfo).sort((a, b) => a.offsetMinutes - b.offsetMinutes || a.tz.localeCompare(b.tz));
@@ -178,7 +188,11 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     className={`inline-flex items-center justify-center px-2 h-full rounded-md border ${!topbar.showPast ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'}`}
                 >
                     {!topbar.showPast ? <EyeOff size={14} /> : <Eye size={14} />}
-                    <span className="hidden md:block text-xs ml-1">{t('past.label', { state: !topbar.showPast ? t('past.on') : t('past.off') })}</span>
+                    <span className="hidden md:block text-xs ml-1">
+                        {t('past.label', {
+                            state: !topbar.showPast ? t('past.on') : t('past.off'),
+                        })}
+                    </span>
                 </Toolbar.Button>
 
                 <Toolbar.Button
@@ -189,7 +203,11 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     className={`inline-flex items-center justify-center px-2 h-full rounded-md border ${topbar.autoScroll ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'}`}
                 >
                     <ChevronsDown size={14} />
-                    <span className="text-xs ml-1">{t('autoScroll.label', { state: topbar.autoScroll ? t('past.on') : t('past.off') })}</span>
+                    <span className="text-xs ml-1">
+                        {t('autoScroll.label', {
+                            state: topbar.autoScroll ? t('past.on') : t('past.off'),
+                        })}
+                    </span>
                 </Toolbar.Button>
 
                 <Toolbar.Separator className="w-px mr-auto" />

@@ -134,7 +134,7 @@ describe('useTopbarState', () => {
             const { result } = renderHook(() => useTopbarState());
             const [state] = result.current;
 
-            expect(state.viewMode).toBe('split'); // デフォルト値
+            expect(state.viewMode).toBe('split'); // default value
         });
 
         it('ignores errors when reading URL params', () => {
@@ -174,7 +174,7 @@ describe('useTopbarState', () => {
 
             const [newState] = result.current;
             expect(newState.currency).toBe('GBP');
-            expect(newState.viewMode).toBe('split'); // 他の値は変更されない
+            expect(newState.viewMode).toBe('split'); // other values remain unchanged
         });
 
         it('updates multiple properties at once', () => {

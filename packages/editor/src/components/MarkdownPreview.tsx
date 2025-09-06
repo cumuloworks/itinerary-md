@@ -8,11 +8,13 @@ import remarkItineraryAlert from 'remark-itinerary-alert';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { notifyError } from '../core/errors';
+import { normalizeCurrencyCode } from '../utils/currency';
 import { isValidIanaTimeZone } from '../utils/timezone';
 import 'highlight.js/styles/github.css';
 import { DateTime } from 'luxon';
 import { Statistics } from './itinerary/Statistics';
-import { createRenderNode } from './render';
+import { createRenderBlock } from './render';
+import type { MdNode } from './render/types';
 import { Tags } from './Tags';
 
 interface MarkdownPreviewProps {
@@ -27,11 +29,10 @@ interface MarkdownPreviewProps {
     scrollToRatio?: number;
     activeLine?: number;
     autoScroll?: boolean;
+    onShowPast?: () => void;
 }
 
 //
-
-type MdNode = { type?: string; depth?: number; children?: any[]; position?: { start?: { line: number; column?: number }; end?: { line: number; column?: number } } };
 
 type TextSegment = { text: string; url?: string; kind?: 'text' | 'code' };
 
@@ -53,7 +54,7 @@ const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | un
 
 const segmentsToPlainText = (segments?: TextSegment[]): string | undefined => (Array.isArray(segments) ? segments.map((s) => s.text).join('') : undefined);
 
-const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true, onShowPast }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
@@ -61,8 +62,8 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
     const { reactContent, root, parsedFrontmatter, isItmd } = React.useMemo(() => {
         try {
             const fm = matter(content);
-            const fmTimezone = typeof (fm.data as any)?.timezone === 'string' ? (fm.data as any).timezone : undefined;
-            const fmCurrency = typeof (fm.data as any)?.currency === 'string' ? (fm.data as any).currency : undefined;
+            const fmTimezoneRaw = typeof (fm.data as any)?.timezone === 'string' ? (fm.data as any).timezone : undefined;
+            const fmCurrencyRaw = typeof (fm.data as any)?.currency === 'string' ? (fm.data as any).currency : undefined;
             const fmType =
                 typeof (fm.data as any)?.type === 'string'
                     ? String((fm.data as any).type)
@@ -70,18 +71,24 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                           .toLowerCase()
                     : undefined;
             const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
-            const tzFallback = isValidIanaTimeZone(fmTimezone || '') ? (fmTimezone as string) : timezone;
+            const normalizedTimezone = isValidIanaTimeZone(fmTimezoneRaw || '') ? (fmTimezoneRaw as string) : undefined;
+            const normalizedCurrency = normalizeCurrencyCode(fmCurrencyRaw || currency, currency || 'USD');
+            const tzFallback = normalizedTimezone || timezone;
             const mdProcessor = (unified as any)().use(remarkParse).use(remarkGfm);
             if (isItmdDoc) {
-                (mdProcessor as any).use(remarkItineraryAlert as any).use(remarkItinerary as any, { tzFallback, currencyFallback: (fmCurrency as string) || currency });
+                (mdProcessor as any).use(remarkItineraryAlert as any).use(remarkItinerary as any, {
+                    tzFallback,
+                    currencyFallback: normalizedCurrency,
+                });
             }
             const mdast = mdProcessor.parse(fm.content || content) as unknown as Root;
-            const transformed = mdProcessor.runSync(mdast) as unknown as Root & { children?: MdNode[] };
+            const transformed = mdProcessor.runSync(mdast) as unknown as Root & {
+                children?: MdNode[];
+            };
             const prefixLength = typeof fm.content === 'string' ? content.length - fm.content.length : 0;
             const frontmatterOffset = prefixLength > 0 ? (content.slice(0, prefixLength).match(/\r?\n/g) || []).length : 0;
             const lastStaySegmentsByDate = new Map<string, Array<{ text: string; url?: string }>>();
             let currentDate: { date: string; tz?: string } | undefined;
-            let hasPastByAttr = false;
             const getLineStart = (n: { position?: { start?: { line?: number } } } | undefined): number | undefined => {
                 const l = n?.position?.start?.line as number | undefined;
                 return typeof l === 'number' ? l + frontmatterOffset : undefined;
@@ -112,7 +119,11 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             };
             for (const node of (transformed.children || []) as MdNode[]) {
                 if ((node as { type?: string }).type === 'itmdHeading') {
-                    const d = node as unknown as { type: string; dateISO?: string; timezone?: string };
+                    const d = node as unknown as {
+                        type: string;
+                        dateISO?: string;
+                        timezone?: string;
+                    };
                     if (d.dateISO) {
                         currentDate = { date: d.dateISO, tz: d.timezone };
                     }
@@ -121,7 +132,13 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 if ((node as { type?: string })?.type === 'itmdEvent') {
                     try {
                         if (currentDate) {
-                            const ev = node as unknown as { baseType?: string; destination?: { to?: PhrasingContent[]; at?: PhrasingContent[] } };
+                            const ev = node as unknown as {
+                                baseType?: string;
+                                destination?: {
+                                    to?: PhrasingContent[];
+                                    at?: PhrasingContent[];
+                                };
+                            };
                             if (ev?.baseType === 'stay') {
                                 try {
                                     const inline = ev.destination?.at as PhrasingContent[] | undefined;
@@ -132,18 +149,23 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                         }
                     } catch {}
                 }
-                const attrDate = getNodeDateAttr(node);
-                if (isPastISODate(attrDate)) hasPastByAttr = true;
+                // attrDate computation kept for potential future stats; no longer used for banner
+                // const attrDate = getNodeDateAttr(node);
             }
 
             const els: React.ReactNode[] = [];
 
-            const renderNode = createRenderNode({
+            // Action to reveal hidden past events without page reload
+            const bannerAction = (
+                <button type="button" onClick={onShowPast} className="underline hover:text-gray-700">
+                    Click to show
+                </button>
+            );
+
+            const renderBlock = createRenderBlock({
                 getLineStart,
                 getLineEnd,
                 getNodeDateAttr,
-                isPastISODate,
-                showPastEffective,
                 displayTimezone,
                 currency,
                 lastStaySegmentsByDate,
@@ -151,33 +173,58 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 segmentsToPlainText,
             });
 
+            let sawAnyHidden = false;
+            let inHiddenRun = false;
             for (const [idx, node] of ((transformed.children || []) as MdNode[]).entries()) {
-                const rendered = renderNode(node as any, idx);
+                const attr = getNodeDateAttr(node);
+                const isHidden = !showPastEffective && isPastISODate(attr);
+                if (isHidden) {
+                    sawAnyHidden = true;
+                    inHiddenRun = true;
+                    continue;
+                }
+                if (inHiddenRun) {
+                    const lineStart = getLineStart(node);
+                    els.push(
+                        <div key={`past-banner-${lineStart ?? idx}`} className="flex items-center text-gray-500 text-xs mt-6 mb-4" data-itin-line-start={undefined} data-itin-line-end={undefined}>
+                            <span className="flex-1 border-t border-gray-200" />
+                            <span className="px-2">Past events are hidden — {bannerAction}</span>
+                            <span className="flex-1 border-t border-gray-200" />
+                        </div>
+                    );
+                    inHiddenRun = false;
+                }
+                const rendered = renderBlock(node as any, idx);
                 if (rendered) els.push(rendered);
             }
-            const hasHiddenPast = !showPastEffective && hasPastByAttr;
-            const topBanner = hasHiddenPast ? (
-                <div className="flex items-center text-gray-500 text-xs mt-6 mb-4" data-itin-line-start={undefined} data-itin-line-end={undefined}>
-                    <span className="flex-1 border-t border-gray-200" />
-                    <span className="px-2">Past events are hidden</span>
-                    <span className="flex-1 border-t border-gray-200" />
-                </div>
-            ) : null;
+            if (els.length === 0 && sawAnyHidden) {
+                els.push(
+                    <div key={'past-banner-only'} className="flex items-center text-gray-500 text-xs mt-6 mb-4">
+                        <span className="flex-1 border-t border-gray-200" />
+                        <span className="px-2">Past events are hidden — {bannerAction}</span>
+                        <span className="flex-1 border-t border-gray-200" />
+                    </div>
+                );
+            }
             return {
-                reactContent: (
-                    <>
-                        {topBanner}
-                        {els}
-                    </>
-                ),
+                reactContent: <>{els}</>,
                 root: transformed,
-                parsedFrontmatter: (fm.data || {}) as Record<string, unknown>,
+                parsedFrontmatter: {
+                    ...(fm.data || {}),
+                    timezone: normalizedTimezone || (fm.data as any)?.timezone,
+                    currency: normalizedCurrency,
+                } as Record<string, unknown>,
                 isItmd: isItmdDoc,
             } as any;
         } catch {
-            return { reactContent: null as React.ReactNode, root: null, parsedFrontmatter: {} as Record<string, unknown>, isItmd: false } as any;
+            return {
+                reactContent: null as React.ReactNode,
+                root: null,
+                parsedFrontmatter: {} as Record<string, unknown>,
+                isItmd: false,
+            } as any;
         }
-    }, [content, timezone, currency, showPastEffective, displayTimezone]);
+    }, [content, timezone, currency, showPastEffective, displayTimezone, onShowPast]);
 
     const safeParsedFrontmatter = parsedFrontmatter as Record<string, unknown>;
 

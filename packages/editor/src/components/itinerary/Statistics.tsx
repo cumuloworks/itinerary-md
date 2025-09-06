@@ -2,15 +2,25 @@
 import { ArrowDown, BedDouble, FerrisWheel, Plane } from 'lucide-react';
 import React from 'react';
 import { useRatesUSD } from '../../hooks/useRatesUSD';
-import { convertAmountUSDBase, parseAmountWithCurrency } from '../../utils/currency';
+import { convertAmountUSDBase, normalizeCurrencyCode, parseAmountWithCurrency } from '../../utils/currency';
+import type { MdNode } from '../render/types';
 
-type MdNode = { type?: string; depth?: number; children?: unknown[]; position?: { start?: { line?: number }; end?: { line?: number } } };
-type MoneyTokenLike = { kind?: string; currency?: string; amount?: string; normalized?: { currency?: string; amount?: string } };
-type PriceEntryLike = { key: string; raw: string; price: { tokens?: Array<MoneyTokenLike> } };
+type MoneyTokenLike = {
+    kind?: string;
+    currency?: string;
+    amount?: string;
+    normalized?: { currency?: string; amount?: string };
+};
+type PriceEntryLike = {
+    key: string;
+    raw: string;
+    price: { tokens?: Array<MoneyTokenLike> };
+};
 
 interface ItmdEventNode {
     type: 'itmdEvent';
     eventType: string;
+    baseType?: 'transportation' | 'stay' | 'activity';
     data?: { itmdPrice?: Array<PriceEntryLike> } | null;
 }
 
@@ -46,26 +56,14 @@ const extractHeadingDates = (nodes?: MdNode[]): { startDate?: string; endDate?: 
 
 // no fallback parser anymore
 
-const classifyBaseType = (eventType: string): 'transportation' | 'activity' | 'stay' => {
-    if (['flight', 'train', 'drive', 'ferry', 'bus', 'taxi', 'subway', 'cablecar', 'rocket', 'spaceship'].includes(eventType)) return 'transportation';
-    if (['stay', 'hotel', 'ryokan', 'hostel', 'dormitory'].includes(eventType)) return 'stay';
-    return 'activity';
-};
-
 export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, currency, rate }) => {
     const { data: ratesData } = useRatesUSD();
 
     const summary = React.useMemo(() => extractHeadingDates(root?.children), [root]);
 
     const { total, totalFormatted, breakdownFormatted, toCurrency } = React.useMemo(() => {
-        // Extract currency code from props/frontmatter, stringify → uppercase → trim → 3 chars → validate
-        const rawCurrency = (currency ?? (typeof frontmatter?.currency === 'string' ? (frontmatter?.currency as string) : undefined)) as unknown;
-        const normalizedCandidate = String(rawCurrency ?? 'USD')
-            .toUpperCase()
-            .trim()
-            .slice(0, 3);
-        const VALID_CODE = /^[A-Z]{3}$/;
-        const toCurrency = VALID_CODE.test(normalizedCandidate) ? normalizedCandidate : 'USD';
+        // Currency should already be normalized in frontmatter; ensure idempotently
+        const toCurrency = normalizeCurrencyCode(currency ?? (typeof frontmatter?.currency === 'string' ? (frontmatter?.currency as string) : undefined), 'USD');
         const applyManualRate = (amount: number, from: string, to: string): number | null => {
             if (from === to) return amount;
             const r = rate;
@@ -92,7 +90,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
         for (const node of children) {
             if ((node as { type?: string }).type !== 'itmdEvent') continue;
             const ev = node as unknown as ItmdEventNode;
-            const baseType = classifyBaseType(ev.eventType);
+            const baseType = ev.baseType ?? 'activity';
             const prices = Array.isArray(ev.data?.itmdPrice) ? (ev.data?.itmdPrice as PriceEntryLike[]) : [];
             if (prices.length === 0) continue;
             const to = toCurrency;
@@ -101,11 +99,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
                 const tok = Array.isArray(p.price?.tokens) ? p.price.tokens[0] : undefined;
                 if (!tok || tok.kind !== 'money') continue;
                 // Normalize and validate source currency; if invalid, fall back to display currency
-                const fromCandidate = String(tok.normalized?.currency || tok.currency || to)
-                    .toUpperCase()
-                    .trim()
-                    .slice(0, 3);
-                const from = VALID_CODE.test(fromCandidate) ? fromCandidate : to;
+                const from = normalizeCurrencyCode(tok.normalized?.currency || tok.currency || to, to);
                 const amt = Number(String(tok.normalized?.amount || tok.amount || ''));
                 if (!Number.isFinite(amt)) continue;
                 let converted: number | null = null;
@@ -137,22 +131,50 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
         // Intl.NumberFormat may throw RangeError; fall back to USD via try/catch
         let formatter: Intl.NumberFormat;
         try {
-            formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: toCurrency, currencyDisplay: 'narrowSymbol' });
+            formatter = new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: toCurrency,
+                currencyDisplay: 'narrowSymbol',
+            });
         } catch {
-            formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' });
+            formatter = new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: 'USD',
+                currencyDisplay: 'narrowSymbol',
+            });
         }
         return {
             total,
             toCurrency,
             totalFormatted: total > 0 ? formatter.format(total) : null,
-            breakdownFormatted: total > 0 ? { transportation: formatter.format(transportation), activity: formatter.format(activity), stay: formatter.format(stay) } : null,
-        } as { total: number; toCurrency: string; totalFormatted: string | null; breakdownFormatted: { transportation: string; activity: string; stay: string } | null };
+            breakdownFormatted:
+                total > 0
+                    ? {
+                          transportation: formatter.format(transportation),
+                          activity: formatter.format(activity),
+                          stay: formatter.format(stay),
+                      }
+                    : null,
+        } as {
+            total: number;
+            toCurrency: string;
+            totalFormatted: string | null;
+            breakdownFormatted: {
+                transportation: string;
+                activity: string;
+                stay: string;
+            } | null;
+        };
     }, [root, frontmatter, currency, ratesData, rate]);
 
     const budgetDisplay = React.useMemo(() => {
         // Extract amount and code from frontmatter.budget
         const raw = frontmatter?.budget as unknown;
-        let parsed: { amount: number | null; currency?: string; raw: string } | null = null;
+        let parsed: {
+            amount: number | null;
+            currency?: string;
+            raw: string;
+        } | null = null;
         if (typeof raw === 'number') parsed = parseAmountWithCurrency(String(raw), undefined);
         else if (typeof raw === 'string') parsed = parseAmountWithCurrency(raw, undefined);
         if (!parsed || parsed.amount == null || parsed.amount <= 0) return null;
@@ -185,9 +207,17 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
         if (converted == null) return null;
         const fmt = (() => {
             try {
-                return new Intl.NumberFormat(undefined, { style: 'currency', currency: toCurrency, currencyDisplay: 'narrowSymbol' });
+                return new Intl.NumberFormat(undefined, {
+                    style: 'currency',
+                    currency: toCurrency,
+                    currencyDisplay: 'narrowSymbol',
+                });
             } catch {
-                return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' });
+                return new Intl.NumberFormat(undefined, {
+                    style: 'currency',
+                    currency: 'USD',
+                    currencyDisplay: 'narrowSymbol',
+                });
             }
         })();
         const budgetFormatted = fmt.format(converted);
@@ -206,19 +236,19 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
     return (
         <div className="flex flex-wrap justify-evenly py-4 rounded bg-gray-50 border border-gray-300">
             <div className="basis-1/2 p-4 rounded-lg flex flex-col items-center justify-center">
-                <div className="text-3xl font-bold text-emerald-600" aria-live="polite">
-                    {totalFormatted ?? '—'}
+                <div className="flex flex-wrap items-baseline font-bold break-all whitespace-pre" aria-live="polite">
+                    {totalFormatted && (
+                        <p className={`text-3xl ${budgetDisplay?.remaining !== undefined && budgetDisplay?.remaining !== null ? (budgetDisplay.remaining >= 0 ? 'text-emerald-600' : 'text-red-600') : 'text-gray-800'}`}>{totalFormatted}</p>
+                    )}
+                    {budgetDisplay && (
+                        <>
+                            <p className="text-sm mx-2">/</p>
+                            <p className="text-sm">{budgetDisplay.budgetFormatted}</p>
+                        </>
+                    )}
                 </div>
                 <div className="w-full px-4 mt-2">
-                    {budgetDisplay && (
-                        <div className="flex items-center justify-center text-xs text-gray-700 gap-2 mb-4">
-                            <span className="font-semibold">Budget:</span>
-                            <span className="font-semibold">{budgetDisplay.budgetFormatted}</span>
-                            <span className={budgetDisplay.remaining >= 0 ? 'text-emerald-600' : 'text-red-600'}>({budgetDisplay.remainingLabel})</span>
-                            <span className="text-gray-500">{budgetDisplay.usedPct}% used</span>
-                        </div>
-                    )}
-                    <div className="flex justify-center gap-x-10 text-center">
+                    <div className="flex justify-center gap-x-10 text-center max-w-60 mx-auto">
                         <div className="flex flex-col items-center flex-1">
                             <div className="flex items-center gap-1">
                                 <Plane size={20} className="text-gray-600" />

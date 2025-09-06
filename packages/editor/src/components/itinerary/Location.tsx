@@ -37,16 +37,16 @@ export const Location: React.FC<LocationProps> = ({ location, url, segments }) =
 
         return (
             <span className="flex items-center">
-                <MapPin size={14} className="mr-1 text-gray-500" />
-                <SegmentedText segments={googleMapsSegments} className="" linkClassName="underline" />
+                <MapPin size={14} className="mr-1 text-gray-500 shrink-0" />
+                <SegmentedText segments={googleMapsSegments} className="break-all" linkClassName="underline" />
             </span>
         );
     }
 
     return (
         <span className="flex items-center">
-            <MapPin size={14} className="mr-1 text-gray-500" />
-            <SegmentedText segments={finalSegments} className="" linkClassName="underline" />
+            <MapPin size={14} className="mr-1 text-gray-500 shrink-0" />
+            <SegmentedText segments={finalSegments} className="break-all" linkClassName="underline" />
         </span>
     );
 };
