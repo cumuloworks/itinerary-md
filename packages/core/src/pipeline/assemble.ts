@@ -72,7 +72,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
                     timezone: d.timezone,
                     children: [],
                     position: (h as unknown as { position?: Position }).position,
-                    data: { hProperties: { 'data-itmd-date': d.date } },
+                    data: { itmdDate: { dateISO: d.date, timezone: d.timezone }, hProperties: { 'data-itmd-date': d.date } },
                 } as ITMDHeadingNode;
                 children[i] = headingNode as unknown as Parent['children'][number];
             } else {
