@@ -40,6 +40,7 @@
         "buffer": "^6.0.3",
         "color-hash": "2.0.2",
         "gray-matter": "^4.0.3",
+        "highlight.js": "^11.10.0",
         "lucide-react": "^0.542.0",
         "luxon": "^3.7.1",
         "mdast-util-to-string": "^4.0.0",
