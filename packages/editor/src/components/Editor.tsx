@@ -210,6 +210,7 @@ const EditorComponent: FC<EditorProps> = ({
 								rate={rate}
 								activeLine={editedLine}
 								autoScroll={topbar.autoScroll}
+								showPast={topbar.showPast}
 								className="h-full"
 							/>
 						</MarkdownPreviewErrorBoundary>

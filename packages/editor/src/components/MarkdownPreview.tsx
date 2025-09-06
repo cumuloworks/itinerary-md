@@ -13,7 +13,7 @@ import { isValidIanaTimeZone } from "../utils/timezone";
 import "highlight.js/styles/github.css";
 import { DateTime } from "luxon";
 import { Statistics } from "./itinerary/Statistics";
-import { createRenderNode } from "./render";
+import { createRenderBlock } from "./render";
 import { Tags } from "./Tags";
 
 interface MarkdownPreviewProps {
@@ -140,7 +140,6 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({
 					Array<{ text: string; url?: string }>
 				>();
 				let currentDate: { date: string; tz?: string } | undefined;
-				let hasPastByAttr = false;
 				const getLineStart = (
 					n: { position?: { start?: { line?: number } } } | undefined,
 				): number | undefined => {
@@ -213,18 +212,16 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({
 							}
 						} catch {}
 					}
-					const attrDate = getNodeDateAttr(node);
-					if (isPastISODate(attrDate)) hasPastByAttr = true;
+					// attrDate computation kept for potential future stats; no longer used for banner
+					// const attrDate = getNodeDateAttr(node);
 				}
 
 				const els: React.ReactNode[] = [];
 
-				const renderNode = createRenderNode({
+				const renderBlock = createRenderBlock({
 					getLineStart,
 					getLineEnd,
 					getNodeDateAttr,
-					isPastISODate,
-					showPastEffective,
 					displayTimezone,
 					currency,
 					lastStaySegmentsByDate,
@@ -232,31 +229,51 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({
 					segmentsToPlainText,
 				});
 
+				let sawAnyHidden = false;
+				let inHiddenRun = false;
 				for (const [idx, node] of (
 					(transformed.children || []) as MdNode[]
 				).entries()) {
-					const rendered = renderNode(node as any, idx);
+					const attr = getNodeDateAttr(node);
+					const isHidden = !showPastEffective && isPastISODate(attr);
+					if (isHidden) {
+						sawAnyHidden = true;
+						inHiddenRun = true;
+						continue;
+					}
+					if (inHiddenRun) {
+						const lineStart = getLineStart(node);
+						els.push(
+							<div
+								key={`past-banner-${lineStart ?? idx}`}
+								className="flex items-center text-gray-500 text-xs mt-6 mb-4"
+								data-itin-line-start={undefined}
+								data-itin-line-end={undefined}
+							>
+								<span className="flex-1 border-t border-gray-200" />
+								<span className="px-2">Past events are hidden</span>
+								<span className="flex-1 border-t border-gray-200" />
+							</div>,
+						);
+						inHiddenRun = false;
+					}
+					const rendered = renderBlock(node as any, idx);
 					if (rendered) els.push(rendered);
 				}
-				const hasHiddenPast = !showPastEffective && hasPastByAttr;
-				const topBanner = hasHiddenPast ? (
-					<div
-						className="flex items-center text-gray-500 text-xs mt-6 mb-4"
-						data-itin-line-start={undefined}
-						data-itin-line-end={undefined}
-					>
-						<span className="flex-1 border-t border-gray-200" />
-						<span className="px-2">Past events are hidden</span>
-						<span className="flex-1 border-t border-gray-200" />
-					</div>
-				) : null;
+				if (els.length === 0 && sawAnyHidden) {
+					els.push(
+						<div
+							key={"past-banner-only"}
+							className="flex items-center text-gray-500 text-xs mt-6 mb-4"
+						>
+							<span className="flex-1 border-t border-gray-200" />
+							<span className="px-2">Past events are hidden</span>
+							<span className="flex-1 border-t border-gray-200" />
+						</div>,
+					);
+				}
 				return {
-					reactContent: (
-						<>
-							{topBanner}
-							{els}
-						</>
-					),
+					reactContent: <>{els}</>,
 					root: transformed,
 					parsedFrontmatter: {
 						...(fm.data || {}),
