@@ -1,3 +1,81 @@
+import { describe, it, expect } from 'vitest';
+import type { Root } from 'mdast';
+import { assembleEvents } from '../assemble';
+import { makeDefaultServices } from '../../services';
+
+function h(depth: number, text: string): any {
+  return {
+    type: 'heading',
+    depth,
+    children: [{ type: 'text', value: text }],
+    position: { start: { line: 1 }, end: { line: 1 } },
+  };
+}
+
+function bqPara(text: string): any {
+  return {
+    type: 'blockquote',
+    position: { start: { line: 2 }, end: { line: 4 } },
+    children: [
+      {
+        type: 'paragraph',
+        children: [{ type: 'text', value: text }],
+      },
+    ],
+  };
+}
+
+describe('assembleEvents - date context and data-itmd-date attachment', () => {
+  it('sets context on H2 date, attaches data-itmd-date to all nodes, resets on H1', () => {
+    const root: Root = {
+      type: 'root',
+      children: [
+        h(2, '2024-01-01'),
+        { type: 'paragraph', children: [{ type: 'text', value: 'After date' }] } as any,
+        bqPara('Just quote under dated section'),
+        h(1, 'Top Section'), // reset context here
+        { type: 'paragraph', children: [{ type: 'text', value: 'No date context' }] } as any,
+      ] as any,
+    };
+
+    const sv = makeDefaultServices({ tzFallback: 'UTC' });
+    const out = assembleEvents(root, sv);
+    const c = out.children as any[];
+
+    // H2 converted to itmdHeading with data-itmd-date
+    expect(c[0]?.type).toBe('itmdHeading');
+    expect(c[0]?.data?.hProperties?.['data-itmd-date']).toBe('2024-01-01');
+
+    // Following paragraph received data-itmd-date
+    expect(c[1]?.data?.hProperties?.['data-itmd-date']).toBe('2024-01-01');
+
+    // Blockquote keeps type and also has data-itmd-date
+    expect(c[2]?.type).toBe('blockquote');
+    expect(c[2]?.data?.hProperties?.['data-itmd-date']).toBe('2024-01-01');
+
+    // After H1 reset, subsequent nodes no longer carry data-itmd-date
+    expect(c[3]?.type).toBe('heading');
+    expect(c[3]?.depth).toBe(1);
+    expect(c[4]?.data?.hProperties?.['data-itmd-date']).toBeUndefined();
+  });
+
+  it('when blockquote converts to itmdEvent, it also inherits data-itmd-date', () => {
+    const root: Root = {
+      type: 'root',
+      children: [
+        h(2, '2024-01-02'),
+        bqPara('[08:30] flight AA100 :: A - B'),
+      ] as any,
+    };
+    const sv = makeDefaultServices({ tzFallback: 'UTC' });
+    const out = assembleEvents(root, sv);
+    const c = out.children as any[];
+    expect(c[0]?.type).toBe('itmdHeading');
+    expect(c[1]?.type).toBe('itmdEvent');
+    expect(c[1]?.data?.hProperties?.['data-itmd-date']).toBe('2024-01-02');
+  });
+});
+
 import type { Parent, PhrasingContent, Root } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import { describe, expect, it } from 'vitest';
