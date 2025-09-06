@@ -2,7 +2,12 @@
     "root": true,
     "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
     "files": {
-        "includes": ["apps/**/src/**", "apps/**/test/**", "packages/**/src/**"],
+        "includes": [
+            "apps/**/src/**", 
+            "apps/**/test/**", 
+            "packages/**/src/**",
+            "apps/**/sentry.*.config.js"
+        ],
         "experimentalScannerIgnores": ["**/dist/**", "**/coverage/**", "**/.vite/**", "**/node_modules/**", "**/*.css", "**/*.astro"]
     },
     "linter": {

@@ -2,12 +2,9 @@
 import '../styles/global.css';
 import '@itinerary-md/editor/index.css';
 import { Editor } from '@itinerary-md/editor';
-import { initSentryBrowserOnce } from '../sentry.client';
 import Header from '../components/Header.astro';
 import Analytics from '@vercel/analytics/astro'
 import { reactTelemetryAdapter } from '../telemetry-adapter';
-
-initSentryBrowserOnce();
 
 void Editor;
 void Header;

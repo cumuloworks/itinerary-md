@@ -6,12 +6,23 @@ import vercel from '@astrojs/vercel';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import sitemap from '@astrojs/sitemap';
+import sentry from '@sentry/astro';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://astro.build/config
 export default defineConfig({
     adapter: vercel(),
-    integrations: [react(), sitemap()],
+    integrations: [
+        sentry({
+            sourceMapsUploadOptions: {
+                project: "itinerary-md-studio",
+                org: "cumuloworks",
+                authToken: process.env.SENTRY_AUTH_TOKEN,
+            },
+        }),
+        react(), 
+        sitemap()
+    ],
     site: 'https://tripmd.dev',
     vite: {
         resolve: {
