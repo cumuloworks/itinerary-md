@@ -374,12 +374,16 @@ describe("currency utilities", () => {
 			});
 
 			it("ignores localStorage errors", () => {
-				const setItemMock = vi.fn().mockImplementation(() => {
-					throw new Error("Storage error");
-				});
-				localStorage.setItem = setItemMock;
-
-				expect(() => setCachedRatesUSD(mockRates)).not.toThrow();
+				const spy = vi
+					.spyOn(Storage.prototype, "setItem")
+					.mockImplementation(() => {
+						throw new Error("Storage error");
+					});
+				try {
+					expect(() => setCachedRatesUSD(mockRates)).not.toThrow();
+				} finally {
+					spy.mockRestore();
+				}
 			});
 		});
 

@@ -5,8 +5,8 @@ export type MdNode = {
 	depth?: number;
 	children?: any[];
 	position?: {
-		start?: { line: number; column?: number };
-		end?: { line: number; column?: number };
+		start?: { line?: number; column?: number };
+		end?: { line?: number; column?: number };
 	};
 };
 

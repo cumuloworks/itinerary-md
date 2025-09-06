@@ -7,13 +7,8 @@ import {
 	normalizeCurrencyCode,
 	parseAmountWithCurrency,
 } from "../../utils/currency";
+import type { MdNode } from "../render/types";
 
-type MdNode = {
-	type?: string;
-	depth?: number;
-	children?: unknown[];
-	position?: { start?: { line?: number }; end?: { line?: number } };
-};
 type MoneyTokenLike = {
 	kind?: string;
 	currency?: string;

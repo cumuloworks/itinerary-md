@@ -14,6 +14,7 @@ import "highlight.js/styles/github.css";
 import { DateTime } from "luxon";
 import { Statistics } from "./itinerary/Statistics";
 import { createRenderBlock } from "./render";
+import type { MdNode } from "./render/types";
 import { Tags } from "./Tags";
 
 interface MarkdownPreviewProps {
@@ -32,16 +33,6 @@ interface MarkdownPreviewProps {
 }
 
 //
-
-type MdNode = {
-	type?: string;
-	depth?: number;
-	children?: any[];
-	position?: {
-		start?: { line: number; column?: number };
-		end?: { line: number; column?: number };
-	};
-};
 
 type TextSegment = { text: string; url?: string; kind?: "text" | "code" };
 
