@@ -5,7 +5,7 @@ import type { ParsedHeader } from './parse.js';
 export type NormalizedHeader = ParsedHeader & { time?: EventTime | null };
 
 export function normalizeHeader(h: ParsedHeader, ctx: { baseTz?: string; dateISO?: string }, sv: Services): NormalizedHeader {
-    const baseCoerced = sv.tz.coerce(ctx.baseTz ?? null, sv.policy.tzFallback ?? null);
+    const baseCoerced = sv.tz.coerce(ctx.baseTz ?? null, sv.policy.defaultTimezone ?? null);
     const baseTz = baseCoerced.tz;
     if (!h.time) return { ...h };
     if (!ctx.dateISO) return { ...h };

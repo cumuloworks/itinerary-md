@@ -73,12 +73,12 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
             const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
             const normalizedTimezone = isValidIanaTimeZone(fmTimezoneRaw || '') ? (fmTimezoneRaw as string) : undefined;
             const normalizedCurrency = normalizeCurrencyCode(fmCurrencyRaw || currency, currency || 'USD');
-            const tzFallback = normalizedTimezone || timezone;
+            const defaultTimezone = normalizedTimezone || timezone;
             const mdProcessor = (unified as any)().use(remarkParse).use(remarkGfm);
             if (isItmdDoc) {
                 (mdProcessor as any).use(remarkItineraryAlert as any).use(remarkItinerary as any, {
-                    tzFallback,
-                    currencyFallback: normalizedCurrency,
+                    defaultTimezone,
+                    defaultCurrency: normalizedCurrency,
                 });
             }
             const mdast = mdProcessor.parse(fm.content || content) as unknown as Root;

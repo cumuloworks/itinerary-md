@@ -295,7 +295,7 @@ Timezones are determined in the following priority:
 4. **Plugin options** - Processing configuration
 
    ```typescript
-   .use(remarkItinerary, { tzFallback: 'Asia/Tokyo' })
+   .use(remarkItinerary, { defaultTimezone: 'Asia/Tokyo' })
    ```
 
 ### Currency Processing
@@ -346,9 +346,9 @@ const processor = unified()
   .use(remarkParse)
   .use(remarkItineraryAlert)      // Add alert feature (must come before remarkItinerary)
   .use(remarkItinerary, {
-    tzFallback: 'Asia/Tokyo',      // Default timezone
-    currencyFallback: 'JPY',       // Default currency
-    amHour: 9,                     // Time for [am]
+    defaultTimezone: 'Asia/Tokyo',      // Default timezone
+    defaultCurrency: 'JPY',       // Default currency
+    amHour: 9,                          // Time for [am]
     pmHour: 15                     // Time for [pm]
   });
 ```

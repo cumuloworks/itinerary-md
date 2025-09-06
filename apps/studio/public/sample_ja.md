@@ -295,7 +295,7 @@ TripMD の文法を体系的に説明します。
 4. **プラグインオプション** - 処理時の設定
 
    ```typescript
-   .use(remarkItinerary, { tzFallback: 'Asia/Tokyo' })
+   .use(remarkItinerary, { defaultTimezone: 'Asia/Tokyo' })
    ```
 
 ### 通貨の処理
@@ -346,8 +346,8 @@ const processor = unified()
   .use(remarkParse)
   .use(remarkItineraryAlert)      // アラート機能を追加（remarkItineraryより先に実行する必要があります）
   .use(remarkItinerary, {
-    tzFallback: 'Asia/Tokyo',      // デフォルトタイムゾーン
-    currencyFallback: 'JPY',       // デフォルト通貨
+    defaultTimezone: 'Asia/Tokyo',      // デフォルトタイムゾーン
+    defaultCurrency: 'JPY',       // デフォルト通貨
     amHour: 9,                     // [am] の時刻
     pmHour: 15                     // [pm] の時刻
   });

@@ -7,7 +7,6 @@ import { makeDefaultServices, type Policy } from '../services/index.js';
 import type { ITMDEventNode } from '../types.js';
 
 export type ItmdRemarkOptions = Partial<Policy> & {
-    timezone?: string;
     debug?: boolean;
 };
 

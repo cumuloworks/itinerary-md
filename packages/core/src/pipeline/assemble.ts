@@ -51,7 +51,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
                 if (!m) return null;
                 const date = m[1];
                 const tzRaw = m[2];
-                const tzCheck = tzRaw ? sv.tz.coerce(tzRaw, sv.policy.tzFallback ?? undefined) : { tz: undefined, valid: true };
+                const tzCheck = tzRaw ? sv.tz.coerce(tzRaw, sv.policy.defaultTimezone ?? undefined) : { tz: undefined, valid: true };
                 const tzIsValid = tzCheck.valid;
                 const tzUsed = tzCheck.tz ?? undefined;
                 return {
@@ -112,7 +112,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
         const normalized = normalizeHeader(
             parsed,
             {
-                baseTz: currentDateTz ?? sv.policy.tzFallback ?? undefined,
+                baseTz: currentDateTz ?? sv.policy.defaultTimezone ?? undefined,
                 dateISO: currentDateISO,
             },
             sv
@@ -257,7 +257,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
                         type: 'paragraph',
                         children: e.value,
                     } as unknown as any).trim();
-                    const priceNode = normalizePriceLine(rawStr, sv.policy.currencyFallback ?? undefined);
+                    const priceNode = normalizePriceLine(rawStr, sv.policy.defaultCurrency ?? undefined);
                     priceEntries.push({ key: e.key, raw: rawStr, price: priceNode });
                 }
             }
