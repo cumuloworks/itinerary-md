@@ -28,6 +28,7 @@ interface MarkdownPreviewProps {
 	scrollToRatio?: number;
 	activeLine?: number;
 	autoScroll?: boolean;
+	onShowPast?: () => void;
 }
 
 //
@@ -78,6 +79,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({
 	tags,
 	activeLine,
 	autoScroll = true,
+	onShowPast,
 }) => {
 	const displayTimezone =
 		timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -218,6 +220,17 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({
 
 				const els: React.ReactNode[] = [];
 
+				// Action to reveal hidden past events without page reload
+				const bannerAction = (
+					<button
+						type="button"
+						onClick={onShowPast}
+						className="underline hover:text-gray-700"
+					>
+						Click to show
+					</button>
+				);
+
 				const renderBlock = createRenderBlock({
 					getLineStart,
 					getLineEnd,
@@ -251,7 +264,9 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({
 								data-itin-line-end={undefined}
 							>
 								<span className="flex-1 border-t border-gray-200" />
-								<span className="px-2">Past events are hidden</span>
+								<span className="px-2">
+									Past events are hidden — {bannerAction}
+								</span>
 								<span className="flex-1 border-t border-gray-200" />
 							</div>,
 						);
@@ -267,7 +282,9 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({
 							className="flex items-center text-gray-500 text-xs mt-6 mb-4"
 						>
 							<span className="flex-1 border-t border-gray-200" />
-							<span className="px-2">Past events are hidden</span>
+							<span className="px-2">
+								Past events are hidden — {bannerAction}
+							</span>
 							<span className="flex-1 border-t border-gray-200" />
 						</div>,
 					);
@@ -290,7 +307,14 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({
 					isItmd: false,
 				} as any;
 			}
-		}, [content, timezone, currency, showPastEffective, displayTimezone]);
+		}, [
+			content,
+			timezone,
+			currency,
+			showPastEffective,
+			displayTimezone,
+			onShowPast,
+		]);
 
 	const safeParsedFrontmatter = parsedFrontmatter as Record<string, unknown>;
 

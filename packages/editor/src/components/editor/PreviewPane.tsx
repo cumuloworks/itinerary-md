@@ -17,6 +17,7 @@ export const PreviewPane: React.FC<{
 	autoScroll?: boolean;
 	className?: string;
 	showPast?: boolean;
+	onShowPast?: () => void;
 }> = ({
 	showMdast,
 	toggleMdast,
@@ -31,6 +32,7 @@ export const PreviewPane: React.FC<{
 	autoScroll,
 	className = "",
 	showPast,
+	onShowPast,
 }) => {
 	return (
 		<div className={`h-full min-h-0 flex flex-col ${className}`}>
@@ -63,6 +65,7 @@ export const PreviewPane: React.FC<{
 						activeLine={activeLine}
 						autoScroll={autoScroll}
 						showPast={showPast}
+						onShowPast={onShowPast}
 					/>
 				)}
 			</div>

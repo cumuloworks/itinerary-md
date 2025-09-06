@@ -223,6 +223,7 @@ const EditorComponent: FC<EditorProps> = ({
 								activeLine={editedLine}
 								autoScroll={topbar.autoScroll}
 								showPast={topbar.showPast}
+								onShowPast={() => updateTopbar({ showPast: true })}
 								className="h-full"
 							/>
 						</MarkdownPreviewErrorBoundary>
