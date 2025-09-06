@@ -12,6 +12,7 @@
         "dev": "npm run dev:all",
         "dev:all": "concurrently \"npm -w packages/core run dev\" \"npm -w packages/editor run pack:watch\" \"npm -w apps/studio run dev\"",
         "dev:studio": "npm -w apps/studio run dev",
+        "preview": "npm -w apps/studio run preview",
         "typecheck": "npm -ws run typecheck --if-present",
         "lint": "biome check apps/studio/src packages/core/src packages/editor/src",
         "lint:fix": "biome check --write apps/studio/src packages/core/src packages/editor/src",

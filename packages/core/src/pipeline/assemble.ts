@@ -30,6 +30,17 @@ export function assembleEvents(root: Root, sv: Services): Root {
 			children?: unknown[];
 			position?: Position;
 		};
+		// Reset context on H1
+		if (
+			node?.type === "heading" &&
+			(node as unknown as { depth?: number }).depth === 1
+		) {
+			currentDateISO = undefined;
+			currentDateTz = undefined;
+			currentTzValid = undefined;
+			currentTzWasInvalidOnHeading = false;
+			continue;
+		}
 		if (
 			node?.type === "heading" &&
 			(node as unknown as { depth?: number }).depth === 2
@@ -82,12 +93,7 @@ export function assembleEvents(root: Root, sv: Services): Root {
 			}
 			continue;
 		}
-		if (
-			currentDateISO &&
-			node &&
-			(node as { type?: string }).type !== "heading" &&
-			(node as { type?: string }).type !== "blockquote"
-		) {
+		if (currentDateISO && node) {
 			const dataPrev = ((node as unknown as { data?: Record<string, unknown> })
 				.data || {}) as Record<string, unknown>;
 			const hPropsPrev = getHProps(dataPrev as any);

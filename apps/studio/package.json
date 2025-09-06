@@ -13,6 +13,8 @@
     "@astrojs/sitemap": "^3.5.1",
     "@astrojs/vercel": "^8.2.7",
     "@itinerary-md/editor": "^0.1.0",
+    "@sentry/astro": "^10.10.0",
+    "@sentry/react": "^10.10.0",
     "@tailwindcss/vite": "^4.1.13",
     "@vercel/analytics": "^1.5.0",
     "astro": "^5.13.5",
