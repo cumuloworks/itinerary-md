@@ -1,5 +1,6 @@
 import hljs from "highlight.js/lib/common";
 import { useEffect, useRef } from "react";
+import { mergeClassNames } from "../utils";
 
 export const CodeBlock: React.FC<{
 	lang?: string;
@@ -29,11 +30,14 @@ export const CodeBlock: React.FC<{
 			hljs.highlightElement(el);
 		} catch {}
 	}, [value, lang]);
+	const dp: any = (dataProps as any) || {};
+	const { className: extraClass, ...rest } = dp;
+	const mergedClassName = mergeClassNames(
+		"border border-gray-300 overflow-x-auto my-4 ml-20 text-sm",
+		extraClass as string | undefined,
+	);
 	return (
-		<pre
-			className="border border-gray-300 overflow-x-auto my-4 ml-20 text-sm"
-			{...(dataProps as any)}
-		>
+		<pre className={mergedClassName} {...rest}>
 			<code ref={codeRef} className={codeClass} />
 		</pre>
 	);

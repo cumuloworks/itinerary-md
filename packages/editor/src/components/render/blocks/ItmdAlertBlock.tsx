@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertBlock } from "../../AlertBlock";
 import { renderInline } from "../renderInline";
+import { mergeClassNames } from "../utils";
 
 export const ItmdAlertBlock: React.FC<{
 	node: any;
@@ -56,8 +57,13 @@ export const ItmdAlertBlock: React.FC<{
 			return <React.Fragment key={key}>{renderBlock(c, ci)}</React.Fragment>;
 		}) || [];
 
+	const { className: extraClass, ...rest } = commonDataProps || {};
+	const mergedClassName = mergeClassNames(
+		"contents",
+		extraClass as string | undefined,
+	);
 	return (
-		<div className="contents" {...commonDataProps}>
+		<div className={mergedClassName} {...rest}>
 			<AlertBlock variant={variant} title={titleEl} subtitle={subtitleEl}>
 				{contentEls}
 			</AlertBlock>

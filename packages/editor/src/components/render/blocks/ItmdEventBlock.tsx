@@ -3,6 +3,7 @@ import type { PhrasingContent } from "mdast";
 import { toString as mdastToString } from "mdast-util-to-string";
 import type React from "react";
 import { EventBlock } from "../../itinerary/EventBlock";
+import { mergeClassNames } from "../utils";
 
 export const ItmdEventBlock: React.FC<{
 	node: any;
@@ -178,8 +179,13 @@ export const ItmdEventBlock: React.FC<{
 				undefined
 			: undefined);
 
+	const { className: extraClass, ...rest } = commonDataProps || {};
+	const mergedClassName = mergeClassNames(
+		"contents",
+		extraClass as string | undefined,
+	);
 	return (
-		<div className="contents" {...commonDataProps}>
+		<div className={mergedClassName} {...rest}>
 			<EventBlock
 				eventData={eventData}
 				dateStr={dateStrForDisplay}

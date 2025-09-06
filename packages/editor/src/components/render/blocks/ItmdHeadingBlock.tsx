@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import type React from "react";
 import { Heading } from "../../itinerary/Heading";
+import { mergeClassNames } from "../utils";
 
 export const ItmdHeadingBlock: React.FC<{
 	node: any;
@@ -21,8 +22,13 @@ export const ItmdHeadingBlock: React.FC<{
 			return undefined;
 		}
 	})();
+	const { className: extraClass, ...rest } = commonDataProps || {};
+	const mergedClassName = mergeClassNames(
+		"contents",
+		extraClass as string | undefined,
+	);
 	return (
-		<div className="contents" {...commonDataProps}>
+		<div className={mergedClassName} {...rest}>
 			<Heading date={date} timezone={tz} prevStaySegments={prevStaySegments} />
 		</div>
 	);
