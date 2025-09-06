@@ -81,8 +81,6 @@ export default defineConfig({
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2,ttf,otf}'],
                     additionalManifestEntries: [
                         { url: '/index.html', revision: null },
-                        { url: '/sample_en.md', revision: null },
-                        { url: '/sample_ja.md', revision: null },
                     ],
                     navigateFallbackDenylist: [
                         /^\/api(\/|$)/,

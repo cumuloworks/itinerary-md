@@ -98,7 +98,7 @@ export const Editor: FC<EditorProps> = (props) => {
     }, [effectiveFonts, effectiveMonoFonts]);
 
     // Avoid passing telemetry down to inner component
-    const { telemetry: _telemetry, fonts: _fonts, ...rest } = props as any;
+    const { telemetry: _telemetry, fonts: _fonts, monoFonts: _monoFonts, ...rest } = props as any;
     return (
         <div className="w-full h-full min-h-0 min-w-0">
             <TelemetryContext.Provider value={props.telemetry}>
