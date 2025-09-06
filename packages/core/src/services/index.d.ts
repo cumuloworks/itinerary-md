@@ -26,8 +26,8 @@ export interface Policy {
     amHour: number;
     pmHour: number;
     allowUrlSchemes: string[];
-    tzFallback: string | null;
-    currencyFallback?: string | null;
+    defaultTimezone: string | null;
+    defaultCurrency?: string | null;
 }
 export interface Services {
     tz: TzService;
@@ -37,4 +37,4 @@ export interface Services {
     policy: Policy;
     file?: VFile;
 }
-export declare function makeDefaultServices(policy?: Partial<Policy>, file?: VFile): Services;
+export declare function makeDefaultServices(policy?: Partial<Policy> & { tzFallback?: string | null; currencyFallback?: string | null }, file?: VFile): Services;

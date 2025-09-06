@@ -44,7 +44,14 @@ export default defineConfig({
             VitePWA({
                 registerType: 'autoUpdate',
                 injectRegister: 'script',
-                includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png'],
+                includeAssets: [
+                    'favicon.ico',
+                    'apple-touch-icon.png',
+                    'android-chrome-192x192.png',
+                    'android-chrome-512x512.png',
+                    'sample_en.md',
+                    'sample_ja.md',
+                ],
                 manifest: {
                     name: 'TripMD Studio',
                     short_name: 'TripMD Studio',
@@ -68,7 +75,13 @@ export default defineConfig({
                     ]
                 },
                 workbox: {
+                    clientsClaim: true,
+                    skipWaiting: true,
                     navigateFallback: '/index.html',
+                    globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2,ttf,otf}'],
+                    additionalManifestEntries: [
+                        { url: '/index.html', revision: null },
+                    ],
                     navigateFallbackDenylist: [
                         /^\/api(\/|$)/,
                         /^\/_astro(\/|$)/,
@@ -87,9 +100,10 @@ export default defineConfig({
                     runtimeCaching: [
                         {
                             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-                            handler: 'CacheFirst',
+                            handler: 'StaleWhileRevalidate',
                             options: {
-                                cacheName: 'google-fonts-cache',
+                                cacheName: 'google-fonts-stylesheets',
+                                cacheableResponse: { statuses: [0, 200] },
                                 expiration: {
                                     maxEntries: 10,
                                     maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
@@ -101,9 +115,21 @@ export default defineConfig({
                             handler: 'CacheFirst',
                             options: {
                                 cacheName: 'gstatic-fonts-cache',
+                                cacheableResponse: { statuses: [0, 200] },
                                 expiration: {
                                     maxEntries: 10,
                                     maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                                }
+                            }
+                        },
+                        {
+                            urlPattern: /\.(?:woff2?|ttf|otf)$/i,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'local-fonts-cache',
+                                expiration: {
+                                    maxEntries: 20,
+                                    maxAgeSeconds: 60 * 60 * 24 * 365
                                 }
                             }
                         },

@@ -45,7 +45,7 @@ describe('assembleEvents - date context and data-itmd-date attachment', () => {
             ] as any,
         };
 
-        const sv = makeDefaultServices({ tzFallback: 'UTC' });
+        const sv = makeDefaultServices({ defaultTimezone: 'UTC' });
         const out = assembleEvents(root, sv);
         const c = out.children as any[];
 
@@ -71,7 +71,7 @@ describe('assembleEvents - date context and data-itmd-date attachment', () => {
             type: 'root',
             children: [h(2, '2024-01-02'), bqPara('[08:30] flight AA100 :: A - B')] as any,
         };
-        const sv = makeDefaultServices({ tzFallback: 'UTC' });
+        const sv = makeDefaultServices({ defaultTimezone: 'UTC' });
         const out = assembleEvents(root, sv);
         const c = out.children as any[];
         expect(c[0]?.type).toBe('itmdHeading');
@@ -83,7 +83,7 @@ describe('assembleEvents - date context and data-itmd-date attachment', () => {
 // ...
 
 describe('assemble', () => {
-    const sv = makeDefaultServices({ tzFallback: 'Asia/Tokyo' });
+    const sv = makeDefaultServices({ defaultTimezone: 'Asia/Tokyo' });
 
     it('replaces blockquote with itmdEvent (first paragraph is header)', () => {
         const tree: Root = {

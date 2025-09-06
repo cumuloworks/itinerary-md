@@ -34,4 +34,19 @@ describe('run/remark/extract integration', () => {
         const events = toItineraryEvents(ran as unknown as import('mdast').Root);
         expect(events.length).toBeGreaterThan(0);
     });
+
+    it('uses defaultTimezone option to produce events', () => {
+        const md = `
+## 2025-03-15
+
+> [09:00] breakfast
+`;
+        const tree = unified().use(remarkParse).parse(md);
+        const ran = unified()
+            .use(remarkParse)
+            .use(remarkItinerary, { defaultTimezone: 'Asia/Tokyo' } as any)
+            .runSync(tree);
+        const events = toItineraryEvents(ran as unknown as import('mdast').Root);
+        expect(events.length).toBeGreaterThan(0);
+    });
 });

@@ -24,8 +24,8 @@ export interface Policy {
     amHour: number;
     pmHour: number;
     allowUrlSchemes: string[];
-    tzFallback: string | null;
-    currencyFallback?: string | null;
+    defaultTimezone: string | null;
+    defaultCurrency?: string | null;
 }
 
 export interface Services {
@@ -37,13 +37,34 @@ export interface Services {
     file?: VFile;
 }
 
-export function makeDefaultServices(policy: Partial<Policy> = {}, file?: VFile): Services {
+/**
+ * Create default services set.
+ *
+ * Deprecated aliases supported for backward compatibility (will be removed in 0.2.0):
+ * - Policy.tzFallback -> use Policy.defaultTimezone
+ * - Policy.currencyFallback -> use Policy.defaultCurrency
+ */
+export function makeDefaultServices(policy: Partial<Policy> & { tzFallback?: string | null; currencyFallback?: string | null } = {}, file?: VFile): Services {
+    // Map legacy fields to new names with a deprecation warning
+    const legacyTz = (policy as { tzFallback?: string | null }).tzFallback;
+    const legacyCurrency = (policy as { currencyFallback?: string | null }).currencyFallback;
+    if (legacyTz != null) {
+        try {
+            console.warn('[itmd/core] Policy.tzFallback is deprecated and will be removed in 0.2.0. Use `defaultTimezone`.');
+        } catch {}
+    }
+    if (legacyCurrency != null) {
+        try {
+            console.warn('[itmd/core] Policy.currencyFallback is deprecated and will be removed in 0.2.0. Use `defaultCurrency`.');
+        } catch {}
+    }
+
     const resolvedPolicy: Policy = {
         amHour: policy.amHour ?? 9,
         pmHour: policy.pmHour ?? 15,
         allowUrlSchemes: policy.allowUrlSchemes ?? ['http', 'https', 'mailto'],
-        tzFallback: policy.tzFallback ?? null,
-        currencyFallback: policy.currencyFallback ?? null,
+        defaultTimezone: policy.defaultTimezone ?? legacyTz ?? null,
+        defaultCurrency: policy.defaultCurrency ?? legacyCurrency ?? null,
     };
 
     const tz: TzService = {

@@ -145,7 +145,7 @@ const MdastViewComponent: FC<MdastViewProps> = ({ content, timezone, currency })
                     : undefined;
             const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
 
-            const tzFallback = fmTimezoneRaw || timezone;
+            const defaultTimezone = fmTimezoneRaw || timezone;
             const mdProcessor = (unified as any)()
                 .use(remarkParse)
                 .use(remarkGfm)
@@ -153,8 +153,8 @@ const MdastViewComponent: FC<MdastViewProps> = ({ content, timezone, currency })
             if (isItmdDoc) {
                 const normalizedCurrency = normalizeCurrencyCode(fmCurrencyRaw || currency, currency || 'USD');
                 (mdProcessor as any).use(remarkItinerary as any, {
-                    tzFallback,
-                    currencyFallback: normalizedCurrency,
+                    defaultTimezone,
+                    defaultCurrency: normalizedCurrency,
                 });
             }
             const mdast = mdProcessor.parse(fm.content || content) as unknown as Root;

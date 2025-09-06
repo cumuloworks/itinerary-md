@@ -4,13 +4,13 @@ import { normalizeHeader } from '../normalize';
 
 describe('normalize: time normalization and ISO/TZ', () => {
     it('keeps time undefined when time is not specified', () => {
-        const sv = makeDefaultServices({ tzFallback: 'Asia/Tokyo' });
+        const sv = makeDefaultServices({ defaultTimezone: 'Asia/Tokyo' });
         const out = normalizeHeader({ eventType: 'flight' }, { baseTz: undefined, dateISO: '2025-03-15' }, sv);
         expect(out.time).toBeUndefined();
     });
 
     it('generates startISO for dateISO + hh:mm (considering fallback TZ)', () => {
-        const sv = makeDefaultServices({ tzFallback: 'Europe/Madrid' });
+        const sv = makeDefaultServices({ defaultTimezone: 'Europe/Madrid' });
         const out = normalizeHeader(
             {
                 eventType: 'flight',
@@ -25,7 +25,7 @@ describe('normalize: time normalization and ISO/TZ', () => {
     });
 
     it('does not generate ISO when marker is present', () => {
-        const sv = makeDefaultServices({ tzFallback: 'Europe/Madrid' });
+        const sv = makeDefaultServices({ defaultTimezone: 'Europe/Madrid' });
         const out = normalizeHeader({ eventType: 'breakfast', time: { kind: 'marker', marker: 'am' } }, { baseTz: undefined, dateISO: '2025-03-15' }, sv);
         if (!out.time || out.time.kind !== 'marker') throw new Error('time should be marker');
         // For marker, startISO/endISO properties themselves do not exist
@@ -34,7 +34,7 @@ describe('normalize: time normalization and ISO/TZ', () => {
     });
 
     it('range: generates next-day ISO considering end.dayOffset(+1)', () => {
-        const sv = makeDefaultServices({ tzFallback: 'Europe/Madrid' });
+        const sv = makeDefaultServices({ defaultTimezone: 'Europe/Madrid' });
         const out = normalizeHeader(
             {
                 eventType: 'activity',
@@ -53,7 +53,7 @@ describe('normalize: time normalization and ISO/TZ', () => {
     });
 
     it('accepts UTC/GMT/offset notation as IANA/ZonedName (UTC+09:00)', () => {
-        const sv = makeDefaultServices({ tzFallback: 'Asia/Tokyo' });
+        const sv = makeDefaultServices({ defaultTimezone: 'Asia/Tokyo' });
         const out = normalizeHeader(
             {
                 eventType: 'flight',
@@ -67,7 +67,7 @@ describe('normalize: time normalization and ISO/TZ', () => {
     });
 
     it('accepts @+09:00 inside event and generates ISO', () => {
-        const sv = makeDefaultServices({ tzFallback: 'UTC' });
+        const sv = makeDefaultServices({ defaultTimezone: 'UTC' });
         const out = normalizeHeader(
             {
                 eventType: 'train',
