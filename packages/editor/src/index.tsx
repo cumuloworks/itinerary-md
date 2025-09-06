@@ -1,9 +1,8 @@
 import { Buffer } from "buffer";
 import "./index.css";
 import type { FC } from "react";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
-import { Editor as EditorBare } from "./components/Editor";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { registerGlobalErrorHandlers } from "./core/errors";
 import {
@@ -26,6 +25,13 @@ if (typeof window !== "undefined") {
 	window.Buffer = window.Buffer || Buffer;
 }
 
+// Lazy load the actual editor component for SSR safety
+const EditorBare = lazy(() =>
+	import("./components/Editor").then((module) => ({
+		default: module.Editor,
+	})),
+);
+
 export interface EditorProps {
 	storageKey?: string;
 	samplePath?: string;
@@ -45,6 +51,11 @@ export const Editor: FC<EditorProps> = (props) => {
 		return () => setTelemetry(undefined);
 	}, [props.telemetry]);
 
+	// SSR safety check
+	if (typeof window === "undefined") {
+		return null;
+	}
+
 	// Avoid passing telemetry down to inner component
 	const { telemetry: _telemetry, ...rest } = props as any;
 	return (
@@ -52,7 +63,15 @@ export const Editor: FC<EditorProps> = (props) => {
 			<TelemetryContext.Provider value={props.telemetry}>
 				<ErrorBoundary>
 					<I18nProvider language={props.language}>
-						<EditorBare {...(rest as any)} />
+						<Suspense
+							fallback={
+								<div className="flex items-center justify-center h-full text-gray-500 bg-white rounded-lg p-4 border border-gray-300">
+									Loading editor...
+								</div>
+							}
+						>
+							<EditorBare {...(rest as any)} />
+						</Suspense>
 					</I18nProvider>
 				</ErrorBoundary>
 			</TelemetryContext.Provider>

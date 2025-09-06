@@ -1,16 +1,18 @@
 ---
 import '../styles/global.css';
 import '@itinerary-md/editor/index.css';
-import EditorIsland from '../components/EditorIsland';
+import { Editor } from '@itinerary-md/editor';
 import { initSentryBrowserOnce } from '../sentry.client';
 import Header from '../components/Header.astro';
 import Analytics from '@vercel/analytics/astro'
+import { reactTelemetryAdapter } from '../telemetry-adapter';
 
 initSentryBrowserOnce();
 
-void EditorIsland;
+void Editor;
 void Header;
 void Analytics;
+void reactTelemetryAdapter;
 ---
 
 <html lang="ja">
@@ -57,9 +59,14 @@ void Analytics;
 	<body class="bg-gray-100">
         <div class="max-w-screen-2xl mx-auto h-svh overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
 			<Header />
-			<div class="px-0 md:px-8 w-full flex-1 min-h-0">
-				<EditorIsland client:only="react" />
-			</div>
+		<div class="px-0 md:px-8 w-full flex-1 min-h-0">
+			<Editor 
+				client:only="react" 
+				storageKey="itinerary-md-content"
+				samplePath="/sample_en.md"
+				telemetry={reactTelemetryAdapter}
+			/>
+		</div>
 		</div>
 	</body>
 </html>
