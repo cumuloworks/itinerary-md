@@ -1,20 +1,21 @@
-import { toString as mdastToString } from "mdast-util-to-string";
 import type React from "react";
+import { renderInline } from "../renderInline";
 import type { MdNode } from "../types";
+import { getHProps, mergeClassNames } from "../utils";
 
 export const HeadingBlock: React.FC<{
 	node: MdNode;
 	commonDataProps: any;
 }> = ({ node, commonDataProps }) => {
 	const depth = (node as { depth?: number }).depth || 1;
-	const text = (() => {
-		try {
-			return mdastToString(node as any).trim();
-		} catch {
-			return "";
-		}
-	})();
-	if (!text) return null;
+	const inline = Array.isArray((node as any).children)
+		? ((node as any).children as any[])
+		: [];
+	const content = renderInline(inline);
+	if (content == null) return null;
+
+	const hProps = getHProps(node);
+	const { className: hClassFromProps, ...hRest } = hProps as any;
 	const dataProps: any = { ...commonDataProps };
 	const hClass = (() => {
 		switch (depth) {
@@ -32,41 +33,45 @@ export const HeadingBlock: React.FC<{
 				return "text-xs font-semibold text-gray-800 mb-2 mt-4 ml-0";
 		}
 	})();
+	const mergedClassName = mergeClassNames(
+		hClass,
+		hClassFromProps as string | undefined,
+	);
 	switch (depth) {
 		case 1:
 			return (
-				<h1 className={hClass} {...dataProps}>
-					{text}
+				<h1 className={mergedClassName} {...hRest} {...dataProps}>
+					{content}
 				</h1>
 			);
 		case 2:
 			return (
-				<h2 className={hClass} {...dataProps}>
-					{text}
+				<h2 className={mergedClassName} {...hRest} {...dataProps}>
+					{content}
 				</h2>
 			);
 		case 3:
 			return (
-				<h3 className={hClass} {...dataProps}>
-					{text}
+				<h3 className={mergedClassName} {...hRest} {...dataProps}>
+					{content}
 				</h3>
 			);
 		case 4:
 			return (
-				<h4 className={hClass} {...dataProps}>
-					{text}
+				<h4 className={mergedClassName} {...hRest} {...dataProps}>
+					{content}
 				</h4>
 			);
 		case 5:
 			return (
-				<h5 className={hClass} {...dataProps}>
-					{text}
+				<h5 className={mergedClassName} {...hRest} {...dataProps}>
+					{content}
 				</h5>
 			);
 		default:
 			return (
-				<h6 className={hClass} {...dataProps}>
-					{text}
+				<h6 className={mergedClassName} {...hRest} {...dataProps}>
+					{content}
 				</h6>
 			);
 	}

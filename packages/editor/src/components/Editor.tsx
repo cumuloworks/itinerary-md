@@ -53,7 +53,16 @@ function getLanguageAwareSamplePath(basePath: string, lang: string): string {
 		lower.endsWith("/sample_en.md") ||
 		lower.endsWith("/sample_ja.md");
 	if (!isSample) return basePath;
-	return `/sample_${norm}.md`;
+	// Preserve the original directory and replace only the filename
+	const lastSlash = basePath.lastIndexOf("/");
+	const hasLeadingSlash = basePath.startsWith("/");
+	const dir =
+		lastSlash >= 0
+			? basePath.slice(0, lastSlash + 1)
+			: hasLeadingSlash
+				? "/"
+				: "";
+	return `${dir}sample_${norm}.md`;
 }
 
 const EditorComponent: FC<EditorProps> = ({

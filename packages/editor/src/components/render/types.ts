@@ -18,8 +18,6 @@ export type RenderBlockContext = {
 		n: { position?: { end?: { line?: number } } } | undefined,
 	) => number | undefined;
 	getNodeDateAttr: (n: unknown) => string | undefined;
-	isPastISODate: (iso?: string) => boolean;
-	showPastEffective: boolean;
 	displayTimezone: string;
 	currency?: string;
 	lastStaySegmentsByDate: Map<string, Array<{ text: string; url?: string }>>;

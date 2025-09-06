@@ -1,6 +1,7 @@
 import React from "react";
 import { renderInline } from "../renderInline";
 import type { MdNode } from "../types";
+import { mergeClassNames } from "../utils";
 
 export const ListBlock: React.FC<{
 	node: MdNode;
@@ -61,16 +62,29 @@ export const ListBlock: React.FC<{
 			</li>
 		);
 	});
-	return ordered ? (
-		<ol className="mb-6 space-y-2 ml-24 list-decimal" {...listProps}>
-			{children}
-		</ol>
-	) : (
-		<ul
-			className="mb-6 space-y-2 ml-24 list-disc marker:text-blue-600 marker:font-bold marker:text-lg"
-			{...listProps}
-		>
-			{children}
-		</ul>
-	);
+	return ordered
+		? (() => {
+				const { className: extraClass, ...rest } = listProps || {};
+				const mergedClassName = mergeClassNames(
+					"mb-6 space-y-2 ml-24 list-decimal",
+					extraClass as string | undefined,
+				);
+				return (
+					<ol className={mergedClassName} {...rest}>
+						{children}
+					</ol>
+				);
+			})()
+		: (() => {
+				const { className: extraClass, ...rest } = listProps || {};
+				const mergedClassName = mergeClassNames(
+					"mb-6 space-y-2 ml-24 list-disc marker:text-blue-600 marker:font-bold marker:text-lg",
+					extraClass as string | undefined,
+				);
+				return (
+					<ul className={mergedClassName} {...rest}>
+						{children}
+					</ul>
+				);
+			})();
 };

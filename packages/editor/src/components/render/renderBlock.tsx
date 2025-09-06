@@ -1,4 +1,3 @@
-import type { PhrasingContent } from "mdast";
 import type React from "react";
 import { BlockquoteBlock } from "./blocks/BlockquoteBlock";
 import { CodeBlock } from "./blocks/CodeBlock";
@@ -9,37 +8,9 @@ import { ItmdHeadingBlock } from "./blocks/ItmdHeadingBlock";
 import { ListBlock } from "./blocks/ListBlock";
 import { ParagraphBlock } from "./blocks/ParagraphBlock";
 import { ThematicBreak } from "./blocks/ThematicBreak";
+import type { MdNode, RenderBlockContext } from "./types";
 
-type MdNode = {
-	type?: string;
-	depth?: number;
-	children?: any[];
-	position?: {
-		start?: { line: number; column?: number };
-		end?: { line: number; column?: number };
-	};
-};
-
-export type RenderBlockContext = {
-	getLineStart: (
-		n: { position?: { start?: { line?: number } } } | undefined,
-	) => number | undefined;
-	getLineEnd: (
-		n: { position?: { end?: { line?: number } } } | undefined,
-	) => number | undefined;
-	getNodeDateAttr: (n: unknown) => string | undefined;
-	displayTimezone: string;
-	currency?: string;
-	lastStaySegmentsByDate: Map<string, Array<{ text: string; url?: string }>>;
-	inlineToSegments: (
-		inline?: PhrasingContent[] | null,
-	) =>
-		| Array<{ text: string; url?: string; kind?: "text" | "code" }>
-		| undefined;
-	segmentsToPlainText: (
-		segments?: Array<{ text: string; url?: string }>,
-	) => string | undefined;
-};
+// Types are centralized in ./types
 
 export const createRenderBlock = (ctx: RenderBlockContext) => {
 	const {

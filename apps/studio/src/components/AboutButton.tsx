@@ -307,7 +307,7 @@ const AboutButton: React.FC<AboutButtonProps> = ({ shareUrl }) => {
 - We use Vercel Analytics and Sentry to improve stability and usability. They may collect anonymized usage metrics and error diagnostics (e.g., stack traces, browser/device information). Your document contents are not transmitted.
 
 Currency & Rates
-- Exchange rates are updated from https://open.er-api.com (USD-based). The latest rate are cached locally for up to 12 hours. Converted amounts are approximate and for planning only. Please confirm final prices with the actual provider.
+- Exchange rates are updated from https://open.er-api.com (USD-based). The latest rates are cached locally for up to 12 hours. Converted amounts are approximate and for planning only. Please confirm final prices with the actual provider.
 
 License
 - This project includes components licensed under MIT.

@@ -38,12 +38,17 @@ export const Route: React.FC<RouteProps> = ({
 				: [{ text: arrival }]
 			: undefined);
 
+	const showArrow =
+		Boolean(depSegments?.length) && Boolean(arrSegments?.length);
+
 	return (
 		<span className="flex items-center gap-2 flex-wrap">
 			<Location segments={depSegments} />
-			<span className="text-gray-400">
-				<ArrowRight size={16} />
-			</span>
+			{showArrow && (
+				<span className="text-gray-400">
+					<ArrowRight size={16} />
+				</span>
+			)}
 			<Location segments={arrSegments} />
 		</span>
 	);

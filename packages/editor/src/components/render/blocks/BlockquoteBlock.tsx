@@ -12,8 +12,10 @@ export const BlockquoteBlock: React.FC<{
 		? ((node as any).children as any[])
 		: [];
 	const baseBq = "my-4 pl-4 border-l-4 border-gray-200 text-gray-500 ml-20";
+	const { className: extraClass, ...rest } = commonDataProps || {};
+	const combined = [baseBq, extraClass].filter(Boolean).join(" ");
 	return (
-		<blockquote className={baseBq} {...commonDataProps}>
+		<blockquote className={combined} {...rest}>
 			{children.map((c: any, ci: number) => {
 				const cStart = getLineStart(c);
 				const key = `bqc-${cStart ?? ci}`;

@@ -312,9 +312,12 @@ export const Statistics: React.FC<StatisticsProps> = ({
 					{totalFormatted && (
 						<p
 							className={`text-3xl ${
-								budgetDisplay?.remaining && budgetDisplay?.remaining >= 0
-									? "text-emerald-600"
-									: "text-red-600"
+								budgetDisplay?.remaining !== undefined &&
+								budgetDisplay?.remaining !== null
+									? budgetDisplay.remaining >= 0
+										? "text-emerald-600"
+										: "text-red-600"
+									: "text-gray-800"
 							}`}
 						>
 							{totalFormatted}
