@@ -4,11 +4,12 @@ import { toString as mdastToString } from 'mdast-util-to-string';
 import React, { type FC, memo } from 'react';
 import remarkGfm from 'remark-gfm';
 import remarkItinerary from 'remark-itinerary';
+import { normalizeCurrency, normalizeTimezone } from 'remark-itinerary/utils';
 import remarkItineraryAlert from 'remark-itinerary-alert';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { notifyError } from '../core/errors';
-import { normalizeCurrencyCode } from '../utils/currency';
+// import { normalizeCurrencyCode } from '../utils/currency';
 import { isValidIanaTimeZone } from '../utils/timezone';
 import 'highlight.js/styles/github.css';
 import { DateTime } from 'luxon';
@@ -71,9 +72,9 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                           .toLowerCase()
                     : undefined;
             const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
-            const normalizedTimezone = isValidIanaTimeZone(fmTimezoneRaw || '') ? (fmTimezoneRaw as string) : undefined;
-            const normalizedCurrency = normalizeCurrencyCode(fmCurrencyRaw || currency, currency || 'USD');
-            const defaultTimezone = normalizedTimezone || timezone;
+            const normalizedTimezone = normalizeTimezone(fmTimezoneRaw || timezone || null, null) || undefined;
+            const normalizedCurrency = normalizeCurrency(fmCurrencyRaw || currency || 'USD', 'USD');
+            const defaultTimezone = normalizedTimezone || undefined;
             const mdProcessor = (unified as any)().use(remarkParse).use(remarkGfm);
             if (isItmdDoc) {
                 (mdProcessor as any).use(remarkItineraryAlert as any).use(remarkItinerary as any, {
@@ -211,7 +212,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 root: transformed,
                 parsedFrontmatter: {
                     ...(fm.data || {}),
-                    timezone: normalizedTimezone || (fm.data as any)?.timezone,
+                    timezone: normalizedTimezone ?? (fm.data as any)?.timezone,
                     currency: normalizedCurrency,
                 } as Record<string, unknown>,
                 isItmd: isItmdDoc,
