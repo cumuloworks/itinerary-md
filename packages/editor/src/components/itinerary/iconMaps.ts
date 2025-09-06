@@ -92,9 +92,17 @@ export function toLabelFromKey(key: string): string {
         .join(' ');
 }
 
-export function getMetadataConfig(key: string): { icon: LucideIcon; label: string; isSpecial?: boolean } {
+export function getMetadataConfig(key: string): {
+    icon: LucideIcon;
+    label: string;
+    isSpecial?: boolean;
+} {
     const cfg = metadataIconMap[key] || { icon: Tag };
-    return { icon: cfg.icon, label: toLabelFromKey(key), isSpecial: cfg.isSpecial };
+    return {
+        icon: cfg.icon,
+        label: toLabelFromKey(key),
+        isSpecial: cfg.isSpecial,
+    };
 }
 
 // Event type → icon mapping (used by EventBlock)

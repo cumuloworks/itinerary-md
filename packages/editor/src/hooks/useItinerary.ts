@@ -28,7 +28,12 @@ export function useItinerary(rawContent: string, previewDelay = 300, _opts?: { t
         frontmatterDescription?: string;
         frontmatterTags?: string[];
         summary: ItinerarySummary;
-    }>({ frontmatterTitle: undefined, frontmatterDescription: undefined, frontmatterTags: undefined, summary: {} });
+    }>({
+        frontmatterTitle: undefined,
+        frontmatterDescription: undefined,
+        frontmatterTags: undefined,
+        summary: {},
+    });
 
     const frontmatterTitle = useMemo(() => {
         if (!previewContent.trim()) {
@@ -36,7 +41,10 @@ export function useItinerary(rawContent: string, previewDelay = 300, _opts?: { t
             return undefined;
         }
         try {
-            const parsed = matter(previewContent, { language: 'yaml', engines: { yaml: (s: string) => YAML.parse(s) } });
+            const parsed = matter(previewContent, {
+                language: 'yaml',
+                engines: { yaml: (s: string) => YAML.parse(s) },
+            });
             const title = (parsed.data?.title as string) || undefined;
             lastSuccessfulParseRef.current.frontmatterTitle = title;
             return title;
@@ -78,7 +86,10 @@ export function useItinerary(rawContent: string, previewDelay = 300, _opts?: { t
             return undefined;
         }
         try {
-            const parsed = matter(previewContent, { language: 'yaml', engines: { yaml: (s: string) => YAML.parse(s) } });
+            const parsed = matter(previewContent, {
+                language: 'yaml',
+                engines: { yaml: (s: string) => YAML.parse(s) },
+            });
             const description = typeof parsed.data?.description === 'string' ? (parsed.data.description as string) : undefined;
             lastSuccessfulParseRef.current.frontmatterDescription = description;
             return description;
@@ -93,7 +104,10 @@ export function useItinerary(rawContent: string, previewDelay = 300, _opts?: { t
             return undefined;
         }
         try {
-            const parsed = matter(previewContent, { language: 'yaml', engines: { yaml: (s: string) => YAML.parse(s) } });
+            const parsed = matter(previewContent, {
+                language: 'yaml',
+                engines: { yaml: (s: string) => YAML.parse(s) },
+            });
             const raw = (parsed.data as any)?.tags as unknown;
             let tags: string[] | undefined;
             if (Array.isArray(raw)) {

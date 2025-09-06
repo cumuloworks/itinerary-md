@@ -20,7 +20,10 @@ describe('clipboard utilities', () => {
             delete (navigator as any).clipboard;
         } else {
             if (originalClipboardDescriptor) {
-                Object.defineProperty(navigator, 'clipboard', { ...originalClipboardDescriptor, value: originalClipboard });
+                Object.defineProperty(navigator, 'clipboard', {
+                    ...originalClipboardDescriptor,
+                    value: originalClipboard,
+                });
             } else {
                 Object.defineProperty(navigator, 'clipboard', {
                     value: originalClipboard,

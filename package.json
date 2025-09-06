@@ -28,10 +28,10 @@
         "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.2.2",
+        "@biomejs/biome": "^2.2.3",
         "@commitlint/cli": "^19.8.1",
         "@commitlint/config-conventional": "^19.8.1",
-        "@cumuloworks/configs": "github:cumuloworks/configs",
+        "@cumuloworks/configs": "^1.0.5",
         "@vitest/coverage-v8": "^3.2.4",
         "concurrently": "^9.2.1",
         "husky": "^9.1.7",

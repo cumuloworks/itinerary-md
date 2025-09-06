@@ -1,22 +1,13 @@
 {
-    "root": true,
-    "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
-    "files": {
-        "includes": [
-            "apps/**/src/**", 
-            "apps/**/test/**", 
-            "packages/**/src/**",
-            "apps/**/sentry.*.config.js"
-        ],
-        "experimentalScannerIgnores": ["**/dist/**", "**/coverage/**", "**/.vite/**", "**/node_modules/**", "**/*.css", "**/*.astro"]
-    },
-    "linter": {
-        "rules": {
-            "suspicious": {
-                "noUnknownAtRules": "off",
-                "noExplicitAny": "off"
-            },
-            "style": {}
-        }
-    }
+	"extends": [
+		"@cumuloworks/configs/biome"
+	],
+	"$schema": "https://biomejs.dev/schemas/2.2.3/schema.json",
+	"linter": {
+		"rules": {
+			"suspicious": {
+				"noExplicitAny": "off"
+			}
+		}
+	}
 }

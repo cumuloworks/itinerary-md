@@ -16,7 +16,13 @@ export type EventTime =
     | { kind: 'none' }
     | { kind: 'marker'; marker: TimeMarker }
     | { kind: 'point'; start: TimePoint; startISO?: string | null }
-    | { kind: 'range'; start: TimePoint; end: TimePoint; startISO?: string | null; endISO?: string | null };
+    | {
+          kind: 'range';
+          start: TimePoint;
+          end: TimePoint;
+          startISO?: string | null;
+          endISO?: string | null;
+      };
 
 export type TextSlicePosition = { start: number; end: number };
 
@@ -50,13 +56,29 @@ export interface ITMDEventNode extends Parent {
     position?: Position;
     positions?: {
         title?: TextSlicePosition;
-        destination?: { from?: TextSlicePosition; to?: TextSlicePosition; at?: TextSlicePosition };
-        time?: { start?: TextSlicePosition; end?: TextSlicePosition; marker?: TextSlicePosition };
+        destination?: {
+            from?: TextSlicePosition;
+            to?: TextSlicePosition;
+            at?: TextSlicePosition;
+        };
+        time?: {
+            start?: TextSlicePosition;
+            end?: TextSlicePosition;
+            marker?: TextSlicePosition;
+        };
     };
     version: '1';
 }
 
-export type ITMDBodySegment = { kind: 'inline'; content: RichInline } | { kind: 'meta'; entries: Array<{ key: string; value: RichInline }> } | { kind: 'list'; items: RichInline[]; ordered?: boolean; start?: number | null };
+export type ITMDBodySegment =
+    | { kind: 'inline'; content: RichInline }
+    | { kind: 'meta'; entries: Array<{ key: string; value: RichInline }> }
+    | {
+          kind: 'list';
+          items: RichInline[];
+          ordered?: boolean;
+          start?: number | null;
+      };
 
 export interface ITMDHeadingNode extends Parent {
     type: 'itmdHeading';
