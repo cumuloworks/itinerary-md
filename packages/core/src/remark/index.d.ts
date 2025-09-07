@@ -1,1 +1,0 @@
-export { remarkItinerary } from './itinerary';
