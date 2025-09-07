@@ -1,4 +1,4 @@
-import type { QueryParams, ViewMode } from '../types/itinerary';
+import type { QueryParams, ViewMode } from '@/types/itinerary';
 
 /**
  * Hook that parses URL query parameters and returns type-safe values.

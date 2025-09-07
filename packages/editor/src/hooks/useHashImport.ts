@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { notifySuccess } from '../core/errors';
-import { clearHash, decodeFromHashBase64, readHashPayload } from '../utils/hash';
+import { notifySuccess } from '@/core/errors';
+import { clearHash, decodeFromHashBase64, readHashPayload } from '@/utils/hash';
 
 type UseHashImportResult = {
     isDialogOpen: boolean;

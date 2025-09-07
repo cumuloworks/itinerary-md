@@ -1,15 +1,15 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { notifyError } from '../../core/errors';
-import { isValidIanaTimeZone } from '../../utils/timezone';
-import { useTopbarState } from '../useTopbarState';
+import { notifyError } from '@/core/errors';
+import { useTopbarState } from '@/hooks/useTopbarState';
+import { isValidIanaTimeZone } from '@/utils/timezone';
 
 // Mocks
-vi.mock('../../utils/timezone', () => ({
+vi.mock('@/utils/timezone', () => ({
     isValidIanaTimeZone: vi.fn(),
 }));
 
-vi.mock('../../core/errors', () => ({
+vi.mock('@/core/errors', () => ({
     notifyError: vi.fn(),
 }));
 

@@ -1,2 +1,2 @@
-export { createRenderBlock } from './renderBlock';
-export { renderInline } from './renderInline';
+export { createRenderBlock } from '@/components/render/renderBlock';
+export { renderInline } from '@/components/render/renderInline';

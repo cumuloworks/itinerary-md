@@ -1,7 +1,7 @@
 import React from 'react';
-import { renderInline } from '../renderInline';
-import type { MdNode } from '../types';
-import { mergeClassNames } from '../utils';
+import { renderInline } from '@/components/render/renderInline';
+import type { MdNode } from '@/components/render/types';
+import { mergeClassNames } from '@/components/render/utils';
 
 export const ListBlock: React.FC<{
     node: MdNode;

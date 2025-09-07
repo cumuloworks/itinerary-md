@@ -1,6 +1,6 @@
 import React from 'react';
-import { notifyError } from '../core/errors';
-import { type Telemetry, TelemetryContext } from '../core/telemetry';
+import { notifyError } from '@/core/errors';
+import { type Telemetry, TelemetryContext } from '@/core/telemetry';
 
 type Props = { children: React.ReactNode };
 type State = { hasError: boolean };

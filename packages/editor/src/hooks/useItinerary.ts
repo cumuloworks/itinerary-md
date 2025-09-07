@@ -1,9 +1,10 @@
 // Do not use Core's event extraction directly in UI (remark → mdast → UI rendering)
 import matter from 'gray-matter';
+// import { normalizeCurrency, normalizeTimezone } from 'remark-itinerary/utils';
 import { useMemo, useRef } from 'react';
 import YAML from 'yaml';
-import type { ItinerarySummary } from '../types/itinerary';
-import { useDebouncedValue } from './useDebouncedValue';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import type { ItinerarySummary } from '@/types/itinerary';
 
 type UseItineraryResult = {
     previewContent: string;

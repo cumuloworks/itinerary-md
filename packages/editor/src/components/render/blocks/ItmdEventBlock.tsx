@@ -2,8 +2,8 @@ import { DateTime } from 'luxon';
 import type { PhrasingContent } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import type React from 'react';
-import { EventBlock } from '../../itinerary/EventBlock';
-import { mergeClassNames } from '../utils';
+import { EventBlock } from '@/components/itinerary/EventBlock';
+import { mergeClassNames } from '@/components/render/utils';
 
 export const ItmdEventBlock: React.FC<{
     node: any;

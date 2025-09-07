@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildShareUrlFromContent, clearHash, decodeFromHashBase64, encodeToHashBase64, readHashPayload } from '../hash';
+import { buildShareUrlFromContent, clearHash, decodeFromHashBase64, encodeToHashBase64, readHashPayload } from '@/utils/hash';
 
 describe('hash utilities', () => {
     const originalLocation = window.location;

@@ -1,7 +1,7 @@
 import { Bug } from 'lucide-react';
 import type React from 'react';
-import { MarkdownPreview } from '../MarkdownPreview';
-import { MdastView } from '../MdastView';
+import { MarkdownPreview } from '@/components/MarkdownPreview';
+import { MdastView } from '@/components/MdastView';
 
 export const PreviewPane: React.FC<{
     showMdast: boolean;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -8,12 +9,15 @@ export default defineConfig(({ command }) => {
     return {
         plugins: [react(), tailwindcss()],
         resolve: {
-            alias: isServe
-                ? {
-                      'remark-itinerary': fileURLToPath(new URL('../core/src', import.meta.url)),
-                      'remark-itinerary-alert': fileURLToPath(new URL('../alert/src', import.meta.url)),
-                  }
-                : {},
+            alias: {
+                '@': fileURLToPath(new URL('./src', import.meta.url)),
+                ...(isServe
+                    ? {
+                          'remark-itinerary': fileURLToPath(new URL('../core/src', import.meta.url)),
+                          'remark-itinerary-alert': fileURLToPath(new URL('../alert/src', import.meta.url)),
+                      }
+                    : {}),
+            },
         },
         build: {
             lib: {
@@ -23,10 +27,10 @@ export default defineConfig(({ command }) => {
                 formats: ['es'],
             },
             rollupOptions: {
-                external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+                external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'remark-itinerary', 'remark-itinerary/utils', 'remark-itinerary-alert'],
             },
-            sourcemap: true,
-            emptyOutDir: true,
+            sourcemap: false,
+            emptyOutDir: false,
         },
     };
 });

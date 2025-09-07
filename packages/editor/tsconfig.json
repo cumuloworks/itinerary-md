@@ -8,6 +8,7 @@
         "moduleResolution": "bundler",
         "baseUrl": ".",
         "paths": {
+            "@/*": ["src/*"],
             "remark-itinerary": ["../core/src"],
             "remark-itinerary/*": ["../core/src/*"],
             "remark-itinerary-alert": ["../alert/src"],

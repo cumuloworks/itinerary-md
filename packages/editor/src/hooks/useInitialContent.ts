@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { notifyError, notifySuccess, safeLocalStorage } from '../core/errors';
-import type { UseInitialContentOptions } from '../types/itinerary';
+import { notifyError, notifySuccess, safeLocalStorage } from '@/core/errors';
+import type { UseInitialContentOptions } from '@/types/itinerary';
 
 type UseInitialContentResult = {
     content: string;

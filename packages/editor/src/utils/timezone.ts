@@ -30,7 +30,7 @@ export function isValidIanaTimeZone(tz: unknown): boolean {
     }
 }
 
-import { notifyError } from '../core/errors';
+import { notifyError } from '@/core/errors';
 
 export function coerceTimezoneWithToast(tz: unknown, fallback: string, source: string): string {
     if (typeof tz === 'string' && isValidIanaTimeZone(tz)) return tz;

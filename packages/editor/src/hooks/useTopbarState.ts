@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { notifyError } from '../core/errors';
-import type { TopbarState, ViewMode } from '../types/itinerary';
-import { isValidIanaTimeZone } from '../utils/timezone';
+import { notifyError } from '@/core/errors';
+import type { TopbarState, ViewMode } from '@/types/itinerary';
+import { isValidIanaTimeZone } from '@/utils/timezone';
 
 const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
 

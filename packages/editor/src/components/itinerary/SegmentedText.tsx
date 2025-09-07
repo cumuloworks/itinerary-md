@@ -1,5 +1,5 @@
 import type React from 'react';
-import { renderInline } from '../render/renderInline';
+import { renderInline } from '@/components/render/renderInline';
 
 export type TextSegment = {
     text: string;

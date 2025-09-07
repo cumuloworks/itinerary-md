@@ -1,7 +1,7 @@
 import React from 'react';
-import { AlertBlock } from '../../AlertBlock';
-import { renderInline } from '../renderInline';
-import { mergeClassNames } from '../utils';
+import { AlertBlock } from '@/components/AlertBlock';
+import { renderInline } from '@/components/render/renderInline';
+import { mergeClassNames } from '@/components/render/utils';
 
 export const ItmdAlertBlock: React.FC<{
     node: any;

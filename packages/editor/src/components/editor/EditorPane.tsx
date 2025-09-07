@@ -1,5 +1,5 @@
 import type React from 'react';
-import { MonacoEditor } from '../MonacoEditor';
+import { MonacoEditor } from '@/components/MonacoEditor';
 
 export const EditorPane: React.FC<{
     value: string;

@@ -1,6 +1,6 @@
 import { AlertCircle, AlertOctagon, AlertTriangle, Info, Lightbulb, type LucideIcon } from 'lucide-react';
 import React, { type FC, type ReactNode } from 'react';
-import { TimePlaceholder } from './itinerary/TimePlaceholder';
+import { TimePlaceholder } from '@/components/itinerary/TimePlaceholder';
 
 export type AlertVariant = 'note' | 'tip' | 'important' | 'warning' | 'caution';
 

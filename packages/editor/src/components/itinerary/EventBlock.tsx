@@ -1,10 +1,11 @@
 //
-import { formatDateTime, getDayOffset } from '../../utils/timezone';
-import { isAllowedHref } from '../../utils/url';
-import { AirlineLogo } from './AirlineLogo';
-import { Location } from './Location';
-import { Route } from './Route';
-import { SegmentedText } from './SegmentedText';
+
+import { AirlineLogo } from '@/components/itinerary/AirlineLogo';
+import { Location } from '@/components/itinerary/Location';
+import { Route } from '@/components/itinerary/Route';
+import { SegmentedText } from '@/components/itinerary/SegmentedText';
+import { formatDateTime, getDayOffset } from '@/utils/timezone';
+import { isAllowedHref } from '@/utils/url';
 
 interface EventBlockProps {
     eventData: {
@@ -207,8 +208,8 @@ const getTypeColors = (type: EventBlockProps['eventData']['type'], baseType: Eve
 };
 
 import ColorHash from 'color-hash';
-import { getIconForEventType } from './iconMaps';
-import { TimePlaceholder } from './TimePlaceholder';
+import { getIconForEventType } from '@/components/itinerary/iconMaps';
+import { TimePlaceholder } from '@/components/itinerary/TimePlaceholder';
 
 const getTypeIcon = (type: EventBlockProps['eventData']['type']) => getIconForEventType(type);
 
@@ -245,7 +246,7 @@ const TimeDisplay: React.FC<{
     );
 };
 
-import { Meta } from './Metadata';
+import { Meta } from '@/components/itinerary/Metadata';
 
 export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, timezone, currency, priceInfos, extraLinks, nameSegments, departureSegments, arrivalSegments, startISO, endISO, marker, bodySegments }) => {
     const colors = getTypeColors(eventData.type, eventData.baseType);

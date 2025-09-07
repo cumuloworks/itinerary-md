@@ -1,14 +1,14 @@
 import type React from 'react';
-import { BlockquoteBlock } from './blocks/BlockquoteBlock';
-import { CodeBlock } from './blocks/CodeBlock';
-import { HeadingBlock } from './blocks/HeadingBlock';
-import { ItmdAlertBlock } from './blocks/ItmdAlertBlock';
-import { ItmdEventBlock } from './blocks/ItmdEventBlock';
-import { ItmdHeadingBlock } from './blocks/ItmdHeadingBlock';
-import { ListBlock } from './blocks/ListBlock';
-import { ParagraphBlock } from './blocks/ParagraphBlock';
-import { ThematicBreak } from './blocks/ThematicBreak';
-import type { MdNode, RenderBlockContext } from './types';
+import { BlockquoteBlock } from '@/components/render/blocks/BlockquoteBlock';
+import { CodeBlock } from '@/components/render/blocks/CodeBlock';
+import { HeadingBlock } from '@/components/render/blocks/HeadingBlock';
+import { ItmdAlertBlock } from '@/components/render/blocks/ItmdAlertBlock';
+import { ItmdEventBlock } from '@/components/render/blocks/ItmdEventBlock';
+import { ItmdHeadingBlock } from '@/components/render/blocks/ItmdHeadingBlock';
+import { ListBlock } from '@/components/render/blocks/ListBlock';
+import { ParagraphBlock } from '@/components/render/blocks/ParagraphBlock';
+import { ThematicBreak } from '@/components/render/blocks/ThematicBreak';
+import type { MdNode, RenderBlockContext } from '@/components/render/types';
 
 // Types are centralized in ./types
 

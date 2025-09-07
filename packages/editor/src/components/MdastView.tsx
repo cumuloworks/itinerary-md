@@ -3,12 +3,12 @@ import type { Root } from 'mdast';
 import { type FC, memo, useMemo } from 'react';
 import ReactJson from 'react18-json-view';
 import remarkItinerary from 'remark-itinerary';
+import { normalizeCurrency, normalizeTimezone } from 'remark-itinerary/utils';
 import 'react18-json-view/src/style.css';
 import remarkGfm from 'remark-gfm';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import { normalizeCurrencyCode } from '../utils/currency';
 
 interface MdastViewProps {
     content: string;
@@ -145,13 +145,13 @@ const MdastViewComponent: FC<MdastViewProps> = ({ content, timezone, currency })
                     : undefined;
             const isItmdDoc = fmType === 'itmd' || fmType === 'itinerary-md' || fmType === 'tripmd';
 
-            const defaultTimezone = fmTimezoneRaw || timezone;
+            const defaultTimezone = normalizeTimezone(fmTimezoneRaw || timezone || null, null) || undefined;
             const mdProcessor = (unified as any)()
                 .use(remarkParse)
                 .use(remarkGfm)
                 .use(remarkGithubBlockquoteAlert as any);
             if (isItmdDoc) {
-                const normalizedCurrency = normalizeCurrencyCode(fmCurrencyRaw || currency, currency || 'USD');
+                const normalizedCurrency = normalizeCurrency(fmCurrencyRaw || currency || 'USD', 'USD');
                 (mdProcessor as any).use(remarkItinerary as any, {
                     defaultTimezone,
                     defaultCurrency: normalizedCurrency,

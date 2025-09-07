@@ -4,8 +4,8 @@ import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import { Check, ChevronDown, ChevronsDown, Clipboard, Columns, Eye, EyeOff, FileText, GlobeIcon, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, RotateCcw, Rows, Share2, Trash2 } from 'lucide-react';
 import * as React from 'react';
-import { useI18n } from '../i18n';
-import type { TopbarState, ViewMode } from '../types/itinerary';
+import { useI18n } from '@/i18n';
+import type { TopbarState, ViewMode } from '@/types/itinerary';
 
 interface TopBarProps {
     tzSelectId: string;
