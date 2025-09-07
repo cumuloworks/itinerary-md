@@ -28,5 +28,13 @@
     "menu.clearAll": "すべての内容をクリア",
     "menu.language": "言語",
     "menu.language.en": "英語",
-    "menu.language.ja": "日本語"
+    "menu.language.ja": "日本語",
+    "dialog.loadSample.title": "サンプルを読み込みますか？",
+    "dialog.loadSample.desc": "現在の内容はサンプルの内容で置き換えられます。実行するには『読み込み』を選択してください。",
+    "dialog.loadSample.cancel": "キャンセル",
+    "dialog.loadSample.load": "読み込み",
+    "dialog.clearAll.title": "すべての内容をクリアしますか？",
+    "dialog.clearAll.desc": "エディタの内容はすべて削除され、元に戻せません。実行するには『クリア』を選択してください。",
+    "dialog.clearAll.cancel": "キャンセル",
+    "dialog.clearAll.clear": "クリア"
 }

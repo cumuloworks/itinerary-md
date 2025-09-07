@@ -28,5 +28,13 @@
     "menu.clearAll": "Clear All Contents",
     "menu.language": "Language",
     "menu.language.en": "English",
-    "menu.language.ja": "Japanese"
+    "menu.language.ja": "Japanese",
+    "dialog.loadSample.title": "Load Sample Itinerary?",
+    "dialog.loadSample.desc": "This will replace your current content with the sample itinerary. Select \"Load\" to proceed.",
+    "dialog.loadSample.cancel": "Cancel",
+    "dialog.loadSample.load": "Load",
+    "dialog.clearAll.title": "Clear All Contents?",
+    "dialog.clearAll.desc": "This will remove all editor contents and cannot be undone. Select \"Clear\" to proceed.",
+    "dialog.clearAll.cancel": "Cancel",
+    "dialog.clearAll.clear": "Clear"
 }
