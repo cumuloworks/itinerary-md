@@ -4,12 +4,13 @@ export function normalizeTimezone(value: unknown, fallback?: string | null): str
         if (!raw) return fallback ?? null;
         // Reuse local implementation from time/iana to avoid new deps
         const re = /^(?:\s*(?:UTC|GMT)\s*)?([+-])(\d{1,2})(?::?(\d{1,2}))?$/i;
-        const isValid = (tz: string) => {
+        const canonicalizeTimeZone = (tz: string): string | null => {
             try {
                 const ro = new Intl.DateTimeFormat(undefined, { timeZone: tz }).resolvedOptions();
-                return ro.timeZone === tz;
+                // ro.timeZone は正規化済みの IANA 名
+                return ro.timeZone || null;
             } catch {
-                return false;
+                return null;
             }
         };
         // Handle bare UTC/GMT first -> always coerce to explicit offset
@@ -26,8 +27,9 @@ export function normalizeTimezone(value: unknown, fallback?: string | null): str
                 return `UTC${sign}${hh}:${mm}`;
             }
         }
-        // Finally, accept valid IANA names as-is
-        if (isValid(raw)) return raw;
+        // Finally, accept and return canonical IANA name
+        const cz = canonicalizeTimeZone(raw);
+        if (cz) return cz;
         return fallback ?? null;
     } catch {
         return fallback ?? null;

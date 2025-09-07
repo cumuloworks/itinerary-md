@@ -5,11 +5,11 @@ import { useTopbarState } from '@/hooks/useTopbarState';
 import { isValidIanaTimeZone } from '@/utils/timezone';
 
 // Mocks
-vi.mock('../../utils/timezone', () => ({
+vi.mock('@/utils/timezone', () => ({
     isValidIanaTimeZone: vi.fn(),
 }));
 
-vi.mock('../../core/errors', () => ({
+vi.mock('@/core/errors', () => ({
     notifyError: vi.fn(),
 }));
 

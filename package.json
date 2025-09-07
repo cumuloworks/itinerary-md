@@ -25,8 +25,7 @@
         "build": "npm run build:deps && npm -w apps/studio run build",
         "build:deps": "npm -w packages/alert run build && npm -w packages/core run build && npm -w packages/editor run build",
         "clean": "git clean -xfd -e node_modules",
-        "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json",
-        "refactor:alias": "node scripts/refactor-imports-to-alias.mjs"
+        "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.2.3",

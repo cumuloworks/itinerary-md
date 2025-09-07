@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { notifyError } from '@/core/errors';
 import { coerceTimezoneWithToast, getTimezoneOptions } from '@/utils/timezone';
 
-vi.mock('../../core/errors', () => ({
+vi.mock('@/core/errors', () => ({
     notifyError: vi.fn(),
 }));
 

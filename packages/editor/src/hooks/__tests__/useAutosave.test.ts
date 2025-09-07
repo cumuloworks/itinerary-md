@@ -4,7 +4,7 @@ import { notifyError, safeLocalStorage } from '@/core/errors';
 import { useAutosave } from '@/hooks/useAutosave';
 
 // Mocks
-vi.mock('../../core/errors', () => ({
+vi.mock('@/core/errors', () => ({
     notifyError: vi.fn(),
     safeLocalStorage: {
         set: vi.fn(),
