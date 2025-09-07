@@ -25,14 +25,20 @@ jobs:
           cache: 'npm'
 
       - name: Read published versions
+        id: read_versions
         run: |
-          node -e "const fs=require('fs');const v=require('./packages/core/package.json').version;fs.appendFileSync(process.env.GITHUB_ENV, `CORE_VERSION=${v}\n`)"
-          node -e "const fs=require('fs');const v=require('./packages/alert/package.json').version;fs.appendFileSync(process.env.GITHUB_ENV, `ALERT_VERSION=${v}\n`)"
+          set -euo pipefail
+          node <<'NODE' >> "$GITHUB_OUTPUT"
+          const core = require('./packages/core/package.json').version;
+          const alert = require('./packages/alert/package.json').version;
+          console.log(`core_version=${core}`);
+          console.log(`alert_version=${alert}`);
+          NODE
 
       - name: Wait until versions are visible on npm
         run: |
           set -euxo pipefail
-          for PKG in "remark-itinerary@${CORE_VERSION}" "remark-itinerary-alert@${ALERT_VERSION}"; do
+          for PKG in "remark-itinerary@${{ steps.read_versions.outputs.core_version }}" "remark-itinerary-alert@${{ steps.read_versions.outputs.alert_version }}"; do
             for i in {1..10}; do
               if npm view "$PKG" version >/dev/null 2>&1; then
                 echo "Found $PKG on npm"
@@ -49,6 +55,7 @@ jobs:
           WORK=/tmp/itmd-verify
           rm -rf "$WORK"
           mkdir -p "$WORK"
+          mkdir -p "$WORK/fixtures"
           cp -r .github/workflows/verify "$WORK"/fixtures
           cd "$WORK/fixtures"
           npm init -y >/dev/null 2>&1
@@ -57,7 +64,7 @@ jobs:
         working-directory: /tmp/itmd-verify/fixtures
         run: |
           npm i --no-audit --no-fund unified remark-parse unist-util-visit \
-            remark-itinerary@"$CORE_VERSION" remark-itinerary-alert@"$ALERT_VERSION"
+            remark-itinerary@"${{ steps.read_versions.outputs.core_version }}" remark-itinerary-alert@"${{ steps.read_versions.outputs.alert_version }}"
 
       - name: Run verification
         working-directory: /tmp/itmd-verify/fixtures/verify
