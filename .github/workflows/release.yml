@@ -73,8 +73,7 @@ jobs:
         if: github.event_name == 'push' && steps.changes.outputs.core_changed == 'true'
         run: |
           VERSION=$(node -e "const fs=require('fs');console.log(JSON.parse(fs.readFileSync('packages/core/package.json','utf8')).version)")
-          EXISTS=$(npm view remark-itinerary@"$VERSION" --json 2>/dev/null || true)
-          if [ -n "$EXISTS" ] && [ "$EXISTS" != "null" ]; then
+          if npm view remark-itinerary@"$VERSION" version > /dev/null 2>&1; then
             echo "remark-itinerary@$VERSION is already published. Skipping."
           else
             npm publish --workspace packages/core --provenance --access public
@@ -86,8 +85,7 @@ jobs:
         if: github.event_name == 'push' && steps.changes.outputs.alert_changed == 'true'
         run: |
           VERSION=$(node -e "const fs=require('fs');console.log(JSON.parse(fs.readFileSync('packages/alert/package.json','utf8')).version)")
-          EXISTS=$(npm view remark-itinerary-alert@"$VERSION" --json 2>/dev/null || true)
-          if [ -n "$EXISTS" ] && [ "$EXISTS" != "null" ]; then
+          if npm view remark-itinerary-alert@"$VERSION" version > /dev/null 2>&1; then
             echo "remark-itinerary-alert@$VERSION is already published. Skipping."
           else
             npm publish --workspace packages/alert --provenance --access public
