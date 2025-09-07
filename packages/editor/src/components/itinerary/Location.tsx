@@ -12,11 +12,7 @@ interface LocationProps {
 export const Location: React.FC<LocationProps> = ({ location, url, segments }) => {
     if (!location && (!segments || segments.length === 0)) return null;
 
-    // フォールバック可否は URL の有無でのみ判定（許可可否とは切り離す）
-    const userProvidedUrl = Boolean(
-        (url && url.trim()) ||
-            (segments && segments.some((s) => s.url && s.url.trim() !== ''))
-    );
+    const userProvidedUrl = Boolean(url?.trim() || segments?.some((s) => s.url && s.url.trim() !== ''));
 
     const finalSegments: TextSegment[] = (() => {
         if (segments && segments.length > 0) {
