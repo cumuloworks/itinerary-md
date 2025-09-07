@@ -44,6 +44,10 @@ export default defineConfig({
             VitePWA({
                 registerType: 'autoUpdate',
                 injectRegister: 'script',
+                devOptions: {
+                    // Disable PWA service worker in dev to avoid caching stale hashed chunks
+                    enabled: false,
+                },
                 includeAssets: [
                     'favicon.ico',
                     'apple-touch-icon.png',
