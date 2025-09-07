@@ -12,7 +12,7 @@
     "@astrojs/react": "^4.3.0",
     "@astrojs/sitemap": "^3.5.1",
     "@astrojs/vercel": "^8.2.7",
-    "@itinerary-md/editor": "workspace:^",
+    "@itinerary-md/editor": "0.2.1",
     "@sentry/astro": "^10.10.0",
     "@sentry/react": "^10.10.0",
     "@tailwindcss/vite": "^4.1.13",
