@@ -1,6 +1,6 @@
 {
     "name": "@itinerary-md/editor",
-    "version": "0.1.0",
+    "version": "0.2.1",
     "private": true,
     "type": "module",
     "license": "UNLICENSED",
@@ -54,8 +54,8 @@
         "rehype-react": "^8.0.0",
         "remark-gfm": "^4.0.1",
         "remark-github-blockquote-alert": "^2.0.0",
-        "remark-itinerary": "^0.2.0",
-        "remark-itinerary-alert": "^0.2.0",
+        "remark-itinerary": "^0.2.1",
+        "remark-itinerary-alert": "^0.2.1",
         "remark-parse": "^11.0.0",
         "remark-rehype": "^11.1.2",
         "unified": "^11.0.5",
