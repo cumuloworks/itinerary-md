@@ -81,7 +81,7 @@ export function splitRichInlineByCaret(nodes: RichInline): { left: RichInline; r
         if (idx < 0) return { left: nodes, right: null };
         const left = sliceInlineNodes(nodes, 0, idx);
         const right = sliceInlineNodes(nodes, idx + 1, plain.length);
-        return { left, right: right.length > 0 ? right : [] };
+        return { left, right: right.length > 0 ? right : null };
     } catch {
         return { left: nodes, right: null };
     }
