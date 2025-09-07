@@ -7,11 +7,13 @@ interface MonacoEditorProps {
     onSave: () => void;
     onCursorLineChange?: (line: number) => void;
     onChangedLines?: (lines: number[]) => void;
+    onSelectionChange?: (selectedText: string | undefined) => void;
 }
 
-const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave, onCursorLineChange, onChangedLines }) => {
+const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave, onCursorLineChange, onChangedLines, onSelectionChange }) => {
     const cursorLineChangeRef = useRef<MonacoEditorProps['onCursorLineChange']>(undefined);
     const changedLinesRef = useRef<MonacoEditorProps['onChangedLines']>(undefined);
+    const selectionChangeRef = useRef<MonacoEditorProps['onSelectionChange']>(undefined);
 
     useEffect(() => {
         cursorLineChangeRef.current = onCursorLineChange;
@@ -20,6 +22,10 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
     useEffect(() => {
         changedLinesRef.current = onChangedLines;
     }, [onChangedLines]);
+
+    useEffect(() => {
+        selectionChangeRef.current = onSelectionChange;
+    }, [onSelectionChange]);
 
     const handleEditorChange = (value: string | undefined) => {
         onChange(value || '');
@@ -45,6 +51,16 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
                         const ln = e.position?.lineNumber;
                         if (typeof ln === 'number') {
                             cursorLineChangeRef.current?.(ln);
+                        }
+                    });
+                    editor.onDidChangeCursorSelection((e) => {
+                        const selection = e.selection;
+                        const model = editor.getModel();
+                        if (model && !selection.isEmpty()) {
+                            const selectedText = model.getValueInRange(selection);
+                            selectionChangeRef.current?.(selectedText);
+                        } else {
+                            selectionChangeRef.current?.(undefined);
                         }
                     });
                     editor.onDidChangeModelContent((e) => {

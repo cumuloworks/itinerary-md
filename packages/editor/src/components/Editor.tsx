@@ -7,6 +7,7 @@ import { useInitialContent } from '../hooks/useInitialContent';
 import { useItinerary } from '../hooks/useItinerary';
 import { useLatest } from '../hooks/useLatest';
 import { useTopbarState } from '../hooks/useTopbarState';
+import { usePlugins } from '../hooks/usePlugins';
 import { useI18n } from '../i18n';
 import { writeTextToClipboard } from '../utils/clipboard';
 import { COMMON_CURRENCIES } from '../utils/currency';
@@ -18,6 +19,7 @@ import { LoadSampleDialog } from './dialog/LoadSampleDialog';
 import { EditorPane } from './editor/EditorPane';
 import { PreviewPane } from './editor/PreviewPane';
 import { MarkdownPreviewErrorBoundary } from './MarkdownPreviewErrorBoundary';
+import { PluginActions } from './PluginActions';
 import { TopBar } from './TopBar';
 
 export interface EditorProps {
@@ -61,6 +63,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
     const { lang } = useI18n();
     const effectiveSamplePath = useMemo(() => getLanguageAwareSamplePath(samplePath, lang), [samplePath, lang]);
     const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
+    const [selectedText, setSelectedText] = useState<string | undefined>(undefined);
     const tzSelectId = useId();
 
     const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
@@ -79,6 +82,14 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
     const [topbar, updateTopbar] = useTopbarState();
 
     const { previewContent, frontmatterTitle, frontmatterDescription, frontmatterTags } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
+        timezone: topbar.timezone,
+    });
+
+    // Initialize plugins
+    const { actions } = usePlugins({
+        content,
+        selectedText,
+        language: lang,
         timezone: topbar.timezone,
     });
 
@@ -149,6 +160,9 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                 onLoadSample={loadSample}
                 onClearAll={handleOpenClearAll}
             />
+            {selectedText && actions.length > 0 && (
+                <PluginActions actions={actions} className="px-4" />
+            )}
             <div className={containerClass}>
                 {(topbar.viewMode === 'split' || topbar.viewMode === 'editor') && (
                     <div className={`${topbar.viewMode === 'split' ? 'md:basis-1/2 basis-1/3' : 'flex-1'} min-w-0 min-h-0`}>
@@ -159,6 +173,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                             onCursorLineChange={(ln) => {
                                 if (topbar.autoScroll) setEditedLine(ln);
                             }}
+                            onSelectionChange={setSelectedText}
                         />
                     </div>
                 )}

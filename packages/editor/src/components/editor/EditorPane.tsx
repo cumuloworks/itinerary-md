@@ -6,13 +6,20 @@ export const EditorPane: React.FC<{
     onChange: (next: string) => void;
     onSave: () => void;
     onCursorLineChange?: (line: number | undefined) => void;
+    onSelectionChange?: (selectedText: string | undefined) => void;
     className?: string;
-}> = ({ value, onChange, onSave, onCursorLineChange, className = '' }) => {
+}> = ({ value, onChange, onSave, onCursorLineChange, onSelectionChange, className = '' }) => {
     return (
         <div className={`h-full min-h-0 flex flex-col ${className}`}>
             <div className="px-2 py-1 bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600">Editor</div>
             <div className="h-[calc(100%-41px)] min-h-0">
-                <MonacoEditor value={value} onChange={onChange} onSave={onSave} onCursorLineChange={onCursorLineChange} />
+                <MonacoEditor 
+                    value={value} 
+                    onChange={onChange} 
+                    onSave={onSave} 
+                    onCursorLineChange={onCursorLineChange}
+                    onSelectionChange={onSelectionChange}
+                />
             </div>
         </div>
     );
