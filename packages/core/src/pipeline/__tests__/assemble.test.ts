@@ -104,6 +104,72 @@ describe('assemble', () => {
         expect((out.children?.[0] as any).type).toBe('itmdEvent');
     });
 
+    it('splits native^local in title and destination(single)', () => {
+        const tree: Root = {
+            type: 'root',
+            children: [
+                {
+                    type: 'blockquote',
+                    children: [
+                        {
+                            type: 'paragraph',
+                            children: [{ type: 'text', value: '[08:00] lunch タイトル^Title :: 店^Shop' }],
+                        },
+                    ],
+                },
+            ],
+        } as any;
+        const out = assembleEvents(tree, sv);
+        const evt = out.children?.[0] as any;
+        expect(evt.type).toBe('itmdEvent');
+        // title split
+        const titleText = mdastToString({ type: 'paragraph', children: evt.title || [] } as unknown as Parent);
+        const titleAltText = mdastToString({ type: 'paragraph', children: evt.title_alt || [] } as unknown as Parent);
+        expect(titleText).toBe('タイトル');
+        expect(titleAltText).toBe('Title');
+        // at split
+        const atText = mdastToString({ type: 'paragraph', children: evt.destination.at || [] } as unknown as Parent);
+        const atAltText = mdastToString({ type: 'paragraph', children: evt.destination.at_alt || [] } as unknown as Parent);
+        expect(atText).toBe('店');
+        expect(atAltText).toBe('Shop');
+    });
+
+    it('splits native^local in destination(dashPair/fromTo)', () => {
+        const mk = (kind: 'dashPair' | 'fromTo') =>
+            ({
+                type: 'root',
+                children: [
+                    {
+                        type: 'blockquote',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [
+                                    {
+                                        type: 'text',
+                                        value: kind === 'dashPair' ? '[08:00] flight :: 出発^From - 到着^To' : '[08:00] flight from 出発^From to 到着^To',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }) as any;
+        for (const kind of ['dashPair', 'fromTo'] as const) {
+            const out = assembleEvents(mk(kind) as any, sv);
+            const evt = out.children?.[0] as any;
+            expect(evt.type).toBe('itmdEvent');
+            const fromText = mdastToString({ type: 'paragraph', children: evt.destination.from || [] } as unknown as Parent);
+            const fromAltText = mdastToString({ type: 'paragraph', children: evt.destination.from_alt || [] } as unknown as Parent);
+            const toText = mdastToString({ type: 'paragraph', children: evt.destination.to || [] } as unknown as Parent);
+            const toAltText = mdastToString({ type: 'paragraph', children: evt.destination.to_alt || [] } as unknown as Parent);
+            expect(fromText).toBe('出発');
+            expect(fromAltText).toBe('From');
+            expect(toText).toBe('到着');
+            expect(toAltText).toBe('To');
+        }
+    });
+
     it('keeps list inside blockquote as event children (remain in children and extracted into body)', () => {
         const tree: Root = {
             type: 'root',

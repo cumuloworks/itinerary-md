@@ -21,6 +21,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
         showPast: true,
         autoScroll: true,
         showMdast: false,
+        altNames: false,
     }));
 
     useEffect(() => {
@@ -64,6 +65,9 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             const scroll = searchParams.get('scroll');
             if (scroll) patch.autoScroll = scroll === '1';
 
+            const alt = searchParams.get('alt');
+            if (alt) patch.altNames = alt === '1';
+
             // mdast flag is ephemeral and should not be driven by URL
 
             if (Object.keys(patch).length > 0) {
@@ -87,25 +91,34 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
     }, []);
 
     useEffect(() => {
+        // Skip URL sync until initial state has been read from URL/localStorage
+        if (!isInitializedRef.current) return;
         try {
             const curr = new URLSearchParams(window.location.search);
-            if (curr.get('tz') === state.timezone && curr.get('cur') === state.currency && curr.get('view') === state.viewMode && curr.get('past') === (state.showPast ? '1' : '0') && curr.get('scroll') === (state.autoScroll ? '1' : '0'))
-                return;
+            const next = new URLSearchParams(curr);
 
-            const searchParams = new URLSearchParams(window.location.search);
+            // timezone
             if (isValidIanaTimeZone(state.timezone)) {
-                searchParams.set('tz', state.timezone);
+                next.set('tz', state.timezone);
             }
-            searchParams.set('cur', state.currency);
-            searchParams.set('view', state.viewMode);
-            searchParams.set('past', state.showPast ? '1' : '0');
-            searchParams.set('scroll', state.autoScroll ? '1' : '0');
 
-            const newSearch = `?${searchParams.toString()}`;
+            // always reflect these
+            next.set('cur', state.currency);
+            next.set('view', state.viewMode);
+            next.set('past', state.showPast ? '1' : '0');
+            next.set('scroll', state.autoScroll ? '1' : '0');
+
+            // alt is explicitly represented as 0/1 for consistency
+            next.set('alt', state.altNames ? '1' : '0');
+
+            // If no change, skip updating history
+            if (curr.toString() === next.toString()) return;
+
+            const newSearch = `?${next.toString()}`;
             const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
             history.replaceState(null, '', newUrl);
         } catch {}
-    }, [state.timezone, state.currency, state.viewMode, state.showPast, state.autoScroll]);
+    }, [state.timezone, state.currency, state.viewMode, state.showPast, state.autoScroll, state.altNames]);
 
     return [state, updateState];
 }

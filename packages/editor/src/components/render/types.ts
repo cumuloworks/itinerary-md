@@ -19,4 +19,5 @@ export type RenderBlockContext = {
     lastStaySegmentsByDate: Map<string, Array<{ text: string; url?: string }>>;
     inlineToSegments: (inline?: PhrasingContent[] | null) => Array<{ text: string; url?: string; kind?: 'text' | 'code' }> | undefined;
     segmentsToPlainText: (segments?: Array<{ text: string; url?: string }>) => string | undefined;
+    preferAltNames?: boolean;
 };

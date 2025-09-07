@@ -13,7 +13,7 @@ import type { MdNode, RenderBlockContext } from '@/components/render/types';
 // Types are centralized in ./types
 
 export const createRenderBlock = (ctx: RenderBlockContext) => {
-    const { getLineStart, getLineEnd, getNodeDateAttr, displayTimezone, currency, lastStaySegmentsByDate, inlineToSegments, segmentsToPlainText } = ctx;
+    const { getLineStart, getLineEnd, getNodeDateAttr, displayTimezone, currency, lastStaySegmentsByDate, inlineToSegments, segmentsToPlainText, preferAltNames } = ctx as any;
 
     const renderBlock = (node: MdNode, idx: number): React.ReactNode => {
         if (!node) return null;
@@ -56,6 +56,7 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
                     currency={currency}
                     inlineToSegments={inlineToSegments as any}
                     segmentsToPlainText={segmentsToPlainText as any}
+                    preferAltNames={preferAltNames}
                 />
             );
         }

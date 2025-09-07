@@ -32,21 +32,27 @@ export interface ITMDEventNode extends Parent {
     eventType: string;
     baseType?: 'transportation' | 'stay' | 'activity';
     title?: RichInline | null;
+    title_alt?: RichInline | null;
     destination?:
         | (
               | {
                     kind: 'single';
                     at: RichInline;
+                    at_alt?: RichInline | null;
                 }
               | {
                     kind: 'dashPair';
                     from: RichInline;
                     to: RichInline;
+                    from_alt?: RichInline | null;
+                    to_alt?: RichInline | null;
                 }
               | {
                     kind: 'fromTo';
                     from: RichInline;
                     to: RichInline;
+                    from_alt?: RichInline | null;
+                    to_alt?: RichInline | null;
                 }
           )
         | null;

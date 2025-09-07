@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Select from '@radix-ui/react-select';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
-import { Check, ChevronDown, ChevronsDown, Clipboard, Columns, Eye, EyeOff, FileText, GlobeIcon, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, RotateCcw, Rows, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Check, ChevronDown, ChevronsDown, Clipboard, Columns, Eye, EyeOff, FileText, GlobeIcon, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, RotateCcw, Rows, Share2, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { useI18n } from '@/i18n';
 import type { TopbarState, ViewMode } from '@/types/itinerary';
@@ -208,6 +208,17 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                             state: topbar.autoScroll ? t('past.on') : t('past.off'),
                         })}
                     </span>
+                </Toolbar.Button>
+
+                <Toolbar.Button
+                    type="button"
+                    aria-label={topbar.altNames ? t('names.hide') : t('names.show')}
+                    title={topbar.altNames ? t('names.hide') : t('names.show')}
+                    onClick={() => onTopbarChange({ altNames: !topbar.altNames })}
+                    className={`inline-flex items-center justify-center px-2 h-full rounded-md border ${topbar.altNames ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-700 bg-white hover:bg-gray-50 border-gray-300'}`}
+                >
+                    <ArrowLeftRight size={14} />
+                    <span className="hidden md:block text-xs ml-1">{t('names.label', { state: topbar.altNames ? t('past.on') : t('past.off') })}</span>
                 </Toolbar.Button>
 
                 <Toolbar.Separator className="w-px mr-auto" />

@@ -18,7 +18,8 @@ export const PreviewPane: React.FC<{
     className?: string;
     showPast?: boolean;
     onShowPast?: () => void;
-}> = ({ showMdast, toggleMdast, previewContent, frontmatterTitle, frontmatterDescription, frontmatterTags, timezone, currency, rate, activeLine, autoScroll, className = '', showPast, onShowPast }) => {
+    preferAltNames?: boolean;
+}> = ({ showMdast, toggleMdast, previewContent, frontmatterTitle, frontmatterDescription, frontmatterTags, timezone, currency, rate, activeLine, autoScroll, className = '', showPast, onShowPast, preferAltNames }) => {
     return (
         <div className={`h-full min-h-0 flex flex-col ${className}`}>
             <div className="px-2 py-1 flex justify-between bg-gray-100 border-b border-gray-300 font-medium text-sm text-gray-600 group">
@@ -43,6 +44,7 @@ export const PreviewPane: React.FC<{
                         autoScroll={autoScroll}
                         showPast={showPast}
                         onShowPast={onShowPast}
+                        preferAltNames={preferAltNames}
                     />
                 )}
             </div>
