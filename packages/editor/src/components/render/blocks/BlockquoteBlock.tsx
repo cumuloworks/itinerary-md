@@ -1,6 +1,6 @@
 import React from 'react';
-import { renderInline } from '../renderInline';
-import type { MdNode } from '../types';
+import { renderInline } from '@/components/render/renderInline';
+import type { MdNode } from '@/components/render/types';
 
 export const BlockquoteBlock: React.FC<{
     node: MdNode;

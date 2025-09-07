@@ -1,5 +1,5 @@
 import type React from 'react';
-import { mergeClassNames } from '../utils';
+import { mergeClassNames } from '@/components/render/utils';
 
 export const ThematicBreak: React.FC<{ commonDataProps: any }> = ({ commonDataProps }) => {
     const { className: extraClass, ...rest } = commonDataProps || {};

@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import { captureException } from './telemetry';
+import { captureException } from '@/core/telemetry';
 
 export class AppError extends Error {
     code?: string;

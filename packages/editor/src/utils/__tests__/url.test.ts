@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildGoogleMapsSearchUrl, isAllowedHref, isAllowedImageSrc, isExternalHttpUrl } from '../url';
+import { buildGoogleMapsSearchUrl, isAllowedHref, isAllowedImageSrc, isExternalHttpUrl } from '@/utils/url';
 
 describe('url utilities', () => {
     describe('isAllowedHref', () => {

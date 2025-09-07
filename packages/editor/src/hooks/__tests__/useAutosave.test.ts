@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import { notifyError, safeLocalStorage } from '../../core/errors';
-import { useAutosave } from '../useAutosave';
+import { notifyError, safeLocalStorage } from '@/core/errors';
+import { useAutosave } from '@/hooks/useAutosave';
 
 // Mocks
 vi.mock('../../core/errors', () => ({

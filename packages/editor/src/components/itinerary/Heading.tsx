@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import type React from 'react';
-import { Location } from './Location';
-import type { TextSegment } from './SegmentedText';
+import { Location } from '@/components/itinerary/Location';
+import type { TextSegment } from '@/components/itinerary/SegmentedText';
 
 interface HeadingProps {
     date: string;

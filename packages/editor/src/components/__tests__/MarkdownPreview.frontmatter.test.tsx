@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { MarkdownPreview } from '../MarkdownPreview';
+import { MarkdownPreview } from '@/components/MarkdownPreview';
 
 describe('MarkdownPreview frontmatter normalization', () => {
     it('normalizes timezone via core utils (IANA stays, UTC offsets coerced)', () => {

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import * as ratesHook from '../../hooks/useRatesUSD';
-import { Statistics } from '../itinerary/Statistics';
+import { Statistics } from '@/components/itinerary/Statistics';
+import * as ratesHook from '@/hooks/useRatesUSD';
 
 vi.mock('../../hooks/useRatesUSD', () => {
     return {

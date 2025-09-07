@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { RatesUSDBase } from '../utils/currency';
-import { getRatesUSD, initializeRates } from '../utils/currency';
+import type { RatesUSDBase } from '@/utils/currency';
+import { getRatesUSD, initializeRates } from '@/utils/currency';
 
 interface UseRatesUSDResult {
     data: RatesUSDBase | null;

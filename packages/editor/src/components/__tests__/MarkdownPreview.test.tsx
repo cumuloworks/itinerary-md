@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { MarkdownPreview } from '../MarkdownPreview';
+import { MarkdownPreview } from '@/components/MarkdownPreview';
 
 describe('MarkdownPreview (github blockquote alert)', () => {
     it('renders one-line alert title; body may be empty when inline text is omitted by plugin', () => {

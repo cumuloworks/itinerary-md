@@ -1,13 +1,16 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
+        "baseUrl": ".",
         "declaration": true,
-        "declarationMap": true,
+        "declarationMap": false,
         "emitDeclarationOnly": true,
         "outDir": "dist",
         "rootDir": "src",
         "noEmit": false,
-        "paths": {},
+        "paths": {
+            "@/*": ["src/*"]
+        },
         "typeRoots": ["./types", "../../node_modules/@types"],
         "types": ["react", "react-dom", "vite/client"]
     },

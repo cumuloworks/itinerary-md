@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { useQueryParams } from '../useQueryParams';
+import { useQueryParams } from '@/hooks/useQueryParams';
 
 describe('useQueryParams', () => {
     const originalLocation = window.location;

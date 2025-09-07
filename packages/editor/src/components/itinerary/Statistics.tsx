@@ -1,9 +1,9 @@
 // Dates are obtained from itmdHeading nodes
 import { ArrowDown, BedDouble, FerrisWheel, Plane } from 'lucide-react';
 import React from 'react';
-import { useRatesUSD } from '../../hooks/useRatesUSD';
-import { convertAmountUSDBase, normalizeCurrencyCode, parseAmountWithCurrency } from '../../utils/currency';
-import type { MdNode } from '../render/types';
+import type { MdNode } from '@/components/render/types';
+import { useRatesUSD } from '@/hooks/useRatesUSD';
+import { convertAmountUSDBase, normalizeCurrencyCode, parseAmountWithCurrency } from '@/utils/currency';
 
 type MoneyTokenLike = {
     kind?: string;

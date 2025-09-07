@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import type React from 'react';
-import { SegmentedText, type TextSegment } from './SegmentedText';
+import { SegmentedText, type TextSegment } from '@/components/itinerary/SegmentedText';
 
 export type IconLabelTextProps = {
     icon: LucideIcon;

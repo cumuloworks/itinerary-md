@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TopBar } from '../TopBar';
+import { TopBar } from '@/components/TopBar';
 
 // Mock for Radix UI
 vi.mock('@radix-ui/react-dropdown-menu', () => ({

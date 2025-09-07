@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import { COMMON_CURRENCIES, convertAmountUSDBase, fetchRatesUSD, formatCurrency, getCachedRatesUSD, getRatesUSD, initializeRates, parseAmountWithCurrency, setCachedRatesUSD } from '../currency';
+import { COMMON_CURRENCIES, convertAmountUSDBase, fetchRatesUSD, formatCurrency, getCachedRatesUSD, getRatesUSD, initializeRates, parseAmountWithCurrency, setCachedRatesUSD } from '@/utils/currency';
 
 describe('currency utilities', () => {
     const originalFetch = global.fetch;

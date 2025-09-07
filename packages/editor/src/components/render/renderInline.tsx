@@ -1,5 +1,5 @@
 import React from 'react';
-import { isAllowedHref } from '../../utils/url';
+import { isAllowedHref } from '@/utils/url';
 
 type InlineRenderOptions = {
     linkClassName?: string;

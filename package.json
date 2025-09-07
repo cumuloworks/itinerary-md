@@ -25,7 +25,8 @@
         "build": "npm run build:deps && npm -w apps/studio run build",
         "build:deps": "npm -w packages/alert run build && npm -w packages/core run build && npm -w packages/editor run build",
         "clean": "git clean -xfd -e node_modules",
-        "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
+        "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json",
+        "refactor:alias": "node scripts/refactor-imports-to-alias.mjs"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.2.3",
@@ -38,6 +39,7 @@
         "jsdom": "^26.1.0",
         "license-checker": "^25.0.1",
         "lint-staged": "^16.1.6",
+        "tsc-alias": "^1.8.16",
         "vitest": "^3.2.4"
     },
     "lint-staged": {

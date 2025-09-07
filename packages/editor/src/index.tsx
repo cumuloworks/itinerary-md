@@ -3,12 +3,12 @@ import './index.css';
 import type { FC } from 'react';
 import { lazy, Suspense, useEffect, useMemo, useRef } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { registerGlobalErrorHandlers } from './core/errors';
-import type { EditorFontsOption, GoogleFontsConfig } from './core/fonts.ts';
-import { setTelemetry, type Telemetry, TelemetryContext } from './core/telemetry';
-import { I18nProvider } from './i18n';
-import { initializeRates } from './utils/currency';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { registerGlobalErrorHandlers } from '@/core/errors';
+import type { EditorFontsOption, GoogleFontsConfig } from '@/core/fonts.ts';
+import { setTelemetry, type Telemetry, TelemetryContext } from '@/core/telemetry';
+import { I18nProvider } from '@/i18n';
+import { initializeRates } from '@/utils/currency';
 
 declare global {
     interface Window {
@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
 
 // Lazy load the actual editor component for SSR safety
 const EditorBare = lazy(() =>
-    import('./components/Editor').then((module) => ({
+    import('@/components/Editor').then((module) => ({
         default: module.Editor,
     }))
 );
@@ -81,7 +81,7 @@ export const Editor: FC<EditorProps> = (props) => {
         if (typeof window === 'undefined') return;
         let disposed = false;
         (async () => {
-            const { injectFontsLinks } = await import('./core/fonts.ts');
+            const { injectFontsLinks } = await import('@/core/fonts.ts');
             if (disposed) return;
             const cleanupSans = injectFontsLinks(effectiveFonts);
             const cleanupMono = injectFontsLinks(effectiveMonoFonts);

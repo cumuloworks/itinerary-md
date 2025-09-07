@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MonacoEditor } from '../MonacoEditor';
+import { MonacoEditor } from '@/components/MonacoEditor';
 
 // Simple mock for Monaco Editor
 vi.mock('@monaco-editor/react', () => ({

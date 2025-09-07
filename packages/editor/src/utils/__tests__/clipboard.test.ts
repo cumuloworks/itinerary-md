@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { writeTextToClipboard } from '../clipboard';
+import { writeTextToClipboard } from '@/utils/clipboard';
 
 describe('clipboard utilities', () => {
     let originalClipboard: Clipboard | undefined;

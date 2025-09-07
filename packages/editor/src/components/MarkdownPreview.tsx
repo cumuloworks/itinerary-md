@@ -8,15 +8,15 @@ import { normalizeCurrency, normalizeTimezone } from 'remark-itinerary/utils';
 import remarkItineraryAlert from 'remark-itinerary-alert';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import { notifyError } from '../core/errors';
-// import { normalizeCurrencyCode } from '../utils/currency';
-import { isValidIanaTimeZone } from '../utils/timezone';
+import { notifyError } from '@/core/errors';
+// import { normalizeCurrencyCode } from '@/utils/currency';
+import { isValidIanaTimeZone } from '@/utils/timezone';
 import 'highlight.js/styles/github.css';
 import { DateTime } from 'luxon';
-import { Statistics } from './itinerary/Statistics';
-import { createRenderBlock } from './render';
-import type { MdNode } from './render/types';
-import { Tags } from './Tags';
+import { Statistics } from '@/components/itinerary/Statistics';
+import { createRenderBlock } from '@/components/render';
+import type { MdNode } from '@/components/render/types';
+import { Tags } from '@/components/Tags';
 
 interface MarkdownPreviewProps {
     content: string;

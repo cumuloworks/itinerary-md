@@ -1,7 +1,7 @@
 import { MapPin } from 'lucide-react';
 import type React from 'react';
-import { buildGoogleMapsSearchUrl, isAllowedHref } from '../../utils/url';
-import { SegmentedText, type TextSegment } from './SegmentedText';
+import { SegmentedText, type TextSegment } from '@/components/itinerary/SegmentedText';
+import { buildGoogleMapsSearchUrl, isAllowedHref } from '@/utils/url';
 
 interface LocationProps {
     location?: string;

@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import type React from 'react';
-import { Heading } from '../../itinerary/Heading';
-import { mergeClassNames } from '../utils';
+import { Heading } from '@/components/itinerary/Heading';
+import { mergeClassNames } from '@/components/render/utils';
 
 export const ItmdHeadingBlock: React.FC<{
     node: any;

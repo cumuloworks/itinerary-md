@@ -1,6 +1,6 @@
 import hljs from 'highlight.js/lib/common';
 import { useEffect, useRef } from 'react';
-import { mergeClassNames } from '../utils';
+import { mergeClassNames } from '@/components/render/utils';
 
 export const CodeBlock: React.FC<{
     lang?: string;

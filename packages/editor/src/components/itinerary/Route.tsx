@@ -1,7 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import type React from 'react';
-import { Location } from './Location';
-import type { TextSegment } from './SegmentedText';
+import { Location } from '@/components/itinerary/Location';
+import type { TextSegment } from '@/components/itinerary/SegmentedText';
 
 //
 

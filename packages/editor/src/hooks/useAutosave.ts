@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { notifyError, safeLocalStorage } from '../core/errors';
-import type { UseAutosaveOptions } from '../types/itinerary';
+import { notifyError, safeLocalStorage } from '@/core/errors';
+import type { UseAutosaveOptions } from '@/types/itinerary';
 
 /**
  * Hook that manages autosaving to LocalStorage (handles notifications internally).

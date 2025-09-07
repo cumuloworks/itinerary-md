@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import en from './en.json';
-import ja from './ja.json';
+import en from '@/i18n/en.json';
+import ja from '@/i18n/ja.json';
 
 type Dictionary = Record<string, string>;
 type SupportedLang = 'en' | 'ja';

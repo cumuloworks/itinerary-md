@@ -3,11 +3,15 @@
         "target": "ES2020",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["src/*"]
+        },
         "outDir": "dist",
         "rootDir": "src",
         "declaration": true,
-        "declarationMap": true,
-        "sourceMap": true,
+        "declarationMap": false,
+        "sourceMap": false,
         "strict": true,
         "skipLibCheck": true,
         "resolveJsonModule": true,

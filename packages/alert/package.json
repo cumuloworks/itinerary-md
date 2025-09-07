@@ -41,7 +41,7 @@
     ],
     "scripts": {
         "clean": "rimraf dist",
-        "build": "rimraf dist && tsc -p tsconfig.build.json",
+        "build": "rimraf dist && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
         "prepack": "npm run build",
         "test": "vitest --run --passWithNoTests",
         "test:watch": "vitest"

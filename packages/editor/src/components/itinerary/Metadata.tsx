@@ -1,12 +1,12 @@
 //
 import type React from 'react';
 import { useMemo } from 'react';
-import { useRatesUSD } from '../../hooks/useRatesUSD';
-import { convertAmountUSDBase, formatCurrency } from '../../utils/currency';
-import { isAllowedHref } from '../../utils/url';
-import { IconLabelText } from './IconLabelText';
-import { getMetadataConfig } from './iconMaps';
-import type { TextSegment } from './SegmentedText';
+import { IconLabelText } from '@/components/itinerary/IconLabelText';
+import { getMetadataConfig } from '@/components/itinerary/iconMaps';
+import type { TextSegment } from '@/components/itinerary/SegmentedText';
+import { useRatesUSD } from '@/hooks/useRatesUSD';
+import { convertAmountUSDBase, formatCurrency } from '@/utils/currency';
+import { isAllowedHref } from '@/utils/url';
 
 // getMetadataConfig is consumed from a shared module
 
