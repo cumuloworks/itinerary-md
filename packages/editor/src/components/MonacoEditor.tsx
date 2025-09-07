@@ -1,5 +1,6 @@
 import Editor from '@monaco-editor/react';
 import { type FC, memo, useEffect, useRef } from 'react';
+import { registerTimezoneCompletion } from '@/completions/timezone';
 
 interface MonacoEditorProps {
     value: string;
@@ -34,6 +35,7 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
                 onChange={handleEditorChange}
                 theme="vs-light"
                 onMount={(editor, monaco) => {
+                    registerTimezoneCompletion(monaco);
                     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
                         onSave();
                     });

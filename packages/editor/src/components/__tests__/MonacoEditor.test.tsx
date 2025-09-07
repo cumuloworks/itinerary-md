@@ -1,15 +1,46 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MonacoEditor } from '@/components/MonacoEditor';
+import { getTimezoneOptions } from '@/utils/timezone';
 
-// Simple mock for Monaco Editor
+// Mock getTimezoneOptions
+vi.mock('@/utils/timezone', () => ({
+    getTimezoneOptions: vi.fn(() => ['UTC', 'Asia/Tokyo', 'America/New_York', 'Europe/London']),
+}));
+
+// Enhanced mock for Monaco Editor with onMount support
+const mockRegisterCompletionItemProvider = vi.fn();
+const mockMonaco = {
+    KeyMod: { CtrlCmd: 2048 },
+    KeyCode: { KeyS: 83 },
+    languages: {
+        registerCompletionItemProvider: mockRegisterCompletionItemProvider,
+        CompletionItemKind: {
+            Value: 12,
+        },
+    },
+};
+
 vi.mock('@monaco-editor/react', () => ({
-    default: ({ value, language, options, height }: { value: string; language: string; options?: Record<string, unknown>; height: string }) => (
-        <div data-testid="monaco-editor" data-language={language} data-height={height}>
-            <div data-testid="editor-value">{value}</div>
-            <div data-testid="editor-options">{JSON.stringify(options)}</div>
-        </div>
-    ),
+    default: ({ value, language, options, height, onMount }: { value: string; language: string; options?: Record<string, unknown>; height: string; onMount?: (editor: any, monaco: any) => void }) => {
+        // Call onMount if provided
+        if (onMount) {
+            const mockEditor = {
+                addCommand: vi.fn(),
+                getPosition: vi.fn(() => ({ lineNumber: 1 })),
+                onDidChangeCursorPosition: vi.fn(),
+                onDidChangeModelContent: vi.fn(),
+            };
+            onMount(mockEditor, mockMonaco);
+        }
+
+        return (
+            <div data-testid="monaco-editor" data-language={language} data-height={height}>
+                <div data-testid="editor-value">{value}</div>
+                <div data-testid="editor-options">{JSON.stringify(options)}</div>
+            </div>
+        );
+    },
 }));
 
 describe('MonacoEditor', () => {
@@ -137,6 +168,116 @@ describe('MonacoEditor', () => {
 
             // Verify the component renders normally
             expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
+        });
+    });
+
+    describe('Timezone autocomplete', () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+        });
+
+        it('registers completion provider for mdx language', () => {
+            render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
+
+            expect(mockRegisterCompletionItemProvider).toHaveBeenCalledWith(
+                'mdx',
+                expect.objectContaining({
+                    triggerCharacters: ['@'],
+                    provideCompletionItems: expect.any(Function),
+                })
+            );
+        });
+
+        it('provides timezone suggestions when @ is typed', () => {
+            render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
+
+            // Get the registered completion provider
+            const [, provider] = mockRegisterCompletionItemProvider.mock.calls[0];
+
+            // Mock model and position for testing
+            const mockModel = {
+                getValueInRange: vi.fn(() => 'Some text @'),
+            };
+            const mockPosition = {
+                lineNumber: 1,
+                column: 12,
+            };
+
+            // Call the provider
+            const result = provider.provideCompletionItems(mockModel, mockPosition);
+
+            // Check that timezones are included in suggestions
+            expect(result.suggestions).toContainEqual(
+                expect.objectContaining({
+                    label: 'Asia/Tokyo',
+                    kind: mockMonaco.languages.CompletionItemKind.Value,
+                    insertText: 'Asia/Tokyo',
+                    detail: 'Timezone',
+                })
+            );
+
+            // No UTC offset suggestions expected anymore
+            const utcOffsets = result.suggestions.filter((s: any) => s.detail === 'UTC Offset');
+            expect(utcOffsets.length).toBe(0);
+        });
+
+        it('does not provide suggestions when @ is not typed', () => {
+            render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
+
+            const [, provider] = mockRegisterCompletionItemProvider.mock.calls[0];
+
+            const mockModel = {
+                getValueInRange: vi.fn(() => 'Some text without at sign'),
+            };
+            const mockPosition = {
+                lineNumber: 1,
+                column: 25,
+            };
+
+            const result = provider.provideCompletionItems(mockModel, mockPosition);
+
+            expect(result.suggestions).toEqual([]);
+        });
+
+        it('uses getTimezoneOptions to fetch timezone list', () => {
+            render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
+
+            const [, provider] = mockRegisterCompletionItemProvider.mock.calls[0];
+
+            const mockModel = {
+                getValueInRange: vi.fn(() => '@'),
+            };
+            const mockPosition = {
+                lineNumber: 1,
+                column: 2,
+            };
+
+            provider.provideCompletionItems(mockModel, mockPosition);
+
+            expect(getTimezoneOptions).toHaveBeenCalled();
+        });
+
+        it('provides IANA timezones only (no UTC offsets)', () => {
+            render(<MonacoEditor value="test" onChange={mockOnChange} onSave={mockOnSave} />);
+
+            const [, provider] = mockRegisterCompletionItemProvider.mock.calls[0];
+
+            const mockModel = {
+                getValueInRange: vi.fn(() => 'Test @'),
+            };
+            const mockPosition = {
+                lineNumber: 1,
+                column: 7,
+            };
+
+            const result = provider.provideCompletionItems(mockModel, mockPosition);
+
+            // IANA timezones are present
+            const ianaTimezones = result.suggestions.filter((s: any) => s.detail === 'Timezone');
+            expect(ianaTimezones.length).toBeGreaterThan(0);
+
+            const utcOffsets = result.suggestions.filter((s: any) => s.detail === 'UTC Offset');
+            expect(utcOffsets.length).toBe(0);
         });
     });
 });
