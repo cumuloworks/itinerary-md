@@ -291,7 +291,7 @@ describe('useTopbarState', () => {
         });
 
         it('does not update when URL is already the same', () => {
-            window.location.search = '?tz=UTC&cur=USD&view=split&past=1&scroll=1';
+            window.location.search = '?tz=UTC&cur=USD&view=split&past=1&scroll=1&alt=0';
             const replaceStateMock = vi.fn();
             window.history.replaceState = replaceStateMock;
 
