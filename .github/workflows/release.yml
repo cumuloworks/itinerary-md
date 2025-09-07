@@ -33,44 +33,18 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Detect Version Bumps
-        id: changes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          BEFORE=${{ github.event.before }}
-          echo "Comparing $BEFORE..$GITHUB_SHA"
-
-          CORE_CHANGED=false
-          if git diff --name-only "$BEFORE" "$GITHUB_SHA" -- packages/core/package.json | grep -q .; then
-            CORE_CURR=$(node -e "console.log(JSON.parse(require('fs').readFileSync('packages/core/package.json','utf8')).version)")
-            CORE_PREV=$(git show "$BEFORE:packages/core/package.json" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).version))" || echo '')
-            if [ -n "$CORE_PREV" ] && [ "$CORE_CURR" != "$CORE_PREV" ]; then CORE_CHANGED=true; fi
-          fi
-          echo "core_changed=$CORE_CHANGED" >> $GITHUB_OUTPUT
-
-          ALERT_CHANGED=false
-          if git diff --name-only "$BEFORE" "$GITHUB_SHA" -- packages/alert/package.json | grep -q .; then
-            ALERT_CURR=$(node -e "console.log(JSON.parse(require('fs').readFileSync('packages/alert/package.json','utf8')).version)")
-            ALERT_PREV=$(git show "$BEFORE:packages/alert/package.json" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).version))" || echo '')
-            if [ -n "$ALERT_PREV" ] && [ "$ALERT_CURR" != "$ALERT_PREV" ]; then ALERT_CHANGED=true; fi
-          fi
-          echo "alert_changed=$ALERT_CHANGED" >> $GITHUB_OUTPUT
-
-      # Build only what's needed on main push (after change detection)
+      # Build packages on main push
       - name: Build Packages
         run: |
           if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
-            if [[ "${{ steps.changes.outputs.core_changed }}" == "true" ]]; then npm -w packages/core run build; fi
-            if [[ "${{ steps.changes.outputs.alert_changed }}" == "true" ]]; then npm -w packages/alert run build; fi
-            if [[ "${{ steps.changes.outputs.core_changed }}" != "true" && "${{ steps.changes.outputs.alert_changed }}" != "true" ]]; then
-              echo "No version bumps detected; nothing to build."
-            fi
+            npm -w packages/core run build
+            npm -w packages/alert run build
           else
             npm run build:deps
           fi
 
       - name: Publish remark-itinerary
-        if: github.event_name == 'push' && steps.changes.outputs.core_changed == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           VERSION=$(node -e "const fs=require('fs');console.log(JSON.parse(fs.readFileSync('packages/core/package.json','utf8')).version)")
           if npm view remark-itinerary@"$VERSION" version > /dev/null 2>&1; then
@@ -82,7 +56,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish remark-itinerary-alert
-        if: github.event_name == 'push' && steps.changes.outputs.alert_changed == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           VERSION=$(node -e "const fs=require('fs');console.log(JSON.parse(fs.readFileSync('packages/alert/package.json','utf8')).version)")
           if npm view remark-itinerary-alert@"$VERSION" version > /dev/null 2>&1; then
