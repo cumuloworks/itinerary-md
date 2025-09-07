@@ -2,7 +2,7 @@ import type { Parent, PhrasingContent, Root } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
 import type { Position } from 'unist';
 import { normalizePriceLine } from '../domain/price.js';
-import { sliceInlineNodes } from '../mdast/index.js';
+import { sliceInlineNodes, splitRichInlineByCaret } from '../mdast/index.js';
 import type { Services } from '../services/index.js';
 import type { ITMDHeadingNode } from '../types.js';
 import { buildEventNode } from './build.js';
@@ -237,6 +237,58 @@ export function assembleEvents(root: Root, sv: Services): Root {
         const childrenOut: Parent['children'] = blockChildren;
         const combinedPos = bq.position as Position | undefined;
         const built = buildEventNode(header, childrenOut as any, combinedPos, sv);
+        // Apply native^local splitting at the very end
+        try {
+            // title
+            if (Array.isArray(built.title)) {
+                const sp = splitRichInlineByCaret(built.title);
+                if (sp.right) {
+                    (built as any).title = sp.left;
+                    (built as any).title_alt = sp.right;
+                }
+            }
+            // destination parts
+            if (built.destination && typeof built.destination === 'object') {
+                const dest = built.destination as any;
+                if (dest.kind === 'single' && Array.isArray(dest.at)) {
+                    const sp = splitRichInlineByCaret(dest.at);
+                    if (sp.right) {
+                        dest.at = sp.left;
+                        dest.at_alt = sp.right;
+                    }
+                } else if (dest.kind === 'dashPair') {
+                    if (Array.isArray(dest.from)) {
+                        const spF = splitRichInlineByCaret(dest.from);
+                        if (spF.right) {
+                            dest.from = spF.left;
+                            dest.from_alt = spF.right;
+                        }
+                    }
+                    if (Array.isArray(dest.to)) {
+                        const spT = splitRichInlineByCaret(dest.to);
+                        if (spT.right) {
+                            dest.to = spT.left;
+                            dest.to_alt = spT.right;
+                        }
+                    }
+                } else if (dest.kind === 'fromTo') {
+                    if (Array.isArray(dest.from)) {
+                        const spF = splitRichInlineByCaret(dest.from);
+                        if (spF.right) {
+                            dest.from = spF.left;
+                            dest.from_alt = spF.right;
+                        }
+                    }
+                    if (Array.isArray(dest.to)) {
+                        const spT = splitRichInlineByCaret(dest.to);
+                        if (spT.right) {
+                            dest.to = spT.left;
+                            dest.to_alt = spT.right;
+                        }
+                    }
+                }
+            }
+        } catch {}
         (built as any).body = bodySegs.length > 0 ? (bodySegs as any) : null;
 
         // Normalize price/cost meta entries (no calculation; currency+amount only)

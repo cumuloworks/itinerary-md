@@ -1,5 +1,6 @@
 import type { InlineCode, Parent, PhrasingContent, Text } from 'mdast';
 import { toString as mdastToString } from 'mdast-util-to-string';
+import type { RichInline } from '../types.js';
 
 function cloneShallow<T extends object>(obj: T): T {
     return { ...obj };
@@ -69,4 +70,19 @@ export function sliceInlineNodes(nodes: PhrasingContent[], start: number, end: n
         out.push(...sliced);
     }
     return out;
+}
+
+// Split RichInline by the first '^' found in its plain-text representation.
+// Returns left (primary) and right (alternative). If no caret found, right is null and left is the original nodes.
+export function splitRichInlineByCaret(nodes: RichInline): { left: RichInline; right: RichInline | null } {
+    try {
+        const plain = mdastToString({ type: 'paragraph', children: nodes } as unknown as Parent) || '';
+        const idx = plain.indexOf('^');
+        if (idx < 0) return { left: nodes, right: null };
+        const left = sliceInlineNodes(nodes, 0, idx);
+        const right = sliceInlineNodes(nodes, idx + 1, plain.length);
+        return { left, right: right.length > 0 ? right : [] };
+    } catch {
+        return { left: nodes, right: null };
+    }
 }
