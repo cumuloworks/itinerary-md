@@ -1,0 +1,187 @@
+[
+    {
+        "type": "itmdHeading",
+        "dateISO": "2026-01-23",
+        "timezone": "America/Los_Angeles",
+        "children": [],
+        "data": {
+            "itmdDate": {
+                "dateISO": "2026-01-23",
+                "timezone": "America/Los_Angeles"
+            },
+            "hProperties": {
+                "data-itmd-date": "2026-01-23"
+            }
+        }
+    },
+    {
+        "type": "itmdEvent",
+        "eventType": "flight",
+        "baseType": "transportation",
+        "title": [
+            {
+                "type": "text",
+                "value": "AA000"
+            }
+        ],
+        "destination": {
+            "kind": "fromTo",
+            "from": [
+                {
+                    "type": "text",
+                    "value": "LAX"
+                }
+            ],
+            "to": [
+                {
+                    "type": "text",
+                    "value": "HND"
+                }
+            ]
+        },
+        "time": {
+            "kind": "range",
+            "start": {
+                "hh": 10,
+                "mm": 0,
+                "tz": null,
+                "dayOffset": null
+            },
+            "end": {
+                "hh": 2,
+                "mm": 0,
+                "tz": "Asia/Tokyo",
+                "dayOffset": 1
+            },
+            "startISO": "2026-01-23T10:00-08:00",
+            "endISO": "2026-01-24T02:00+09:00"
+        },
+        "positions": {
+            "time": {
+                "start": {
+                    "start": 1,
+                    "end": 6
+                },
+                "end": {
+                    "start": 11,
+                    "end": 29
+                }
+            },
+            "destination": {
+                "from": {
+                    "start": 49,
+                    "end": 52
+                },
+                "to": {
+                    "start": 56,
+                    "end": 59
+                }
+            },
+            "title": {
+                "start": 38,
+                "end": 43
+            }
+        },
+        "body": [
+            {
+                "kind": "meta",
+                "entries": [
+                    {
+                        "key": "seat",
+                        "value": [
+                            {
+                                "type": "text",
+                                "value": "10A"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "kind": "inline",
+                "content": [
+                    {
+                        "type": "text",
+                        "value": "Test Paragraph"
+                    }
+                ]
+            }
+        ],
+        "warnings": [],
+        "children": [
+            {
+                "type": "paragraph",
+                "children": [
+                    {
+                        "type": "text",
+                        "value": "[10:00] - [02:00@Asia/Tokyo+1] flight AA000 from LAX to HND"
+                    }
+                ]
+            },
+            {
+                "type": "list",
+                "ordered": false,
+                "start": null,
+                "spread": false,
+                "children": [
+                    {
+                        "type": "listItem",
+                        "spread": false,
+                        "checked": null,
+                        "children": [
+                            {
+                                "type": "paragraph",
+                                "children": [
+                                    {
+                                        "type": "text",
+                                        "value": "seat: 10A"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "type": "paragraph",
+                "children": [
+                    {
+                        "type": "text",
+                        "value": "Test Paragraph"
+                    }
+                ]
+            }
+        ],
+        "version": "1",
+        "data": {
+            "itmdDate": {
+                "dateISO": "2026-01-23",
+                "timezone": "America/Los_Angeles"
+            },
+            "hProperties": {
+                "data-itmd-date": "2026-01-23"
+            }
+        }
+    },
+    {
+        "type": "itmdAlert",
+        "variant": "note",
+        "title": "NOTE",
+        "inlineTitle": [
+            {
+                "type": "text",
+                "value": "This is an alert"
+            }
+        ],
+        "children": [],
+        "data": {
+            "hProperties": {
+                "data-itmd-date": "2026-01-23"
+            },
+            "itmdDate": {
+                "dateISO": "2026-01-23",
+                "timezone": "America/Los_Angeles"
+            }
+        }
+    }
+]

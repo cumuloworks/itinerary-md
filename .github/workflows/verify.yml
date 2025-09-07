@@ -1,0 +1,66 @@
+name: Verify Published Packages
+
+on:
+  workflow_run:
+    workflows: ["Release Packages"]
+    types:
+      - completed
+
+jobs:
+  verify-latest:
+    name: Verify latest packages against fixtures
+    runs-on: ubuntu-latest
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Read published versions
+        run: |
+          node -e "const fs=require('fs');const v=require('./packages/core/package.json').version;fs.appendFileSync(process.env.GITHUB_ENV, `CORE_VERSION=${v}\n`)"
+          node -e "const fs=require('fs');const v=require('./packages/alert/package.json').version;fs.appendFileSync(process.env.GITHUB_ENV, `ALERT_VERSION=${v}\n`)"
+
+      - name: Wait until versions are visible on npm
+        run: |
+          set -euxo pipefail
+          for PKG in "remark-itinerary@${CORE_VERSION}" "remark-itinerary-alert@${ALERT_VERSION}"; do
+            for i in {1..10}; do
+              if npm view "$PKG" version >/dev/null 2>&1; then
+                echo "Found $PKG on npm"
+                break
+              fi
+              echo "Waiting for $PKG to be visible..."; sleep 3
+              if [ "$i" = "10" ]; then echo "Timeout waiting for $PKG"; exit 1; fi
+            done
+          done
+
+      - name: Prepare clean workspace
+        run: |
+          set -euxo pipefail
+          WORK=/tmp/itmd-verify
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          cp -r .github/workflows/verify "$WORK"/fixtures
+          cd "$WORK/fixtures"
+          npm init -y >/dev/null 2>&1
+
+      - name: Install latest packages from npm
+        working-directory: /tmp/itmd-verify/fixtures
+        run: |
+          npm i --no-audit --no-fund unified remark-parse unist-util-visit \
+            remark-itinerary@"$CORE_VERSION" remark-itinerary-alert@"$ALERT_VERSION"
+
+      - name: Run verification
+        working-directory: /tmp/itmd-verify/fixtures/verify
+        run: |
+          node verify.mjs
+
