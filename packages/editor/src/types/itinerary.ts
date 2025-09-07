@@ -7,6 +7,7 @@ export type TopbarState = {
     showPast?: boolean;
     autoScroll?: boolean;
     showMdast?: boolean;
+    altNames?: boolean;
 };
 
 export type QueryParams = {
@@ -15,6 +16,7 @@ export type QueryParams = {
     view?: ViewMode;
     past?: '1' | '0';
     scroll?: '1' | '0';
+    alt?: '1' | '0';
 };
 
 export type ItinerarySummary = {

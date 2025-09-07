@@ -180,6 +180,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                                 showPast={topbar.showPast}
                                 onShowPast={() => updateTopbar({ showPast: true })}
                                 className="h-full"
+                                preferAltNames={topbar.altNames}
                             />
                         </MarkdownPreviewErrorBoundary>
                     </div>

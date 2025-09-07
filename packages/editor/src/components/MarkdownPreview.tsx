@@ -31,6 +31,7 @@ interface MarkdownPreviewProps {
     activeLine?: number;
     autoScroll?: boolean;
     onShowPast?: () => void;
+    preferAltNames?: boolean;
 }
 
 //
@@ -55,7 +56,7 @@ const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | un
 
 const segmentsToPlainText = (segments?: TextSegment[]): string | undefined => (Array.isArray(segments) ? segments.map((s) => s.text).join('') : undefined);
 
-const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true, onShowPast }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true, onShowPast, preferAltNames }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
@@ -172,6 +173,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 lastStaySegmentsByDate,
                 inlineToSegments,
                 segmentsToPlainText,
+                preferAltNames,
             });
 
             let sawAnyHidden = false;
@@ -225,7 +227,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 isItmd: false,
             } as any;
         }
-    }, [content, timezone, currency, showPastEffective, displayTimezone, onShowPast]);
+    }, [content, timezone, currency, showPastEffective, displayTimezone, onShowPast, preferAltNames]);
 
     const safeParsedFrontmatter = parsedFrontmatter as Record<string, unknown>;
 

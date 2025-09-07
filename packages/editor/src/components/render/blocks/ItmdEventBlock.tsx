@@ -13,11 +13,18 @@ export const ItmdEventBlock: React.FC<{
     currency?: string;
     inlineToSegments: (inline?: PhrasingContent[] | null) => Array<{ text: string; url?: string; kind?: 'text' | 'code' }> | undefined;
     segmentsToPlainText: (segments?: Array<{ text: string; url?: string }>) => string | undefined;
-}> = ({ node, commonDataProps, getNodeDateAttr, displayTimezone, currency, inlineToSegments, segmentsToPlainText }) => {
+    preferAltNames?: boolean;
+}> = ({ node, commonDataProps, getNodeDateAttr, displayTimezone, currency, inlineToSegments, segmentsToPlainText, preferAltNames }) => {
     const nodeDateAttr = getNodeDateAttr(node);
     const ev = node as any;
     const dateInfo = nodeDateAttr ? { date: nodeDateAttr } : undefined;
-    const nameSegmentsRaw = inlineToSegments(ev.title as PhrasingContent[] | null | undefined);
+    const effectiveTitle = ((): PhrasingContent[] | null | undefined => {
+        const primary = ev.title as PhrasingContent[] | null | undefined;
+        const alt = ev.title_alt as PhrasingContent[] | null | undefined;
+        if (preferAltNames && Array.isArray(alt) && alt.length > 0) return alt;
+        return primary;
+    })();
+    const nameSegmentsRaw = inlineToSegments(effectiveTitle);
     const nameSegments = Array.isArray(nameSegmentsRaw) && nameSegmentsRaw.length > 0 ? nameSegmentsRaw : undefined;
     const nameText = (() => {
         try {
@@ -32,8 +39,22 @@ export const ItmdEventBlock: React.FC<{
     })();
     const baseType = (ev as { baseType?: 'transportation' | 'stay' | 'activity' }).baseType ?? 'activity';
     const t = ev.eventType as string;
-    const depSegs = ev.destination && (ev.destination as any).from ? inlineToSegments((ev.destination as any).from) : undefined;
-    const arrSegs = ev.destination && ((ev.destination as any).to || (ev.destination as any).at) ? inlineToSegments(((ev.destination as any).to ?? (ev.destination as any).at) as PhrasingContent[]) : undefined;
+    const depSegs = (() => {
+        if (!ev.destination) return undefined;
+        const d = ev.destination as any;
+        const primary = d.from as PhrasingContent[] | undefined;
+        const alt = d.from_alt as PhrasingContent[] | undefined;
+        const inline = preferAltNames && Array.isArray(alt) && alt.length > 0 ? alt : primary;
+        return inlineToSegments(inline);
+    })();
+    const arrSegs = (() => {
+        if (!ev.destination) return undefined;
+        const d = ev.destination as any;
+        const primary = (d.to ?? d.at) as PhrasingContent[] | undefined;
+        const alt = (d.to_alt ?? d.at_alt) as PhrasingContent[] | undefined;
+        const inline = preferAltNames && Array.isArray(alt) && alt.length > 0 ? alt : primary;
+        return inlineToSegments(inline);
+    })();
     const metadata: Record<string, string> = {};
     const bodySegments = (() => {
         const body = (ev as any).body as Array<any> | undefined;
