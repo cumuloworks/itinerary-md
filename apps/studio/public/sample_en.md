@@ -16,6 +16,8 @@ timezone: Asia/Tokyo
 
 TripMD is a framework that leverages the simplicity and flexibility of Markdown to write and share travel itineraries in structured text.
 
+TripMD consists of the Studio (editor) and the underlying Remark plugins.
+
 - ✈️ **Organize flights, accommodations, sightseeing, and transportation** chronologically
 - 🌍 **Timezone-aware** time management
 - 💰 **Expense tracking** with multi-currency support
@@ -24,12 +26,12 @@ TripMD is a framework that leverages the simplicity and flexibility of Markdown 
 
 ## 2026-01-23
 
-> [08:50@Asia/Tokyo] - [16:35@Europe/Paris] flight AF187 from HND to CDG
+> [08:50@Asia/Tokyo] - [16:35@Europe/Paris] flight AF187 from Haneda Airport^HND to Charles de Gaulle Airport^CDG
 >
 > - price: 285000 JPY
 > - class: Economy
 > - seat: 32A
-> - note: Online check-in completed
+> - note: Check in 2 hours before
 
 > [18:30@Europe/Paris] train RER B :: CDG - Châtelet
 >
@@ -40,32 +42,28 @@ TripMD is a framework that leverages the simplicity and flexibility of Markdown 
 >
 > - price: EUR 2.10
 
-> [!CAUTION]
+> [!CAUTION] Power adapter preparation
 >
-> Power adapter preparation
 > France uses Type C/E plugs.
-> Japanese Type A plugs cannot be used.
 
 > [19:30@Europe/Paris] hotel :: [Example Hotel Paris](https://example.com/hotel)
 >
 > - check-in: 15:00
 > - check-out: 11:00
-> - price: EUR 180/night
+> - price: EUR {80*2}
 > - wifi: Available
-> - note: Breakfast included
 
-> [20:30@Europe/Paris] dinner :: [Bistro Example](https://example.com/bistro)
+> [20:30@Europe/Paris] dinner French cuisine :: Restaurant Example
 >
 > - price: EUR 45
 
 ## 2026-01-24 @Europe/Paris
 
-> [!TIP] Avoiding museum crowds
+> [!TIP] Museum tickets
 >
-> Purchase museum tickets online in advance to
-> skip long queues. Also download the official apps.
+> Purchase museum tickets online in advance
 
-> [09:00] breakfast :: [Hotel Restaurant](https://example.com/hotel)
+> [09:00] breakfast :: Hotel
 
 > [10:30] - [13:00] museum :: [Louvre Museum](https://example.com/louvre)
 >
@@ -84,7 +82,6 @@ TripMD is a framework that leverages the simplicity and flexibility of Markdown 
 > [15:00] - [17:00] sightseeing :: Eiffel Tower
 >
 > - price: EUR 26.80
-> - note: Up to 2nd floor
 
 > [18:30] dinner :: [Le Example Restaurant](https://example.com/restaurant)
 >
@@ -106,13 +103,15 @@ A systematic explanation of TripMD syntax.
 All events are written in quote blocks starting with `>`.
 
 ```markdown
-> [time] eventType title :: location/details
+> [time] eventType title^alias :: location/details^alias
 > - attribute: value
 ```
 
 ## 2. Event Types
 
 Event types are automatically classified into three categories:
+
+`title^alias` notation allows writing local names or alternate labels.
 
 ### Transportation
 
@@ -186,20 +185,7 @@ All other event types:
 > [10:00] train from Tokyo to Kyoto              # from-to format
 ```
 
-### Activity
-
-```markdown
-> [14:00] museum :: [Example Museum](https://example.com)
-> - note: Using official app with `skip-the-line`
-```
-
-### Accommodation
-
-Write the accommodation name, and optionally add area or notes after `::`.
-
-```markdown
-> [15:00] hotel :: Example Paris
-```
+Spaces are required around each symbol (`::`, `-`, `from`, `to`, `at`).
 
 ## 5. Attribute Keys
 
@@ -213,6 +199,10 @@ Lines starting with `- key: value` add detailed information to events.
 > - price: EUR 100          # Price (price/cost are auto-aggregated)
 > - cost: 15000 JPY         # Cost (treated same as price)
 ```
+
+`price`, `cost` are converted and auto-aggregated.
+
+Arithmetic like `{25*4} EUR` is supported.
 
 #### Transportation
 
@@ -330,10 +320,16 @@ currency: JPY              # Document default currency
 
 # Developer Information
 
+TripMD (codename `itinerary-md`/`itmd`) is a Markdown extension for writing travel itineraries devised and developed by [@cumuloworks](https://github.com/cumuloworks).
+
+The TripMD Studio app is published in `apps/studio` for demonstration purposes.
+
+The packages include the core Remark parser (`remark-itinerary`), the alert extension (`remark-itinerary-alert`), and the editor component (`@itinerary-md/editor`).
+
 ## Installation and Basic Setup
 
 ```bash
-npm install remark-itinerary
+npm install remark-itinerary remark-itinerary-alert
 ```
 
 ```typescript
@@ -434,9 +430,11 @@ function ItineraryViewer({ markdown }) {
 - **remark-itinerary** - Core parser (MIT License)
 - **remark-itinerary-alert** - Alert extension (MIT License)
 - **@itinerary-md/editor** - React editor component (UNLICENSED)
+- **@itinerary-md/studio** - Studio app (UNLICENSED)
 
 ## Resources
 
 - GitHub: [cumuloworks/itinerary-md](https://github.com/cumuloworks/itinerary-md)  
 - Demo: [https://tripmd.dev/](https://tripmd.dev/)
 - npm: [remark-itinerary](https://www.npmjs.com/package/remark-itinerary)
+- npm: [remark-itinerary-alert](https://www.npmjs.com/package/remark-itinerary-alert)
