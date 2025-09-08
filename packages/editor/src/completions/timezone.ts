@@ -5,8 +5,8 @@ import { getTimezoneOptions } from '@/utils/timezone';
  * This registers suggestions for IANA timezones and common UTC offset formats
  * when the user types '@' in MDX documents.
  */
-export function registerTimezoneCompletion(monaco: any): void {
-    monaco.languages.registerCompletionItemProvider('mdx', {
+export function registerTimezoneCompletion(monaco: any): { dispose: () => void } {
+    return monaco.languages.registerCompletionItemProvider('mdx', {
         triggerCharacters: ['@'],
         provideCompletionItems: (model: any, position: any) => {
             const textUntilPosition = model.getValueInRange({

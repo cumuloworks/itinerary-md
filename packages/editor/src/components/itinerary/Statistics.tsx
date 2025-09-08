@@ -96,31 +96,31 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
             const to = toCurrency;
             let eventSum = 0;
             for (const p of prices) {
-                const tok = Array.isArray(p.price?.tokens) ? p.price.tokens[0] : undefined;
-                if (!tok || tok.kind !== 'money') continue;
-                // Normalize and validate source currency; if invalid, fall back to display currency
-                const from = normalizeCurrencyCode(tok.normalized?.currency || tok.currency || to, to);
-                const amt = Number(String(tok.normalized?.amount || tok.amount || ''));
-                if (!Number.isFinite(amt)) continue;
-                let converted: number | null = null;
-                // 1) apply manual rate (priority) 2) API rates 3) mark unconverted (no 1:1)
-                converted = applyManualRate(amt, from, to);
-                if (converted == null) {
-                    if (from === to) {
-                        converted = amt;
-                    } else if (ratesData) {
-                        const hasFrom = typeof ratesData.rates[from] === 'number';
-                        const hasTo = typeof ratesData.rates[to] === 'number';
-                        if (hasFrom && hasTo) {
-                            converted = convertAmountUSDBase(amt, from, to, ratesData.rates);
+                const toks = Array.isArray(p.price?.tokens) ? p.price.tokens : [];
+                for (const tok of toks) {
+                    if (!tok || tok.kind !== 'money') continue;
+                    // Normalize and validate source currency; if invalid, fall back to display currency
+                    const from = normalizeCurrencyCode(tok.normalized?.currency || tok.currency || to, to);
+                    const amt = Number(String(tok.normalized?.amount || tok.amount || ''));
+                    if (!Number.isFinite(amt)) continue;
+                    let converted: number | null = applyManualRate(amt, from, to);
+                    if (converted == null) {
+                        if (from === to) {
+                            converted = amt;
+                        } else if (ratesData?.rates && typeof ratesData.rates === 'object') {
+                            const hasFrom = typeof (ratesData.rates as Record<string, number>)[from] === 'number';
+                            const hasTo = typeof (ratesData.rates as Record<string, number>)[to] === 'number';
+                            if (hasFrom && hasTo) {
+                                converted = convertAmountUSDBase(amt, from, to, ratesData.rates as Record<string, number>);
+                            } else {
+                                converted = null; // unknown rates → mark as unconverted
+                            }
                         } else {
-                            converted = null; // unknown rates → mark as unconverted
+                            converted = null; // rates unavailable → mark as unconverted
                         }
-                    } else {
-                        converted = null; // rates unavailable → mark as unconverted
                     }
+                    if (converted != null) eventSum += converted;
                 }
-                if (converted != null) eventSum += converted;
             }
             if (eventSum <= 0) continue;
             total += eventSum;

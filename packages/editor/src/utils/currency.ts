@@ -187,7 +187,8 @@ export const getCurrencyMinorUnit = (code: CurrencyCode, fallback: number = 2): 
 // Compact formatter: "20USD" without space/symbol, with configurable decimals (default 0)
 export const formatAmountCode = (amount: number, code: CurrencyCode, fractionDigits = 0): string => {
     try {
-        const n = typeof fractionDigits === 'number' ? Number(amount.toFixed(fractionDigits)) : amount;
+        const fd = typeof fractionDigits === 'number' ? Math.max(0, Math.min(20, fractionDigits)) : 0;
+        const n = Number(amount.toFixed(fd));
         return `${n.toLocaleString()}${String(code).toUpperCase()}`;
     } catch {
         return `${amount}${String(code).toUpperCase()}`;
@@ -197,7 +198,8 @@ export const formatAmountCode = (amount: number, code: CurrencyCode, fractionDig
 // Format as "12,345 CODE" with configurable fraction digits
 export const formatMoneyCodeSpaced = (amount: number, code: CurrencyCode, fractionDigits?: number): string => {
     try {
-        const digits = typeof fractionDigits === 'number' ? fractionDigits : getCurrencyMinorUnit(code, 2);
+        const inferred = typeof fractionDigits === 'number' ? fractionDigits : getCurrencyMinorUnit(code, 2);
+        const digits = Math.max(0, Math.min(20, inferred));
         const formatted = Number(amount).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
         return `${formatted} ${String(code).toUpperCase()}`;
     } catch {

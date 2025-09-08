@@ -79,7 +79,7 @@ export const EventBodySegments: React.FC<{
     if (!Array.isArray(bodySegments) || bodySegments.length === 0) return null;
     return (
         <div className={`mt-2 pt-2 border-t ${borderClass}`}>
-            {bodySegments.map((seg, idx) => {
+            {bodySegments.map((seg) => {
                 if (!seg) return null;
                 if ((seg as { kind?: string }).kind === 'inline') {
                     const s = seg as { kind: 'inline'; segments: Array<{ text: string; url?: string }> };
@@ -87,7 +87,7 @@ export const EventBodySegments: React.FC<{
                     const key = `inline-${s.segments
                         .map((x) => `${x.text}-${x.url ?? ''}`)
                         .join('|')
-                        .slice(0, 64)}-${idx}`;
+                        .slice(0, 64)}`;
                     return <SegmentedText key={key} segments={s.segments} className="block text-gray-700 text-sm mb-1" linkClassName="underline text-inherit" />;
                 }
                 if ((seg as { kind?: string }).kind === 'meta') {
@@ -113,7 +113,7 @@ export const EventBodySegments: React.FC<{
                     const key = `meta-${restEntries
                         .map((e) => e.key)
                         .join('|')
-                        .slice(0, 64)}-${idx}`;
+                        .slice(0, 64)}`;
                     return (
                         <div key={key} className="flex flex-wrap gap-x-2">
                             <MetaList entries={restEntries} />

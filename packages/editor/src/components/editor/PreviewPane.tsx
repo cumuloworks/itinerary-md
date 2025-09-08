@@ -49,6 +49,8 @@ export const PreviewPane: React.FC<{
                 <span>{showMdast ? 'MDAST' : 'Preview'}</span>
                 <div className="flex items-center gap-1">
                     <Toggle.Root
+                        aria-label="Toggle MDAST view"
+                        title="Toggle MDAST view"
                         pressed={!!showMdast}
                         onPressedChange={toggleMdast}
                         className={`transition-opacity text-sm opacity-0 group-hover/debug:opacity-100 inline-flex items-center justify-center px-1.5 h-6 ${showMdast ? 'opacity-100 text-red-700' : 'text-gray-600'}`}

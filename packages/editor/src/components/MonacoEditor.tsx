@@ -35,7 +35,10 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
                 onChange={handleEditorChange}
                 theme="vs-light"
                 onMount={(editor, monaco) => {
-                    registerTimezoneCompletion(monaco);
+                    const tzDisposable = registerTimezoneCompletion(monaco);
+                    if ((editor as any).onDidDispose && tzDisposable?.dispose) {
+                        (editor as any).onDidDispose(() => tzDisposable.dispose());
+                    }
                     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
                         onSave();
                     });

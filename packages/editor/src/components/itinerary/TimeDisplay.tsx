@@ -16,7 +16,7 @@ export const TimeDisplay: React.FC<{
         return <span className="font-mono text-lg leading-tight inline-block whitespace-pre">{label.padStart(5, ' ')}</span>;
     }
 
-    const displayTz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const displayTz = timezone || (typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC');
     const date = iso ? new Date(iso) : undefined;
     if (!date || Number.isNaN(date.getTime())) {
         return <span className="font-mono text-lg leading-tight relative inline-block invisible">-----</span>;
@@ -29,7 +29,7 @@ export const TimeDisplay: React.FC<{
     return (
         <span className="font-mono text-lg text-gray-800 leading-tight relative inline-block">
             {timeText}
-            {plusBadge && <span className="absolute -bottom-3 -right-0 text-xs font-bold text-white bg-red-500 rounded px-0.5 ">{plusBadge}</span>}
+            {plusBadge && <span className="absolute -bottom-3 -right-0 text-xs font-bold text-white bg-red-500 rounded px-0.5">{plusBadge}</span>}
         </span>
     );
 };

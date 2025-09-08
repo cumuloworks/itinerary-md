@@ -34,8 +34,12 @@ export function buildGoogleMapsSearchUrl(location: string): string {
  * Replaces reserved/control characters with spaces, collapses whitespace, trims, and shortens.
  */
 export function sanitizeFileName(input: string): string {
+    // Normalize to NFKC to unify forms (e.g., full-width/half-width)
+    const normalized = input.normalize('NFKC');
+    // Windows reserved device names
+    const WINDOWS_RESERVED_BASENAMES = new Set(['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9']);
     // Replace Windows-reserved characters with spaces
-    const withoutReserved = input.replace(/[\\/:*?"<>|]/g, ' ');
+    const withoutReserved = normalized.replace(/[\\/:*?"<>|]/g, ' ');
     // Replace ASCII control chars (0x00-0x1F) with spaces
     let withoutControl = '';
     for (let i = 0; i < withoutReserved.length; i++) {
@@ -49,6 +53,10 @@ export function sanitizeFileName(input: string): string {
     const safe = collapsed.replace(/[^\p{L}\p{N} _.-]/gu, '');
     // Avoid trailing dots/spaces which are problematic on Windows
     const trimmed = safe.replace(/[. ]+$/u, '');
-    const base = trimmed || 'file';
+    let base = trimmed || 'file';
+    // Avoid device-reserved basenames (case-insensitive)
+    if (WINDOWS_RESERVED_BASENAMES.has(base.toUpperCase())) {
+        base = `_${base}`;
+    }
     return base.slice(0, 120);
 }
