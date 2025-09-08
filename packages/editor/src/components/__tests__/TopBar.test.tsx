@@ -31,6 +31,7 @@ vi.mock('@radix-ui/react-dropdown-menu', () => ({
         </button>
     ),
     ItemIndicator: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Separator: () => <div />,
 }));
 
 vi.mock('@radix-ui/react-select', () => ({

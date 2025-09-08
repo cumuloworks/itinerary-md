@@ -160,8 +160,8 @@ describe('Statistics', () => {
         };
         render(<Statistics root={root} frontmatter={{ currency: 'EUR' }} />);
         const totalEl = document.querySelector('[aria-live="polite"]');
-        // When unconverted, the total display area is empty (em dash only on the right period)
-        expect(totalEl?.textContent || '').toBe('');
+        // When unconverted, UI shows an em dash in the display area
+        expect(totalEl?.textContent || '').toBe('—');
     });
 
     it('does not crash when Intl.NumberFormat throws RangeError and shows em dash if unconverted', () => {
@@ -181,8 +181,8 @@ describe('Statistics', () => {
         try {
             render(<Statistics root={root} frontmatter={{ currency: 'EUR' }} />);
             const totalEl = document.querySelector('[aria-live="polite"]');
-            // Even with formatter exceptions or unconverted values, the total display area is empty
-            expect(totalEl?.textContent || '').toBe('');
+            // Even with formatter exceptions or unconverted values, UI shows an em dash
+            expect(totalEl?.textContent || '').toBe('—');
         } finally {
             spy.mockRestore();
         }
