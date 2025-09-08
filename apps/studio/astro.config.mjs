@@ -42,8 +42,7 @@ export default defineConfig({
             },
             tailwindcss(),
             VitePWA({
-                registerType: 'autoUpdate',
-                injectRegister: 'auto',
+                registerType: 'prompt',
                 devOptions: {
                     // Disable PWA service worker in dev to avoid caching stale hashed chunks
                     enabled: false,

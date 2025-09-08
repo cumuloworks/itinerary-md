@@ -24,6 +24,7 @@ import AboutButton from '@/components/AboutButton.tsx';
             <AboutButton client:only="react" />
         </div>
     </div>
+    {import.meta.env.PROD && (
     <script type="module">
         import { registerSW } from 'virtual:pwa-register';
         const updateButton = document.getElementById('pwa-update');
@@ -37,7 +38,8 @@ import AboutButton from '@/components/AboutButton.tsx';
             },
         });
         updateButton?.addEventListener('click', () => {
-            updateSW();
+            updateSW(true);
         });
     </script>
+    )}
 </header>
