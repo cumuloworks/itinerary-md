@@ -1,10 +1,10 @@
 /**
- * Utilities for printing the preview content in a separate window.
- * The function opens a new window with collected styles and triggers print.
+ * Utilities for printing the preview content without relying on popups.
+ * This implementation uses a hidden iframe to render HTML and trigger print,
+ * avoiding popup blockers and unintended downloads of .html files.
  */
 import { notifyError } from '@/core/errors';
-import { triggerDownload } from '@/utils/download';
-import { sanitizeFileName } from '@/utils/url';
+import { tInstant } from '@/i18n';
 
 export interface PrintOptions {
     /** Title used in the print window */
@@ -76,69 +76,80 @@ export function openPrintWindow(options: PrintOptions): void {
         const escaped = raw.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string);
         return `<pre>${escaped}</pre>`;
     })();
-    const autoPrintScript = `<script>window.addEventListener('load', function(){ setTimeout(function(){ window.focus(); window.print(); }, 150); });</script>`;
+    // Do not auto-print inside the iframe content. The parent will trigger print once.
+    const autoPrintScript = ``;
     const baseHref = document.baseURI || `${window.location.origin}/`;
     const html = `<!doctype html><html><head><meta charset="utf-8"><base href="${baseHref}"><title>${escapedTitle}</title>${styleSheets}${inlineStyleTags}${extraStyle}</head><body>${bodyInner}${autoPrintScript}</body></html>`;
 
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const width = 960;
-    const height = 700;
-    const left = Math.max(0, Math.floor((window.screen.availWidth - width) / 2));
-    const top = Math.max(0, Math.floor((window.screen.availHeight - height) / 2));
-    const features = `noopener,scrollbars=yes,resizable=yes,toolbar=0,menubar=0,location=0,status=0,width=${width},height=${height},left=${left},top=${top}`;
-    const win = window.open(url, 'tripmd-print', features);
+    // Use a hidden iframe to avoid popup blockers and downloads
+    const iframe: HTMLIFrameElement = document.createElement('iframe');
+    iframe.setAttribute('title', 'print-frame');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
 
-    // Handle popup blocked case: notify user and fall back to download
-    if (!win) {
-        // Revoke immediately since no window will use the blob URL
-        URL.revokeObjectURL(url);
+    const cleanup = () => {
         try {
-            notifyError('Popup was blocked. Downloading the printable HTML instead.');
+            if (iframe.parentNode) {
+                iframe.parentNode.removeChild(iframe);
+            }
         } catch {}
-        const safeBase = sanitizeFileName(escapedTitle).trim() || 'print';
-        triggerDownload({ data: html, fileName: `${safeBase}.html`, mimeType: 'text/html;charset=utf-8' });
-        return;
-    }
-
-    // Extra guard even with 'noopener' feature
-    try {
-        win.opener = null;
-    } catch {}
-
-    // Revoke the blob URL safely after the new window has loaded/closed
-    let revoked = false;
-    const revokeSafely = () => {
-        if (revoked) return;
-        revoked = true;
-        URL.revokeObjectURL(url);
     };
 
-    // Poll for window close to revoke promptly
-    const pollId = window.setInterval(() => {
-        if (win.closed) {
-            window.clearInterval(pollId);
-            window.clearTimeout(fallbackId);
-            revokeSafely();
-        }
-    }, 1000);
+    // Ensure we only trigger print once
+    let printed = false;
 
-    // Fallback revoke in case close is not detectable
-    const fallbackId = window.setTimeout(
-        () => {
-            window.clearInterval(pollId);
-            revokeSafely();
-        },
-        2 * 60 * 1000
-    );
-
-    // Best-effort: attempt revoke shortly after the child window reports 'load'
-    try {
-        win.addEventListener('load', () => {
+    // Attach load handler before setting content
+    iframe.addEventListener('load', () => {
+        if (printed) return;
+        try {
+            const frameWindow = iframe.contentWindow;
+            if (!frameWindow) throw new Error('No frame window');
+            // Small delay to allow external styles to settle
             window.setTimeout(() => {
-                window.clearTimeout(fallbackId);
-                revokeSafely();
-            }, 10000);
-        });
-    } catch {}
+                try {
+                    if (printed) return;
+                    printed = true;
+                    frameWindow.focus();
+                    frameWindow.print();
+                } catch {
+                    try {
+                        notifyError(tInstant('toast.print.dialog.failed'));
+                    } catch {}
+                } finally {
+                    // Remove iframe after a short delay to not interrupt printing
+                    window.setTimeout(cleanup, 1000);
+                }
+            }, 300);
+        } catch {
+            try {
+                notifyError(tInstant('toast.print.prepare.failed'));
+            } catch {}
+            cleanup();
+        }
+    });
+
+    document.body.appendChild(iframe);
+
+    try {
+        // Prefer srcdoc for simplicity; if it fails, fall back to writing the document
+        iframe.srcdoc = html;
+    } catch {
+        try {
+            const doc = iframe.contentDocument;
+            if (!doc) throw new Error('No frame document');
+            doc.open();
+            doc.write(html);
+            doc.close();
+        } catch {
+            try {
+                notifyError(tInstant('toast.print.render.failed'));
+            } catch {}
+            cleanup();
+        }
+    }
 }

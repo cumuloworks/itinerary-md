@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { notifyError, safeLocalStorage } from '@/core/errors';
+import { tInstant } from '@/i18n';
 import type { UseAutosaveOptions } from '@/types/itinerary';
 
 /**
@@ -9,7 +10,7 @@ import type { UseAutosaveOptions } from '@/types/itinerary';
  * @returns saveNow: A function that saves immediately.
  */
 export function useAutosave(value: string, options: UseAutosaveOptions) {
-    const { key, delay, onSuccess, onError = () => notifyError('Failed to save') } = options;
+    const { key, delay, onSuccess, onError = () => notifyError(tInstant('toast.save.failed')) } = options;
     const timeoutRef = useRef<number | null>(null);
     const lastSavedRef = useRef<string | null>(null);
 

@@ -31,10 +31,11 @@ export function isValidIanaTimeZone(tz: unknown): boolean {
 }
 
 import { notifyError } from '@/core/errors';
+import { tInstant } from '@/i18n';
 
 export function coerceTimezoneWithToast(tz: unknown, fallback: string, source: string): string {
     if (typeof tz === 'string' && isValidIanaTimeZone(tz)) return tz;
-    notifyError(`${source}: Invalid timezone "${String(tz)}". Fallback to ${fallback}`);
+    notifyError(tInstant('toast.tz.coerce', { source, tz: String(tz), fallback }));
     return fallback;
 }
 

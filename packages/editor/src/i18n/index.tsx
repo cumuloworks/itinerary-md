@@ -53,6 +53,40 @@ export interface I18nProviderProps {
 
 const STORAGE_KEY = 'itinerary-md-language';
 
+// Global language for instant translation outside React, lazily initialized
+let currentLang: SupportedLang | undefined;
+
+function readPersistedLanguage(): string | undefined {
+    try {
+        if (typeof window !== 'undefined') {
+            const ls = window.localStorage?.getItem(STORAGE_KEY) || undefined;
+            if (ls) return ls;
+            const ss = window.sessionStorage?.getItem(STORAGE_KEY) || undefined;
+            if (ss) return ss;
+            const cookieMatch = typeof document !== 'undefined' ? document.cookie.match(new RegExp(`${STORAGE_KEY}=([^;]+)`)) : null;
+            if (cookieMatch?.[1]) return decodeURIComponent(cookieMatch[1]);
+        }
+    } catch {}
+    return undefined;
+}
+
+function getOrInitCurrentLang(): SupportedLang {
+    if (currentLang) return currentLang;
+    const persisted = readPersistedLanguage();
+    currentLang = normalizeLang(persisted);
+    return currentLang;
+}
+
+export function setCurrentLang(language: string): void {
+    currentLang = normalizeLang(language);
+}
+
+export function tInstant(key: string, vars?: Record<string, string | number>): string {
+    const lang = getOrInitCurrentLang();
+    const dict = DICTS[lang] ?? DICTS.en;
+    return interpolate(dict[key] ?? DICTS.en[key] ?? key, vars);
+}
+
 export function I18nProvider({ language, children }: I18nProviderProps) {
     const initialLang = useMemo<SupportedLang>(() => {
         try {
@@ -76,6 +110,11 @@ export function I18nProvider({ language, children }: I18nProviderProps) {
         try {
             if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, lang);
         } catch {}
+    }, [lang]);
+
+    // Keep global language in sync
+    useEffect(() => {
+        setCurrentLang(lang);
     }, [lang]);
 
     const value = useMemo<I18nContextValue>(() => {

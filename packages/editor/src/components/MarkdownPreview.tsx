@@ -9,6 +9,7 @@ import remarkItineraryAlert from 'remark-itinerary-alert';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { notifyError } from '@/core/errors';
+import { tInstant } from '@/i18n';
 // import { normalizeCurrencyCode } from '@/utils/currency';
 import { isValidIanaTimeZone } from '@/utils/timezone';
 import 'highlight.js/styles/github.css';
@@ -235,7 +236,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
     const frontmatterTz = typeof safeParsedFrontmatter?.timezone === 'string' ? (safeParsedFrontmatter.timezone as string) : undefined;
     React.useEffect(() => {
         if (frontmatterTz && !isValidIanaTimeZone(frontmatterTz)) {
-            notifyError(`Frontmatter timezone "${frontmatterTz}" is invalid. Using fallback.`);
+            notifyError(tInstant('toast.frontmatter.tz.invalid', { tz: frontmatterTz }));
         }
     }, [frontmatterTz]);
 
