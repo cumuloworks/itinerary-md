@@ -11,6 +11,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://astro.build/config
 export default defineConfig({
+    output: 'static', // Static site generation for offline support
     adapter: vercel(),
     integrations: [
         sentry({
@@ -43,6 +44,7 @@ export default defineConfig({
             tailwindcss(),
             VitePWA({
                 registerType: 'prompt',
+                injectRegister: 'auto',
                 devOptions: {
                     // Disable PWA service worker in dev to avoid caching stale hashed chunks
                     enabled: false,
@@ -82,7 +84,9 @@ export default defineConfig({
                     skipWaiting: true,
                     cleanupOutdatedCaches: true,
                     navigateFallback: '/index.html',
-                    globPatterns: ['**/*.{js,css,html,png,svg,webmanifest,woff,woff2,ttf,otf}'],
+                    navigateFallbackAllowlist: [/^\/$/],
+                    globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest,woff,woff2,ttf,otf,md,json}'],
+                    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
                     navigateFallbackDenylist: [
                         /^\/api(\/|$)/,
                         /^\/_astro(\/|$)/,
@@ -95,10 +99,34 @@ export default defineConfig({
                         /^\/apple-touch-icon\.png$/,
                         /^\/android-chrome-\d+x\d+\.png$/,
                         /^\/ogp\.png$/,
-                        /\/[^\/?]+\.[^/]+$/, // file-like URLs with extensions
+                        /\/[^\/?]+\.(js|css|map)$/, // Only exclude JS/CSS/map files
                     ],
                     // Runtime caching for better offline experience
                     runtimeCaching: [
+                        // Cache the main app shell
+                        {
+                            urlPattern: /^\/$|^\/index\.html$/,
+                            handler: 'NetworkFirst',
+                            options: {
+                                cacheName: 'app-shell',
+                                expiration: {
+                                    maxEntries: 1,
+                                    maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+                                }
+                            }
+                        },
+                        // Cache JavaScript and CSS files
+                        {
+                            urlPattern: /\.(?:js|css)$/i,
+                            handler: 'StaleWhileRevalidate',
+                            options: {
+                                cacheName: 'static-resources',
+                                expiration: {
+                                    maxEntries: 60,
+                                    maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                                }
+                            }
+                        },
                         {
                             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
                             handler: 'StaleWhileRevalidate',
@@ -147,12 +175,25 @@ export default defineConfig({
                         },
                         {
                             urlPattern: /\/sample_.*\.md$/,
-                            handler: 'StaleWhileRevalidate',
+                            handler: 'CacheFirst',
                             options: {
                                 cacheName: 'sample-files-cache',
                                 expiration: {
                                     maxEntries: 10,
-                                    maxAgeSeconds: 60 * 60 * 24 * 7 // <== 7 days
+                                    maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                                }
+                            }
+                        },
+                        // API calls (if any)
+                        {
+                            urlPattern: /^\/api\//,
+                            handler: 'NetworkFirst',
+                            options: {
+                                cacheName: 'api-cache',
+                                networkTimeoutSeconds: 5,
+                                expiration: {
+                                    maxEntries: 50,
+                                    maxAgeSeconds: 60 * 5 // 5 minutes
                                 }
                             }
                         }

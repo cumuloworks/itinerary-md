@@ -24,7 +24,4 @@ import AboutButton from '@/components/AboutButton.tsx';
             <AboutButton client:only="react" />
         </div>
     </div>
-    {import.meta.env.PROD && (
-    <script type="module" src="/src/pwa/register-sw.ts"></script>
-    )}
 </header>
