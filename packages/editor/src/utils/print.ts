@@ -2,6 +2,9 @@
  * Utilities for printing the preview content in a separate window.
  * The function opens a new window with collected styles and triggers print.
  */
+import { notifyError } from '@/core/errors';
+import { triggerDownload } from '@/utils/download';
+import { sanitizeFileName } from '@/utils/url';
 
 export interface PrintOptions {
     /** Title used in the print window */
@@ -13,11 +16,35 @@ export interface PrintOptions {
 }
 
 /**
+ * Escape HTML special characters to prevent injection in HTML contexts.
+ * Replaces &, <, >, " and ' with their corresponding entities.
+ */
+function escapeHtml(input: string): string {
+    return input.replace(/[&<>"']/g, (ch) => {
+        switch (ch) {
+            case '&':
+                return '&amp;';
+            case '<':
+                return '&lt;';
+            case '>':
+                return '&gt;';
+            case '"':
+                return '&quot;';
+            case "'":
+                return '&#39;';
+            default:
+                return ch;
+        }
+    });
+}
+
+/**
  * Open a new window for printing with the given content.
  * Throws on errors; callers should handle user-facing notifications.
  */
 export function openPrintWindow(options: PrintOptions): void {
     const { title, container, fallbackMarkdown } = options;
+    const escapedTitle = escapeHtml(title);
 
     // Collect existing stylesheet links (best effort)
     const styleLinks: string[] = [];
@@ -51,7 +78,7 @@ export function openPrintWindow(options: PrintOptions): void {
     })();
     const autoPrintScript = `<script>window.addEventListener('load', function(){ setTimeout(function(){ window.focus(); window.print(); }, 150); });</script>`;
     const baseHref = document.baseURI || `${window.location.origin}/`;
-    const html = `<!doctype html><html><head><meta charset="utf-8"><base href="${baseHref}"><title>${title}</title>${styleSheets}${inlineStyleTags}${extraStyle}</head><body>${bodyInner}${autoPrintScript}</body></html>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><base href="${baseHref}"><title>${escapedTitle}</title>${styleSheets}${inlineStyleTags}${extraStyle}</head><body>${bodyInner}${autoPrintScript}</body></html>`;
 
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -60,7 +87,58 @@ export function openPrintWindow(options: PrintOptions): void {
     const left = Math.max(0, Math.floor((window.screen.availWidth - width) / 2));
     const top = Math.max(0, Math.floor((window.screen.availHeight - height) / 2));
     const features = `noopener,scrollbars=yes,resizable=yes,toolbar=0,menubar=0,location=0,status=0,width=${width},height=${height},left=${left},top=${top}`;
-    window.open(url, 'tripmd-print', features);
-    // Clean up the blob URL after some delay
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    const win = window.open(url, 'tripmd-print', features);
+
+    // Handle popup blocked case: notify user and fall back to download
+    if (!win) {
+        // Revoke immediately since no window will use the blob URL
+        URL.revokeObjectURL(url);
+        try {
+            notifyError('Popup was blocked. Downloading the printable HTML instead.');
+        } catch {}
+        const safeBase = sanitizeFileName(escapedTitle).trim() || 'print';
+        triggerDownload({ data: html, fileName: `${safeBase}.html`, mimeType: 'text/html;charset=utf-8' });
+        return;
+    }
+
+    // Extra guard even with 'noopener' feature
+    try {
+        win.opener = null;
+    } catch {}
+
+    // Revoke the blob URL safely after the new window has loaded/closed
+    let revoked = false;
+    const revokeSafely = () => {
+        if (revoked) return;
+        revoked = true;
+        URL.revokeObjectURL(url);
+    };
+
+    // Poll for window close to revoke promptly
+    const pollId = window.setInterval(() => {
+        if (win.closed) {
+            window.clearInterval(pollId);
+            window.clearTimeout(fallbackId);
+            revokeSafely();
+        }
+    }, 1000);
+
+    // Fallback revoke in case close is not detectable
+    const fallbackId = window.setTimeout(
+        () => {
+            window.clearInterval(pollId);
+            revokeSafely();
+        },
+        2 * 60 * 1000
+    );
+
+    // Best-effort: attempt revoke shortly after the child window reports 'load'
+    try {
+        win.addEventListener('load', () => {
+            window.setTimeout(() => {
+                window.clearTimeout(fallbackId);
+                revokeSafely();
+            }, 10000);
+        });
+    } catch {}
 }

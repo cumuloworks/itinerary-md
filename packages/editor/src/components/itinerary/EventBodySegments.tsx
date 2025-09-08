@@ -92,8 +92,8 @@ export const EventBodySegments: React.FC<{
                 }
                 if ((seg as { kind?: string }).kind === 'meta') {
                     const m = seg as { kind: 'meta'; entries: MetaEntry[] };
-                    const priceEntries = (m.entries || []).filter((e) => e && (e.key === 'price' || e.key === 'cost'));
-                    const restEntries = (m.entries || []).filter((e) => !e || (e.key !== 'price' && e.key !== 'cost'));
+                    const priceEntries = (m.entries || []).filter((e) => e != null && (e.key === 'price' || e.key === 'cost'));
+                    const restEntries = (m.entries || []).filter((e) => e != null && e.key !== 'price' && e.key !== 'cost');
                     if (priceEntries.length > 0) {
                         const infoByKey = toInfoByKey(priceInfos);
                         const metaKeyStable = `meta-${priceEntries

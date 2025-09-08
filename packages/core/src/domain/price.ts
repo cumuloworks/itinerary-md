@@ -1,4 +1,12 @@
 import { Parser } from 'expr-eval';
+
+// Reuse a single parser instance across evaluations
+const SHARED_MATH_PARSER = new Parser();
+// Lightweight guards for math evaluation
+const MATH_MAX_EXPR_LENGTH = 160; // reasonable upper bound per expression
+const MATH_MAX_EVALS = 20; // cap number of brace evaluations per line
+// Allowed characters: digits, whitespace, arithmetic operators, parentheses, decimal point, percent
+const MATH_ALLOWED_RE = /^[\s0-9+\-*/%^().]+$/;
 export type MoneyFragment = {
     kind: 'money';
     raw: string;
@@ -156,11 +164,32 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
     let evaluatedLine = line;
     let hasMath = false;
     try {
-        const parser = new Parser();
+        let evalCount = 0;
         evaluatedLine = line.replace(/\{([^{}]+)\}/g, (_, expr: string) => {
             hasMath = true;
             const trimmed = String(expr).trim();
-            const result = parser.evaluate(trimmed);
+
+            // Guard: cap total evaluations per input line
+            if (evalCount >= MATH_MAX_EVALS) {
+                warnings.push('math-eval-limit-reached');
+                return `{${expr}}`;
+            }
+
+            // Guard: expression length
+            if (trimmed.length > MATH_MAX_EXPR_LENGTH) {
+                warnings.push('math-eval-too-long');
+                return `{${expr}}`;
+            }
+
+            // Guard: allowed characters only
+            if (!MATH_ALLOWED_RE.test(trimmed)) {
+                warnings.push('math-eval-invalid-chars');
+                return `{${expr}}`;
+            }
+
+            evalCount += 1;
+
+            const result = SHARED_MATH_PARSER.evaluate(trimmed);
             if (typeof result === 'number' && Number.isFinite(result)) return String(result);
             // If not a finite number, keep original braces
             warnings.push('math-eval-failed');
