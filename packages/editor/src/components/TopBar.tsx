@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Select from '@radix-ui/react-select';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
-import { ArrowLeftRight, Check, ChevronDown, ChevronsDown, Clipboard, Columns, Eye, EyeOff, FileText, GlobeIcon, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, RotateCcw, Rows, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Check, ChevronDown, ChevronsDown, Clipboard, Columns, Download, Eye, EyeOff, FileText, GlobeIcon, MoreHorizontal, PanelBottom, PanelLeft, PanelRight, PanelTop, RotateCcw, Rows, Share2, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { useI18n } from '@/i18n';
 import type { TopbarState, ViewMode } from '@/types/itinerary';
@@ -15,12 +15,13 @@ interface TopBarProps {
     onTopbarChange: (patch: Partial<TopbarState>) => void;
     onCopyMarkdown: () => void;
     onShareUrl: () => void;
+    onDownloadMarkdown?: () => void;
     onLoadSample: () => void;
     onClearAll: () => void;
     className?: string;
 }
 
-const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onLoadSample, onClearAll, className }) => {
+const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, currencyOptions, topbar, onTopbarChange, onCopyMarkdown, onShareUrl, onDownloadMarkdown, onLoadSample, onClearAll, className }) => {
     const tzLabelId = React.useId();
     const currencyLabelId = React.useId();
     const { t, lang, setLanguage } = useI18n();
@@ -252,6 +253,19 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Portal>
                         <DropdownMenu.Content align="end" sideOffset={4} className="z-50 min-w-[160px] overflow-auto rounded-md border border-gray-200 bg-white p-1 shadow-md">
+                            <DropdownMenu.Item onClick={() => onDownloadMarkdown?.()} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-gray-100">
+                                <Download size={16} className="mr-2" />
+                                {t('menu.downloadMd')}
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item onClick={onLoadSample} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-gray-100">
+                                <FileText size={16} className="mr-2" />
+                                {t('menu.loadSample')}
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item onClick={onClearAll} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-gray-100 text-red-600">
+                                <Trash2 size={16} className="mr-2" />
+                                {t('menu.clearAll')}
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Separator className="h-px my-1 bg-gray-200" />
                             <DropdownMenu.Sub>
                                 <DropdownMenu.SubTrigger className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-gray-100">
                                     <GlobeIcon size={14} className="mr-2" />
@@ -274,14 +288,6 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                                     </DropdownMenu.RadioGroup>
                                 </DropdownMenu.SubContent>
                             </DropdownMenu.Sub>
-                            <DropdownMenu.Item onClick={onLoadSample} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-gray-100">
-                                <FileText size={16} className="mr-2" />
-                                {t('menu.loadSample')}
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item onClick={onClearAll} className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-gray-100 text-red-600">
-                                <Trash2 size={16} className="mr-2" />
-                                {t('menu.clearAll')}
-                            </DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Portal>
                 </DropdownMenu.Root>

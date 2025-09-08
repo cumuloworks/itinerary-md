@@ -24,6 +24,7 @@
     "actions.copy": "Copy Markdown",
     "actions.share": "Share via URL",
     "more.title": "More options",
+    "menu.downloadMd": "Download (.md)",
     "menu.loadSample": "Load Sample",
     "menu.clearAll": "Clear All Contents",
     "menu.language": "Language",

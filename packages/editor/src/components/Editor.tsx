@@ -19,6 +19,7 @@ import { writeTextToClipboard } from '@/utils/clipboard';
 import { COMMON_CURRENCIES } from '@/utils/currency';
 import { buildShareUrlFromContent } from '@/utils/hash';
 import { getTimezoneOptions } from '@/utils/timezone';
+import { sanitizeFileName } from '@/utils/url';
 
 export interface EditorProps {
     storageKey?: string;
@@ -113,6 +114,26 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
         }
     }, [latestContent]);
 
+    const handleDownloadMarkdown = useCallback(() => {
+        try {
+            const nameFromTitle = (frontmatterTitle || 'itinerary').toString();
+            const safeBase = sanitizeFileName(nameFromTitle).trim() || 'itinerary';
+            const fileName = `${safeBase}.md`;
+            const blob = new Blob([latestContent.current], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download failed:', error);
+            notifyError('Download failed');
+        }
+    }, [frontmatterTitle, latestContent]);
+
     const handleOpenClearAll = useCallback(() => {
         setPendingClearAll(true);
     }, []);
@@ -146,6 +167,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                 onTopbarChange={updateTopbar}
                 onCopyMarkdown={handleCopyMarkdown}
                 onShareUrl={handleShareUrl}
+                onDownloadMarkdown={handleDownloadMarkdown}
                 onLoadSample={loadSample}
                 onClearAll={handleOpenClearAll}
             />
