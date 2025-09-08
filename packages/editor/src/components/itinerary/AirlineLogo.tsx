@@ -46,6 +46,7 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24,
                     title={`${airlineCode} logo`}
                     style={{
                         height: '100%',
+                        maxWidth: '180px',
                         width: 'auto',
                         objectFit: 'contain',
                     }}
