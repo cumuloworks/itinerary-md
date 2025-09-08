@@ -13,6 +13,7 @@ export type IconLabelTextProps = {
     labelClassName?: string;
     textClassName?: string;
     linkClassName?: string;
+    title?: string;
 };
 
 export const IconLabelText: React.FC<IconLabelTextProps> = ({
@@ -26,6 +27,7 @@ export const IconLabelText: React.FC<IconLabelTextProps> = ({
     labelClassName = 'font-medium',
     textClassName = 'ml-1',
     linkClassName = 'underline text-inherit',
+    title,
 }) => {
     return (
         <div className={className}>
@@ -36,7 +38,7 @@ export const IconLabelText: React.FC<IconLabelTextProps> = ({
                     {labelSuffix}
                 </span>
             ) : null}
-            <SegmentedText segments={segments} className={textClassName} linkClassName={linkClassName} />
+            <SegmentedText segments={segments} className={textClassName} linkClassName={linkClassName} title={title} />
         </div>
     );
 };

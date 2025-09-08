@@ -1,4 +1,4 @@
-import { type FC, memo, useCallback, useId, useMemo, useState } from 'react';
+import { type FC, memo, useCallback, useId, useMemo, useRef, useState } from 'react';
 import { ClearAllDialog } from '@/components/dialog/ClearAllDialog';
 import { ImportDialog } from '@/components/dialog/ImportDialog';
 import { LoadSampleDialog } from '@/components/dialog/LoadSampleDialog';
@@ -17,8 +17,11 @@ import { useTopbarState } from '@/hooks/useTopbarState';
 import { useI18n } from '@/i18n';
 import { writeTextToClipboard } from '@/utils/clipboard';
 import { COMMON_CURRENCIES } from '@/utils/currency';
+import { triggerDownload } from '@/utils/download';
 import { buildShareUrlFromContent } from '@/utils/hash';
+import { openPrintWindow } from '@/utils/print';
 import { getTimezoneOptions } from '@/utils/timezone';
+import { sanitizeFileName } from '@/utils/url';
 
 export interface EditorProps {
     storageKey?: string;
@@ -84,6 +87,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
 
     const latestContent = useLatest(content);
     const [pendingClearAll, setPendingClearAll] = useState(false);
+    const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
     const handleContentChange = useCallback(
         (newContent: string) => {
@@ -112,6 +116,34 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
             notifyError('Copy failed');
         }
     }, [latestContent]);
+    const handlePrint = useCallback(() => {
+        try {
+            openPrintWindow({
+                title: (frontmatterTitle || 'Itinerary').toString(),
+                container: previewContainerRef.current,
+                fallbackMarkdown: latestContent.current,
+            });
+        } catch (error) {
+            console.error('Print failed:', error);
+            notifyError('Print failed');
+        }
+    }, [frontmatterTitle, latestContent]);
+
+    const handleDownloadMarkdown = useCallback(() => {
+        try {
+            const nameFromTitle = (frontmatterTitle || 'itinerary').toString();
+            const safeBase = sanitizeFileName(nameFromTitle).trim() || 'itinerary';
+            const fileName = `${safeBase}.md`;
+            triggerDownload({
+                data: latestContent.current,
+                fileName,
+                mimeType: 'text/markdown;charset=utf-8',
+            });
+        } catch (error) {
+            console.error('Download failed:', error);
+            notifyError('Download failed');
+        }
+    }, [frontmatterTitle, latestContent]);
 
     const handleOpenClearAll = useCallback(() => {
         setPendingClearAll(true);
@@ -146,6 +178,8 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                 onTopbarChange={updateTopbar}
                 onCopyMarkdown={handleCopyMarkdown}
                 onShareUrl={handleShareUrl}
+                onDownloadMarkdown={handleDownloadMarkdown}
+                onPrint={handlePrint}
                 onLoadSample={loadSample}
                 onClearAll={handleOpenClearAll}
             />
@@ -168,6 +202,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                             <PreviewPane
                                 showMdast={topbar.showMdast ?? false}
                                 toggleMdast={() => updateTopbar({ showMdast: !topbar.showMdast })}
+                                toggleAutoScroll={() => updateTopbar({ autoScroll: !topbar.autoScroll })}
                                 previewContent={previewContent}
                                 frontmatterTitle={frontmatterTitle}
                                 frontmatterDescription={frontmatterDescription}
@@ -181,6 +216,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                                 onShowPast={() => updateTopbar({ showPast: true })}
                                 className="h-full"
                                 preferAltNames={topbar.altNames}
+                                externalContainerRef={previewContainerRef}
                             />
                         </MarkdownPreviewErrorBoundary>
                     </div>

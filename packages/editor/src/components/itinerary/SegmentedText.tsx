@@ -12,12 +12,17 @@ interface SegmentedTextProps {
     fallbackText?: string;
     className?: string;
     linkClassName?: string;
+    title?: string;
 }
 
-export const SegmentedText: React.FC<SegmentedTextProps> = ({ segments, fallbackText, className = '', linkClassName = 'underline text-inherit' }) => {
+export const SegmentedText: React.FC<SegmentedTextProps> = ({ segments, fallbackText, className = '', linkClassName = 'underline text-inherit', title }) => {
     if (!segments || segments.length === 0) {
         if (!fallbackText) return null;
-        return <span className={className}>{fallbackText}</span>;
+        return (
+            <span className={className} title={title}>
+                {fallbackText}
+            </span>
+        );
     }
 
     const nodes = segments.map((seg) => {
@@ -34,5 +39,9 @@ export const SegmentedText: React.FC<SegmentedTextProps> = ({ segments, fallback
         return { type: 'text', value: seg.text } as const;
     });
 
-    return <span className={className}>{renderInline(nodes as any[], { linkClassName })}</span>;
+    return (
+        <span className={className} title={title}>
+            {renderInline(nodes as any[], { linkClassName })}
+        </span>
+    );
 };

@@ -32,6 +32,7 @@ interface MarkdownPreviewProps {
     autoScroll?: boolean;
     onShowPast?: () => void;
     preferAltNames?: boolean;
+    externalContainerRef?: React.Ref<HTMLDivElement>;
 }
 
 //
@@ -56,7 +57,7 @@ const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | un
 
 const segmentsToPlainText = (segments?: TextSegment[]): string | undefined => (Array.isArray(segments) ? segments.map((s) => s.text).join('') : undefined);
 
-const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true, onShowPast, preferAltNames }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true, onShowPast, preferAltNames, externalContainerRef }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
@@ -240,6 +241,15 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
 
     const containerRef = React.useRef<HTMLDivElement | null>(null);
 
+    const setContainerRef = React.useCallback(
+        (el: HTMLDivElement | null) => {
+            containerRef.current = el;
+            if (typeof externalContainerRef === 'function') externalContainerRef(el);
+            else if (externalContainerRef && typeof externalContainerRef === 'object') (externalContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+        },
+        [externalContainerRef]
+    );
+
     React.useEffect(() => {
         if (!autoScroll) return;
         if (!activeLine || !containerRef.current) return;
@@ -306,7 +316,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
     }, [activeLine, autoScroll]);
 
     return (
-        <div ref={containerRef} className="markdown-preview h-full px-8 py-4 bg-white overflow-auto space-y-4">
+        <div ref={setContainerRef} className="markdown-preview h-full px-8 py-4 bg-white overflow-auto space-y-4">
             {title && <h1 className="text-4xl font-bold text-gray-900 mt-6 ml-0 tracking-tight">{title}</h1>}
             {description && <p className="text-gray-600 tracking-tight">{description}</p>}
             {Array.isArray(tags) && tags.length > 0 && <Tags tags={tags} />}

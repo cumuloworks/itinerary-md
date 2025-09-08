@@ -39,21 +39,19 @@ export const ItmdEventBlock: React.FC<{
     })();
     const baseType = (ev as { baseType?: 'transportation' | 'stay' | 'activity' }).baseType ?? 'activity';
     const t = ev.eventType as string;
-    const depSegs = (() => {
-        if (!ev.destination) return undefined;
+    const destSegments = (() => {
         const d = ev.destination as any;
-        const primary = d.from as PhrasingContent[] | undefined;
-        const alt = d.from_alt as PhrasingContent[] | undefined;
-        const inline = preferAltNames && Array.isArray(alt) && alt.length > 0 ? alt : primary;
-        return inlineToSegments(inline);
-    })();
-    const arrSegs = (() => {
-        if (!ev.destination) return undefined;
-        const d = ev.destination as any;
-        const primary = (d.to ?? d.at) as PhrasingContent[] | undefined;
-        const alt = (d.to_alt ?? d.at_alt) as PhrasingContent[] | undefined;
-        const inline = preferAltNames && Array.isArray(alt) && alt.length > 0 ? alt : primary;
-        return inlineToSegments(inline);
+        if (!d) return undefined;
+        if (d.kind === 'fromTo' || d.kind === 'dashPair') {
+            const from = inlineToSegments(preferAltNames ? d.from_alt || d.from : d.from) || [];
+            const to = inlineToSegments(preferAltNames ? d.to_alt || d.to : d.to) || [];
+            return { kind: d.kind, from, to } as const;
+        }
+        if (d.kind === 'single') {
+            const at = inlineToSegments(preferAltNames ? d.at_alt || d.at : d.at) || [];
+            return { kind: 'single', at } as const;
+        }
+        return undefined;
     })();
     const metadata: Record<string, string> = {};
     const bodySegments = (() => {
@@ -97,11 +95,11 @@ export const ItmdEventBlock: React.FC<{
                 itmdPrice?: Array<{
                     key: string;
                     raw: string;
-                    price: { tokens?: Array<any> };
+                    price: { tokens?: Array<any>; warnings?: string[] };
                 }>;
             };
         }
-    ).data?.itmdPrice as Array<{ key: string; raw: string; price: { tokens?: Array<any> } }> | undefined;
+    ).data?.itmdPrice as Array<{ key: string; raw: string; price: { tokens?: Array<any>; warnings?: string[] } }> | undefined;
     const priceInfos: Array<{ key: string; currency: string; amount: number }> | undefined = (() => {
         if (!Array.isArray(itmdPrice)) return undefined;
         const out: Array<{ key: string; currency: string; amount: number }> = [];
@@ -117,14 +115,28 @@ export const ItmdEventBlock: React.FC<{
         return out.length > 0 ? out : undefined;
     })();
 
+    // price warnings are aggregated by key below
+
+    const priceWarningsByKey: Record<string, string[]> | undefined = (() => {
+        if (!Array.isArray(itmdPrice)) return undefined;
+        const out: Record<string, string[]> = {};
+        for (const p of itmdPrice) {
+            const key = String(p.key || '').toLowerCase();
+            if (!key) continue;
+            const ws = (Array.isArray(p.price?.warnings) ? (p.price?.warnings as string[]) : []).filter(
+                (w) => w === 'math-eval-failed' || w === 'math-eval-error' || w === 'currency-not-detected' || w === 'amount-not-detected' || w === 'no-amount' || w === 'unrecognized'
+            );
+            if (ws.length === 0) continue;
+            out[key] = Array.from(new Set([...(out[key] || []), ...ws]));
+        }
+        return Object.keys(out).length > 0 ? out : undefined;
+    })();
+
     const eventData = {
         baseType,
         type: t,
-        name: baseType !== 'stay' ? nameText : undefined,
-        stayName: baseType === 'stay' ? nameText : undefined,
-        departure: depSegs ? segmentsToPlainText(depSegs) || undefined : undefined,
-        arrival: arrSegs ? segmentsToPlainText(arrSegs) || undefined : undefined,
-        location: baseType !== 'transportation' ? segmentsToPlainText(arrSegs) || undefined : undefined,
+        name: nameText || undefined,
+        destination: destSegments,
         metadata,
     } as any;
 
@@ -140,9 +152,8 @@ export const ItmdEventBlock: React.FC<{
                 timezone={displayTimezone}
                 currency={currency}
                 priceInfos={priceInfos}
+                priceWarningsByKey={priceWarningsByKey}
                 nameSegments={nameSegments}
-                departureSegments={depSegs}
-                arrivalSegments={arrSegs}
                 startISO={startISO ?? null}
                 endISO={endISO ?? null}
                 marker={marker ?? null}
