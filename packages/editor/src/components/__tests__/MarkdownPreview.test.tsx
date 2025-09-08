@@ -129,4 +129,26 @@ describe('MarkdownPreview (itmd pipeline rendering)', () => {
         expect(code).not.toBeNull();
         expect(code?.textContent).toMatch('console.log(1)');
     });
+
+    it('uses primary names when preferAltNames=false (title and destination)', () => {
+        const md = `---\ntype: itmd\n---\n\n> [08:00] lunch タイトル^Title :: 店^Shop`;
+        render(<MarkdownPreview content={md} timezone={'UTC'} preferAltNames={false} />);
+        // Primary (before caret) should be shown
+        expect(screen.getByText('タイトル')).toBeInTheDocument();
+        expect(screen.getByText('店')).toBeInTheDocument();
+        // Alt should not be used as primary
+        expect(screen.queryByText('Title')).not.toBeInTheDocument();
+        expect(screen.queryByText('Shop')).not.toBeInTheDocument();
+    });
+
+    it('uses alternative names when preferAltNames=true (title and destination)', () => {
+        const md = `---\ntype: itmd\n---\n\n> [08:00] lunch タイトル^Title :: 店^Shop`;
+        render(<MarkdownPreview content={md} timezone={'UTC'} preferAltNames={true} />);
+        // Alt (after caret) should be shown
+        expect(screen.getByText('Title')).toBeInTheDocument();
+        expect(screen.getByText('Shop')).toBeInTheDocument();
+        // Primary should not appear when alt preferred
+        expect(screen.queryByText('タイトル')).not.toBeInTheDocument();
+        expect(screen.queryByText('店')).not.toBeInTheDocument();
+    });
 });
