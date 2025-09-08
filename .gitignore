@@ -1,5 +1,6 @@
-﻿node_modules
+node_modules
 dist
 bash.exe.stackdump
 .vercel
 *.tgz
+.DS_Store

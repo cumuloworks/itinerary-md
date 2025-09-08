@@ -25,21 +25,6 @@ import AboutButton from '@/components/AboutButton.tsx';
         </div>
     </div>
     {import.meta.env.PROD && (
-    <script type="module">
-        import { registerSW } from 'virtual:pwa-register';
-        const updateButton = document.getElementById('pwa-update');
-        const updateSW = registerSW({
-            immediate: true,
-            onNeedRefresh() {
-                updateButton?.classList.remove('hidden');
-            },
-            onOfflineReady() {
-                // no-op
-            },
-        });
-        updateButton?.addEventListener('click', () => {
-            updateSW(true);
-        });
-    </script>
+    <script type="module" src="/src/pwa/register-sw.ts"></script>
     )}
 </header>

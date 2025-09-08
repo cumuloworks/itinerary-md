@@ -48,7 +48,7 @@ export default defineConfig({
                     enabled: false,
                 },
                 includeAssets: [
-                    'favicon.ico',
+                    'favicon.png',
                     'apple-touch-icon.png',
                     'android-chrome-192x192.png',
                     'android-chrome-512x512.png',
@@ -62,7 +62,7 @@ export default defineConfig({
                     start_url: '/',
                     scope: '/',
                     display: 'standalone',
-                    background_color: '#ffffff',
+                    background_color: '#f3f4f6',
                     theme_color: '#155dfc',
                     icons: [
                         {
@@ -82,14 +82,14 @@ export default defineConfig({
                     skipWaiting: true,
                     cleanupOutdatedCaches: true,
                     navigateFallback: '/index.html',
-                    globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2,ttf,otf}'],
+                    globPatterns: ['**/*.{js,css,html,png,svg,webmanifest,woff,woff2,ttf,otf}'],
                     navigateFallbackDenylist: [
                         /^\/api(\/|$)/,
                         /^\/_astro(\/|$)/,
                         /^\/workbox-.*\.js$/,
                         /^\/sw\.js$/,
                         /^\/registerSW\.js$/,
-                        /^\/favicon\.ico$/,
+                        /^\/favicon\.png$/,
                         /^\/manifest\.webmanifest$/,
                         /^\/site\.webmanifest$/,
                         /^\/apple-touch-icon\.png$/,
