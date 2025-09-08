@@ -24,6 +24,7 @@
     "actions.copy": "Markdown をコピー",
     "actions.share": "URL で共有",
     "more.title": "その他の操作",
+    "menu.print": "印刷",
     "menu.downloadMd": "ダウンロード(.md)",
     "menu.loadSample": "サンプルを読み込み",
     "menu.clearAll": "すべての内容をクリア",

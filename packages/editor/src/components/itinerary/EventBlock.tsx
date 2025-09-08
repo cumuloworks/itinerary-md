@@ -235,7 +235,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
     })();
 
     return (
-        <div className="my-3 flex items-center">
+        <div className="my-3 flex items-center break-inside-avoid">
             {!startISO && !endISO && !marker ? (
                 <TimePlaceholder />
             ) : (
