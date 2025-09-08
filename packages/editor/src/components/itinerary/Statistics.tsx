@@ -237,9 +237,9 @@ export const Statistics: React.FC<StatisticsProps> = ({ root, frontmatter, curre
         <div className="flex flex-wrap justify-evenly py-4 rounded bg-gray-50 border border-gray-300">
             <div className="basis-1/2 p-4 rounded-lg flex flex-col items-center justify-center">
                 <div className="flex flex-wrap items-baseline font-bold break-all whitespace-pre" aria-live="polite">
-                    {totalFormatted && (
-                        <p className={`text-3xl ${budgetDisplay?.remaining !== undefined && budgetDisplay?.remaining !== null ? (budgetDisplay.remaining >= 0 ? 'text-emerald-600' : 'text-red-600') : 'text-gray-800'}`}>{totalFormatted}</p>
-                    )}
+                    <p className={`text-3xl ${budgetDisplay?.remaining !== undefined && budgetDisplay?.remaining !== null ? (budgetDisplay.remaining >= 0 ? 'text-emerald-600' : 'text-red-600') : 'text-gray-800'}`}>
+                        {totalFormatted ?? '—'}
+                    </p>
                     {budgetDisplay && (
                         <>
                             <p className="text-sm mx-2">/</p>

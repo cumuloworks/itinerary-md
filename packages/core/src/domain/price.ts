@@ -1,3 +1,4 @@
+import { Parser } from 'expr-eval';
 export type MoneyFragment = {
     kind: 'money';
     raw: string;
@@ -151,20 +152,42 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
         };
     }
 
-    // Simple single-term detector: CODE AMOUNT | AMOUNT CODE | SYMBOL AMOUNT
+    // Evaluate simple math inside braces first, e.g. "{25*4} EUR" or "EUR {10+5}"
+    let evaluatedLine = line;
+    let hasMath = false;
+    try {
+        const parser = new Parser();
+        evaluatedLine = line.replace(/\{([^{}]+)\}/g, (_, expr: string) => {
+            hasMath = true;
+            const trimmed = String(expr).trim();
+            const result = parser.evaluate(trimmed);
+            if (typeof result === 'number' && Number.isFinite(result)) return String(result);
+            // If not a finite number, keep original braces
+            warnings.push('math-eval-failed');
+            return `{${expr}}`;
+        });
+    } catch {
+        // Keep original line on any parser error
+        warnings.push('math-eval-error');
+        evaluatedLine = line;
+    }
+
+    // Simple single-term detector: CODE AMOUNT | AMOUNT CODE | SYMBOL AMOUNT (after brace evaluation)
     // Define a single number pattern that accepts optional thousands separators ("," or ".")
     // and allows an optional decimal part using either "." or ",".
     const NUM_RE = /[+-]?(?:\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,]\d+)?/;
     const PATTERNS = [
-        new RegExp(`^(?<code>[A-Za-z]{3})\\s+(?<num>${NUM_RE.source})(?=\\s|$)`),
-        new RegExp(`^(?<num>${NUM_RE.source})\\s+(?<code>[A-Za-z]{3})(?=\\s|$)`),
+        // Allow no space between code and number: "EUR24"
+        new RegExp(`^(?<code>[A-Za-z]{3})\\s*(?<num>${NUM_RE.source})(?=\\s|$)`),
+        // Allow no space between number and code: "24EUR"
+        new RegExp(`^(?<num>${NUM_RE.source})\\s*(?<code>[A-Za-z]{3})(?=\\s|$)`),
         new RegExp(`^(?<sym>A\\$|C\\$|HK\\$|S\\$|[€¥£₩₫฿₱₽₺$])\\s*(?<num>${NUM_RE.source})(?=\\s|$)`),
     ];
     let match: RegExpMatchArray | null = null;
     let kind: 'codeFirst' | 'numFirst' | 'symbol' | null = null;
     for (let i = 0; i < PATTERNS.length; i += 1) {
         const pattern = PATTERNS[i];
-        const m = line.match(pattern);
+        const m = evaluatedLine.match(pattern);
         if (m) {
             match = m;
             kind = i === 0 ? 'codeFirst' : i === 1 ? 'numFirst' : 'symbol';
@@ -174,21 +197,21 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
 
     if (!match || !kind) {
         // As a fallback, try to detect currency anywhere and a number anywhere
-        const { currency } = detectCurrency(line);
-        const numM = line.match(NUM_RE);
+        const { currency } = detectCurrency(evaluatedLine);
+        const numM = evaluatedLine.match(NUM_RE);
         if (!currency && !numM) {
             return {
                 type: 'itmdPrice',
                 rawLine,
                 tokens: [],
                 flags: {
-                    hasMath: false,
+                    hasMath,
                     crossCurrency: false,
                     hasNumberOnlyTerm: true,
                 },
                 summary: { currencies: [], moneyCount: 0 },
                 data: { normalized: true, needsEvaluation: true },
-                warnings: ['unrecognized'],
+                warnings: [...(warnings.length ? warnings : []), 'unrecognized'],
             };
         }
         if (!currency && numM) {
@@ -197,6 +220,8 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
             if (defaultCurrency?.trim()) {
                 const cur = defaultCurrency.toUpperCase();
                 const scale = inferScaleByCurrency(cur);
+                // No currency detected but number present -> mark as currency-not-detected
+                if (!warnings.includes('currency-not-detected')) warnings.push('currency-not-detected');
                 const money: MoneyFragment = {
                     kind: 'money',
                     raw: line,
@@ -212,7 +237,7 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
                     rawLine,
                     tokens,
                     flags: {
-                        hasMath: false,
+                        hasMath,
                         crossCurrency: false,
                         hasNumberOnlyTerm: false,
                     },
@@ -228,7 +253,7 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
                 rawLine,
                 tokens,
                 flags: {
-                    hasMath: false,
+                    hasMath,
                     crossCurrency: false,
                     hasNumberOnlyTerm: true,
                 },
@@ -242,10 +267,10 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
             type: 'itmdPrice',
             rawLine,
             tokens: [],
-            flags: { hasMath: false, crossCurrency: false, hasNumberOnlyTerm: true },
+            flags: { hasMath, crossCurrency: false, hasNumberOnlyTerm: true },
             summary: { currencies: currency ? [currency] : [], moneyCount: 0 },
             data: { normalized: true, needsEvaluation: true },
-            warnings: ['no-amount'],
+            warnings: [...(warnings.length ? warnings : []), 'no-amount'],
         };
     }
 
@@ -285,7 +310,7 @@ export function normalizePriceLine(rawLine: string, defaultCurrency?: string): P
         type: 'itmdPrice',
         rawLine,
         tokens,
-        flags: { hasMath: false, crossCurrency: false, hasNumberOnlyTerm: false },
+        flags: { hasMath, crossCurrency: false, hasNumberOnlyTerm: false },
         summary: {
             currencies: currency ? [normalized.currency] : [],
             moneyCount: 1,

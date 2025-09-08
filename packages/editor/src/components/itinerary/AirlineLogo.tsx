@@ -27,17 +27,15 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24,
         return fallbackIcon ? <Plane size={size} style={{ color: '#6b7280' }} /> : null;
     }
 
-    const logoUrl = `https://img.wway.io/pics/root/${airlineCode.toUpperCase()}@png?exar=1&rs=fit:${size}:${size}`;
+    const logoUrl = `https://img.wway.io/pics/root/${airlineCode.toUpperCase()}@png?exar=1&h=${size * 2}`;
 
     return (
         <div
             style={{
-                width: size,
                 height: size,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: '4px',
                 overflow: 'hidden',
             }}
         >
@@ -47,8 +45,8 @@ export const AirlineLogo: React.FC<AirlineLogoProps> = ({ flightCode, size = 24,
                     alt={`${airlineCode} logo`}
                     title={`${airlineCode} logo`}
                     style={{
-                        maxWidth: '100%',
-                        maxHeight: '100%',
+                        height: '100%',
+                        width: 'auto',
                         objectFit: 'contain',
                     }}
                     onError={() => setHasError(true)}

@@ -172,3 +172,65 @@ export const formatCurrency = (amount: number, code: CurrencyCode): string => {
         return `${amount.toLocaleString()} ${code}`;
     }
 };
+
+// Infer currency minor unit (fraction digits) like 2 for USD/EUR, 0 for JPY
+export const getCurrencyMinorUnit = (code: CurrencyCode, fallback: number = 2): number => {
+    try {
+        const fmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: String(code).toUpperCase() });
+        const ro = fmt.resolvedOptions();
+        return typeof ro.maximumFractionDigits === 'number' ? ro.maximumFractionDigits : fallback;
+    } catch {
+        return fallback;
+    }
+};
+
+// Compact formatter: "20USD" without space/symbol, with configurable decimals (default 0)
+export const formatAmountCode = (amount: number, code: CurrencyCode, fractionDigits = 0): string => {
+    try {
+        const n = typeof fractionDigits === 'number' ? Number(amount.toFixed(fractionDigits)) : amount;
+        return `${n.toLocaleString()}${String(code).toUpperCase()}`;
+    } catch {
+        return `${amount}${String(code).toUpperCase()}`;
+    }
+};
+
+// Format as "12,345 CODE" with configurable fraction digits
+export const formatMoneyCodeSpaced = (amount: number, code: CurrencyCode, fractionDigits?: number): string => {
+    try {
+        const digits = typeof fractionDigits === 'number' ? fractionDigits : getCurrencyMinorUnit(code, 2);
+        const formatted = Number(amount).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+        return `${formatted} ${String(code).toUpperCase()}`;
+    } catch {
+        return `${amount.toLocaleString()} ${String(code).toUpperCase()}`;
+    }
+};
+
+// Format original and converted in one string: "20 USD (17 EUR)" or just "20 USD"
+export const formatOriginalWithConverted = (amount: number, from: CurrencyCode, to?: CurrencyCode, rates?: Record<string, number>, fractionDigits?: number): string => {
+    const fromCode = normalizeCurrencyCode(from);
+    const toCode = to ? normalizeCurrencyCode(to) : fromCode;
+    const fromDigits = typeof fractionDigits === 'number' ? fractionDigits : getCurrencyMinorUnit(fromCode, 2);
+    const toDigits = typeof fractionDigits === 'number' ? fractionDigits : getCurrencyMinorUnit(toCode, 2);
+    const orig = formatMoneyCodeSpaced(amount, fromCode, fromDigits);
+    if (!fromCode || !toCode || fromCode === toCode) return orig;
+    if (!rates || !rates[fromCode] || !rates[toCode]) return orig;
+    const conv = convertAmountUSDBase(amount, fromCode, toCode, rates);
+    if (typeof conv !== 'number' || !Number.isFinite(conv)) return orig;
+    const convStr = formatMoneyCodeSpaced(conv, toCode, toDigits);
+    return `${orig} (${convStr})`;
+};
+
+// Prefer display currency first: "48 USD (7,104 JPY)"; falls back to original if conversion unavailable
+export const formatConvertedPreferred = (amount: number, from: CurrencyCode, to?: CurrencyCode, rates?: Record<string, number>, fractionDigits?: number): string => {
+    const fromCode = normalizeCurrencyCode(from);
+    const toCode = to ? normalizeCurrencyCode(to) : fromCode;
+    const fromDigits = typeof fractionDigits === 'number' ? fractionDigits : getCurrencyMinorUnit(fromCode, 2);
+    const toDigits = typeof fractionDigits === 'number' ? fractionDigits : getCurrencyMinorUnit(toCode, 2);
+    if (!fromCode || !toCode || fromCode === toCode) return formatMoneyCodeSpaced(amount, fromCode, fromDigits);
+    if (!rates || !rates[fromCode] || !rates[toCode]) return formatMoneyCodeSpaced(amount, fromCode, fromDigits);
+    const conv = convertAmountUSDBase(amount, fromCode, toCode, rates);
+    if (typeof conv !== 'number' || !Number.isFinite(conv)) return formatMoneyCodeSpaced(amount, fromCode, fromDigits);
+    const convStr = formatMoneyCodeSpaced(conv, toCode, toDigits);
+    const origStr = formatMoneyCodeSpaced(amount, fromCode, fromDigits);
+    return `${convStr} (${origStr})`;
+};
