@@ -42,8 +42,7 @@ export default defineConfig({
             },
             tailwindcss(),
             VitePWA({
-                registerType: 'autoUpdate',
-                injectRegister: 'script',
+                registerType: 'prompt',
                 devOptions: {
                     // Disable PWA service worker in dev to avoid caching stale hashed chunks
                     enabled: false,
@@ -81,11 +80,9 @@ export default defineConfig({
                 workbox: {
                     clientsClaim: true,
                     skipWaiting: true,
+                    cleanupOutdatedCaches: true,
                     navigateFallback: '/index.html',
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2,ttf,otf}'],
-                    additionalManifestEntries: [
-                        { url: '/index.html', revision: null },
-                    ],
                     navigateFallbackDenylist: [
                         /^\/api(\/|$)/,
                         /^\/_astro(\/|$)/,

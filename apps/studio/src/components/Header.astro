@@ -11,6 +11,9 @@ import AboutButton from '@/components/AboutButton.tsx';
             </a>
         </h1>
         <div class="flex items-center gap-2">
+            <button id="pwa-update" class="hidden rounded bg-blue-600 text-white px-3 py-1 text-sm">
+                更新
+            </button>
             <a
                 href="https://github.com/cumuloworks/itinerary-md"
                 target="_blank"
@@ -21,4 +24,22 @@ import AboutButton from '@/components/AboutButton.tsx';
             <AboutButton client:only="react" />
         </div>
     </div>
+    {import.meta.env.PROD && (
+    <script type="module">
+        import { registerSW } from 'virtual:pwa-register';
+        const updateButton = document.getElementById('pwa-update');
+        const updateSW = registerSW({
+            immediate: true,
+            onNeedRefresh() {
+                updateButton?.classList.remove('hidden');
+            },
+            onOfflineReady() {
+                // no-op
+            },
+        });
+        updateButton?.addEventListener('click', () => {
+            updateSW(true);
+        });
+    </script>
+    )}
 </header>
