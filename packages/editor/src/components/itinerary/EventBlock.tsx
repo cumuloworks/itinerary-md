@@ -190,6 +190,8 @@ const getTypeColors = (type: EventBlockProps['eventData']['type'], baseType: Eve
 };
 
 import ColorHash from 'color-hash';
+//
+import { EventActionsMenu } from '@/components/itinerary/EventActionsMenu';
 import { getIconForEventType } from '@/components/itinerary/iconMaps';
 import { TimePlaceholder } from '@/components/itinerary/TimePlaceholder';
 
@@ -234,8 +236,16 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
         return url && isAllowedHref(url) ? [{ text: titleText, url }] : [{ text: titleText }];
     })();
 
+    // Build external calendar URLs
+    const titleTextForCalendar = (() => {
+        const titleText = mainTitle && String(mainTitle).trim() !== '' ? String(mainTitle) : capitalize(String(eventData.type || ''));
+        return titleText || 'Event';
+    })();
+    // start/end are computed in EventActionsMenu
+    // All action menu logic moved to EventActionsMenu
+
     return (
-        <div className="my-3 flex items-center break-inside-avoid">
+        <div className="my-3 flex items-center break-inside-avoid relative group/event">
             {!startISO && !endISO && !marker ? (
                 <TimePlaceholder />
             ) : (
@@ -245,11 +255,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                 </div>
             )}
 
-            <div className="flex items-center justify-center relative z-10 ml-3">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full ${colors.iconBg}`}>
-                    <IconComponent size={20} className="text-white" />
-                </div>
-            </div>
+            <EventActionsMenu iconBgClass={colors.iconBg} IconComponent={IconComponent} title={titleTextForCalendar} destination={eventData.destination as any} startISO={startISO} endISO={endISO} timezone={timezone} />
 
             <div className={`flex-1 min-w-0 p-5 -ml-4.5 pl-8 ${colors.cardBg} border-l-4 ${colors.border}`}>
                 <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
