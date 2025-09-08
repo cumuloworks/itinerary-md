@@ -4,11 +4,13 @@ import '@itinerary-md/editor/index.css';
 import { Editor } from '@itinerary-md/editor';
 import Analytics from '@vercel/analytics/astro';
 import Header from '@/components/Header.astro';
+import PWAUpdater from '@/components/PWAUpdater.tsx';
 import { reactTelemetryAdapter } from '@/telemetry-adapter';
 
 void Editor;
 void Header;
 void Analytics;
+void PWAUpdater;
 void reactTelemetryAdapter;
 ---
 
@@ -65,5 +67,6 @@ void reactTelemetryAdapter;
 			/>
 		</div>
 		</div>
+		<PWAUpdater client:only="react" />
 	</body>
 </html>
