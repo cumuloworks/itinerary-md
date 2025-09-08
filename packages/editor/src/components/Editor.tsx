@@ -61,7 +61,7 @@ function getLanguageAwareSamplePath(basePath: string, lang: string): string {
 }
 
 const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT, rate }) => {
-    const { lang } = useI18n();
+    const { lang, t } = useI18n();
     const effectiveSamplePath = useMemo(() => getLanguageAwareSamplePath(samplePath, lang), [samplePath, lang]);
     const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
     const tzSelectId = useId();
@@ -100,22 +100,22 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
         try {
             const url = buildShareUrlFromContent(latestContent.current);
             await writeTextToClipboard(url);
-            notifySuccess('Shareable URL copied to clipboard');
+            notifySuccess(t('toast.url.copied'));
         } catch (error) {
             console.error('Failed to generate URL:', error);
-            notifyError('Failed to generate URL');
+            notifyError(t('toast.url.failed'));
         }
-    }, [latestContent]);
+    }, [latestContent, t]);
 
     const handleCopyMarkdown = useCallback(async () => {
         try {
             await writeTextToClipboard(latestContent.current);
-            notifySuccess('Markdown copied to clipboard');
+            notifySuccess(t('toast.copy.ok'));
         } catch (error) {
             console.error('Copy failed:', error);
-            notifyError('Copy failed');
+            notifyError(t('toast.copy.failed'));
         }
-    }, [latestContent]);
+    }, [latestContent, t]);
     const handlePrint = useCallback(() => {
         try {
             openPrintWindow({
@@ -123,11 +123,12 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                 container: previewContainerRef.current,
                 fallbackMarkdown: latestContent.current,
             });
+            notifySuccess(t('toast.print.opened'));
         } catch (error) {
             console.error('Print failed:', error);
-            notifyError('Print failed');
+            notifyError(t('toast.print.failed'));
         }
-    }, [frontmatterTitle, latestContent]);
+    }, [frontmatterTitle, latestContent, t]);
 
     const handleDownloadMarkdown = useCallback(() => {
         try {
@@ -139,11 +140,12 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                 fileName,
                 mimeType: 'text/markdown;charset=utf-8',
             });
+            notifySuccess(t('toast.download.started'));
         } catch (error) {
             console.error('Download failed:', error);
-            notifyError('Download failed');
+            notifyError(t('toast.download.failed'));
         }
-    }, [frontmatterTitle, latestContent]);
+    }, [frontmatterTitle, latestContent, t]);
 
     const handleOpenClearAll = useCallback(() => {
         setPendingClearAll(true);
@@ -156,7 +158,8 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
     const handleConfirmClearAll = useCallback(() => {
         setContent('');
         setPendingClearAll(false);
-    }, [setContent]);
+        notifySuccess(t('toast.clear.ok'));
+    }, [setContent, t]);
 
     const hashImport = useHashImport(
         (hashContent: string) => setContent(hashContent),

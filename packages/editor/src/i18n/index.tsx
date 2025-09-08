@@ -53,6 +53,13 @@ export interface I18nProviderProps {
 
 const STORAGE_KEY = 'itinerary-md-language';
 
+// Global state for instant translation outside React
+let currentLang: SupportedLang = defaultLang;
+export function tInstant(key: string, vars?: Record<string, string | number>): string {
+    const dict = DICTS[currentLang] ?? DICTS.en;
+    return interpolate(dict[key] ?? DICTS.en[key] ?? key, vars);
+}
+
 export function I18nProvider({ language, children }: I18nProviderProps) {
     const initialLang = useMemo<SupportedLang>(() => {
         try {
@@ -76,6 +83,11 @@ export function I18nProvider({ language, children }: I18nProviderProps) {
         try {
             if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, lang);
         } catch {}
+    }, [lang]);
+
+    // Keep global language in sync
+    useEffect(() => {
+        currentLang = lang;
     }, [lang]);
 
     const value = useMemo<I18nContextValue>(() => {

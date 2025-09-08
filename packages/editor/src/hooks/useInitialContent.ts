@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { notifyError, notifySuccess, safeLocalStorage } from '@/core/errors';
+import { tInstant } from '@/i18n';
 import type { UseInitialContentOptions } from '@/types/itinerary';
 
 type UseInitialContentResult = {
@@ -38,11 +39,11 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
                     const text = await response.text();
                     setContent(text);
                 } else {
-                    notifyError(`Failed to load ${samplePath}`);
+                    notifyError(tInstant('toast.sample.failed', { path: samplePath }));
                 }
             } catch (error) {
                 console.error(`Failed to load ${samplePath}:`, error);
-                notifyError(`Failed to load ${samplePath}`);
+                notifyError(tInstant('toast.sample.failed', { path: samplePath }));
             }
         };
 
@@ -60,13 +61,13 @@ export function useInitialContent(options: UseInitialContentOptions): UseInitial
             if (response.ok) {
                 const text = await response.text();
                 setContent(text);
-                notifySuccess('Sample itinerary loaded');
+                notifySuccess(tInstant('toast.sample.loaded'));
             } else {
-                notifyError(`Failed to load ${samplePath}`);
+                notifyError(tInstant('toast.sample.failed', { path: samplePath }));
             }
         } catch (error) {
             console.error(`Failed to load ${samplePath}:`, error);
-            notifyError(`Failed to load ${samplePath}`);
+            notifyError(tInstant('toast.sample.failed', { path: samplePath }));
         } finally {
             setPendingLoadSample(false);
         }

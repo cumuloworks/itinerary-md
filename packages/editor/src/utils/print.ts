@@ -4,6 +4,7 @@
  * avoiding popup blockers and unintended downloads of .html files.
  */
 import { notifyError } from '@/core/errors';
+import { tInstant } from '@/i18n';
 
 export interface PrintOptions {
     /** Title used in the print window */
@@ -117,7 +118,7 @@ export function openPrintWindow(options: PrintOptions): void {
                     frameWindow.print();
                 } catch {
                     try {
-                        notifyError('Failed to open print dialog');
+                        notifyError(tInstant('toast.print.dialog.failed'));
                     } catch {}
                 } finally {
                     // Remove iframe after a short delay to not interrupt printing
@@ -126,7 +127,7 @@ export function openPrintWindow(options: PrintOptions): void {
             }, 300);
         } catch {
             try {
-                notifyError('Failed to prepare print preview');
+                notifyError(tInstant('toast.print.prepare.failed'));
             } catch {}
             cleanup();
         }
@@ -146,7 +147,7 @@ export function openPrintWindow(options: PrintOptions): void {
             doc.close();
         } catch {
             try {
-                notifyError('Failed to render content for printing');
+                notifyError(tInstant('toast.print.render.failed'));
             } catch {}
             cleanup();
         }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { notifyError } from '@/core/errors';
 import { type Telemetry, TelemetryContext } from '@/core/telemetry';
+import { tInstant } from '@/i18n';
 
 type Props = { children: React.ReactNode };
 type State = { hasError: boolean };
@@ -19,7 +20,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         try {
             telemetry?.captureException?.(error, { component: 'ErrorBoundary' });
         } catch {}
-        notifyError('An error occurred while rendering the page');
+        notifyError(tInstant('toast.unexpected'));
     }
 
     render() {
