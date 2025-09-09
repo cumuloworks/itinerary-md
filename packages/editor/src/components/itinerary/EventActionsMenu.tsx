@@ -50,7 +50,7 @@ export function EventActionsMenu({ iconBgClass, IconComponent, title, destinatio
         <div className="flex items-center justify-center relative z-10">
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                    <button type="button" aria-label="Open event menu" className={`flex items-center justify-center rounded-full size-8 hover:brightness-110 hover:scale-110 transition ${iconBgClass}`}>
+                    <button type="button" aria-label="Open event menu" className={`flex items-center justify-center rounded-full size-7 hover:brightness-110 hover:scale-110 transition ${iconBgClass}`}>
                         <IconComponent className="text-white size-4" />
                     </button>
                 </DropdownMenu.Trigger>

@@ -38,8 +38,8 @@ interface EventBlockProps {
             | 'cafe';
         name?: string;
         destination?:
-            | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
-            | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
+            | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
+            | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
             | { kind: 'single'; at: Array<{ text: string; url?: string }> };
         metadata: Record<string, string>;
     };
@@ -207,8 +207,8 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
 
     // Prepare destination-derived segments for grid layout
     const destination = eventData.destination as
-        | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
-        | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
+        | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
+        | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
         | { kind: 'single'; at: Array<{ text: string; url?: string }> }
         | undefined;
 
@@ -221,6 +221,15 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
     const arrivalSegments = (() => {
         if (!destination) return undefined;
         if (destination.kind === 'fromTo' || destination.kind === 'dashPair') return destination.to;
+        return undefined;
+    })();
+
+    const viaSegmentsList = (() => {
+        if (!destination) return undefined;
+        if (destination.kind === 'fromTo' || destination.kind === 'dashPair') {
+            const vs = (destination as { vias?: Array<Array<{ text: string; url?: string }>> }).vias;
+            return Array.isArray(vs) && vs.length > 0 ? vs : undefined;
+        }
         return undefined;
     })();
 
@@ -247,9 +256,17 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
     // start/end are computed in EventActionsMenu
     // All action menu logic moved to EventActionsMenu
 
+    const viaCount = Array.isArray(viaSegmentsList) ? viaSegmentsList.length : 0;
+    const gridTemplateRows = (() => {
+        const head = '2rem auto';
+        const vias = viaCount > 0 ? ` repeat(${viaCount}, auto)` : '';
+        const tail = ' 2rem';
+        return `${head}${vias}${tail}`;
+    })();
+
     return (
         <div className="my-3 break-inside-avoid relative group/event">
-            <div className="grid items-center grid-cols-[min-content_min-content_minmax(0,1fr)] grid-rows-[2rem_1fr_2rem] gap-x-3 py-2">
+            <div className="grid items-center grid-cols-[min-content_min-content_minmax(0,1fr)] gap-x-3 py-2" style={{ gridTemplateRows }}>
                 {/* 1: Time (departure) */}
                 <div className="col-start-1 row-start-1 text-right">{startISO || marker ? <TimeDisplay iso={startISO ?? undefined} marker={marker ?? undefined} dateStr={dateStr} timezone={timezone} /> : null}</div>
 
@@ -258,14 +275,29 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                     <EventActionsMenu iconBgClass={colors.iconBg} IconComponent={IconComponent} title={titleTextForCalendar} destination={eventData.destination as any} startISO={startISO} endISO={endISO} timezone={timezone} />
                 </div>
 
-                {/* 5: Vertical line */}
-                <div className="col-start-2 row-start-2 self-stretch flex justify-center items-center -my-3">
+                {/* 5: Vertical line (span body + via rows, stop before last row) */}
+                <div className="col-start-2 self-stretch flex justify-center items-center -my-3" style={{ gridRow: '2 / -2' }}>
                     <div className={`w-1 h-full ${colors.iconBg}`}></div>
                 </div>
 
-                {/* 8: Small dot (bottom circle) */}
-                <div className="col-start-2 row-start-3 flex items-center justify-center">
-                    <div className={`rounded-full size-3 ${colors.iconBg}`}></div>
+                {/* VIA dots (match count of vias) */}
+                {Array.isArray(viaSegmentsList) && viaSegmentsList.length > 0
+                    ? viaSegmentsList.map((segs, idx) => {
+                          const keyStr = segs
+                              .map((s) => `${s.text}-${s.url ?? ''}`)
+                              .join('|')
+                              .slice(0, 64);
+                          return (
+                              <div key={`viadotp-${keyStr}`} className="col-start-2 flex items-center justify-center" style={{ gridRowStart: 3 + idx }}>
+                                  <div className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
+                              </div>
+                          );
+                      })
+                    : null}
+
+                {/* 8: Small dot (bottom circle) - show only when no vias */}
+                <div className="col-start-2 flex items-center justify-center" style={{ gridRowStart: 3 + viaCount }}>
+                    <div className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
                 </div>
 
                 {/* 3: Location (departure) */}
@@ -289,11 +321,28 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                     <EventBodySegments bodySegments={bodySegments} borderClass={colors.border} priceWarningsByKey={priceWarningsByKey} priceInfos={priceInfos} toCurrency={currency} />
                 </div>
 
+                {/* VIA rows (each via gets its own grid row) */}
+                {Array.isArray(viaSegmentsList) && viaSegmentsList.length > 0
+                    ? viaSegmentsList.map((segs, idx) => {
+                          const keyStr = segs
+                              .map((s) => `${s.text}-${s.url ?? ''}`)
+                              .join('|')
+                              .slice(0, 64);
+                          return (
+                              <div key={`via-${keyStr}`} className="col-start-3" style={{ gridRowStart: 3 + idx }}>
+                                  <Location segments={segs} className="text-sm font-semibold text-gray-800" />
+                              </div>
+                          );
+                      })
+                    : null}
+
                 {/* 7: Time (arrival) */}
-                <div className="col-start-1 row-start-3 text-right">{endISO ? <TimeDisplay iso={endISO ?? undefined} dateStr={dateStr} timezone={timezone} /> : null}</div>
+                <div className="col-start-1 text-right" style={{ gridRowStart: 3 + viaCount }}>
+                    {endISO ? <TimeDisplay iso={endISO ?? undefined} dateStr={dateStr} timezone={timezone} /> : null}
+                </div>
 
                 {/* 9: Location (arrival) */}
-                <div className="col-start-3 row-start-3">
+                <div className="col-start-3" style={{ gridRowStart: 3 + viaCount }}>
                     {Array.isArray(arrivalSegments) && arrivalSegments.length > 0 ? (
                         <Location segments={arrivalSegments} className="text-sm font-semibold text-gray-800" />
                     ) : Array.isArray(singleLocationSegments) && singleLocationSegments.length > 0 ? (
