@@ -51,6 +51,8 @@ export default defineConfig({
                 },
                 includeAssets: [
                     'favicon.png',
+                    'favicon-16x16.png',
+                    'favicon-32x32.png',
                     'apple-touch-icon.png',
                     'android-chrome-192x192.png',
                     'android-chrome-512x512.png',
@@ -64,18 +66,45 @@ export default defineConfig({
                     start_url: '/',
                     scope: '/',
                     display: 'standalone',
+                    orientation: 'any',
                     background_color: '#f3f4f6',
                     theme_color: '#155dfc',
                     icons: [
                         {
+                            src: '/favicon-16x16.png',
+                            sizes: '16x16',
+                            type: 'image/png',
+                            purpose: 'any'
+                        },
+                        {
+                            src: '/favicon-32x32.png',
+                            sizes: '32x32',
+                            type: 'image/png',
+                            purpose: 'any'
+                        },
+                        {
                             src: '/android-chrome-192x192.png',
                             sizes: '192x192',
-                            type: 'image/png'
+                            type: 'image/png',
+                            purpose: 'any'
                         },
                         {
                             src: '/android-chrome-512x512.png',
                             sizes: '512x512',
-                            type: 'image/png'
+                            type: 'image/png',
+                            purpose: 'any'
+                        },
+                        {
+                            src: '/android-chrome-192x192.png',
+                            sizes: '192x192',
+                            type: 'image/png',
+                            purpose: 'maskable'
+                        },
+                        {
+                            src: '/android-chrome-512x512.png',
+                            sizes: '512x512',
+                            type: 'image/png',
+                            purpose: 'maskable'
                         }
                     ]
                 },
