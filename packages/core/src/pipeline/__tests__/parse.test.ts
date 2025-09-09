@@ -148,6 +148,9 @@ describe('parseHeader', () => {
         expect(mdastToString({ type: 'paragraph', children: d.to ?? [] } as unknown as Parent)).toContain('London');
         expect(Array.isArray((d as any).vias)).toBe(true);
         expect(((d as any).vias || []).length).toBe(2);
+        const vias = ((d as any).vias || []) as any[];
+        expect(mdastToString({ type: 'paragraph', children: vias[0] } as unknown as Parent)).toContain('Dubai');
+        expect(mdastToString({ type: 'paragraph', children: vias[1] } as unknown as Parent)).toContain('Frankfurt');
     });
 
     it('destination: :: A - B - C → from=A, via=[B], to=C', () => {

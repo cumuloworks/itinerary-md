@@ -45,8 +45,9 @@ export const ItmdEventBlock: React.FC<{
         if (d.kind === 'fromTo' || d.kind === 'dashPair') {
             const from = inlineToSegments(preferAltNames ? d.from_alt || d.from : d.from) || [];
             const to = inlineToSegments(preferAltNames ? d.to_alt || d.to : d.to) || [];
+            type Segment = { text: string; url?: string; kind?: 'text' | 'code' };
             const viasSrc: any[] = Array.isArray(d.vias) ? d.vias : [];
-            const vias = viasSrc.map((v) => inlineToSegments(v) || []).filter((segArr) => Array.isArray(segArr) && segArr.length > 0);
+            const vias = viasSrc.map((v) => inlineToSegments(v) || []).filter((segArr: Segment[]): segArr is Segment[] => Array.isArray(segArr) && segArr.length > 0);
             return vias.length > 0 ? { kind: d.kind, from, to, vias } : { kind: d.kind, from, to };
         }
         if (d.kind === 'single') {

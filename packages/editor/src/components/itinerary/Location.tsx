@@ -15,7 +15,11 @@ export const Location: React.FC<LocationProps> = ({ segments, className, linkCla
 
     const finalSegments: TextSegment[] = (() => {
         if (hasValidUrl) return segments;
-        const fullText = segments.map((s) => s.text).join('');
+        const fullText = segments
+            .map((s) => s.text)
+            .join('')
+            .trim();
+        if (fullText === '') return segments;
         return [{ text: fullText, url: buildGoogleMapsSearchUrl(fullText) }];
     })();
 

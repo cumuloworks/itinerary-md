@@ -2,10 +2,11 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { DateTime } from 'luxon';
 import type { ComponentType } from 'react';
 import { buildGoogleCalendarUrl, buildICS, buildOutlookCalendarUrl, formatDestinationToString } from '@/utils/calendar';
+import { sanitizeFileName } from '@/utils/url';
 
 type Destination =
-    | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
-    | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
+    | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
+    | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
     | { kind: 'single'; at: Array<{ text: string; url?: string }> }
     | undefined;
 
@@ -24,7 +25,7 @@ export interface EventActionsMenuProps {
 }
 
 export function EventActionsMenu({ iconBgClass, IconComponent, title, destination, startISO, endISO, timezone }: EventActionsMenuProps) {
-    const destinationText = formatDestinationToString(destination as any);
+    const destinationText = formatDestinationToString(destination);
     const startDt = startISO ? DateTime.fromISO(startISO, { zone: timezone || undefined }) : null;
     const endDt = endISO ? DateTime.fromISO(endISO, { zone: timezone || undefined }) : null;
 
@@ -40,7 +41,7 @@ export function EventActionsMenu({ iconBgClass, IconComponent, title, destinatio
         const ics = buildICS({ title, start: startDt, end: endDt, location: destinationText || undefined });
         const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
         const url = URL.createObjectURL(blob);
-        const safeTitle = (title || 'event').replace(/[^\w.-]+/g, '_');
+        const safeTitle = sanitizeFileName(title || 'event');
         const a = document.createElement('a');
         a.href = url;
         a.download = `${safeTitle}.ics`;

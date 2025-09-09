@@ -206,11 +206,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
     })();
 
     // Helpers to extract destination-related segments
-    type Destination =
-        | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
-        | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
-        | { kind: 'single'; at: Array<{ text: string; url?: string }> }
-        | undefined;
+    type Destination = EventBlockProps['eventData']['destination'];
 
     const destination = eventData.destination as Destination;
 
@@ -234,9 +230,19 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
 
     const buildSegmentsKey = (segs: Array<{ text: string; url?: string }>): string => {
         return segs
-            .map((s) => `${s.text}-${s.url ?? ''}`)
+            .map((s, index) => `${index}:${s.text}-${s.url ?? ''}`)
             .join('|')
             .slice(0, 64);
+    };
+
+    const buildOccurrenceKeys = (lists: Array<Array<{ text: string; url?: string }>>): string[] => {
+        const seen: Record<string, number> = {};
+        return lists.map((segs) => {
+            const base = buildSegmentsKey(segs);
+            const next = (seen[base] || 0) + 1;
+            seen[base] = next;
+            return `${base}#${next}`.slice(0, 64);
+        });
     };
 
     const titleSegments = (() => {
@@ -264,6 +270,8 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
         return `${head}${vias}${tail}`;
     })();
 
+    const viaUniqueKeys = Array.isArray(viaSegmentsList) ? buildOccurrenceKeys(viaSegmentsList) : undefined;
+
     return (
         <div className="my-3 break-inside-avoid relative group/event">
             <div className="grid items-center grid-cols-[min-content_min-content_minmax(0,1fr)] gap-x-3 py-2" style={{ gridTemplateRows }}>
@@ -272,29 +280,29 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
 
                 {/* 2: Icon (top circle) */}
                 <div className="col-start-2 row-start-1 flex items-center justify-center">
-                    <EventActionsMenu iconBgClass={colors.iconBg} IconComponent={IconComponent} title={titleTextForCalendar} destination={eventData.destination as any} startISO={startISO} endISO={endISO} timezone={timezone} />
+                    <EventActionsMenu iconBgClass={colors.iconBg} IconComponent={IconComponent} title={titleTextForCalendar} destination={eventData.destination} startISO={startISO} endISO={endISO} timezone={timezone} />
                 </div>
 
                 {/* 5: Vertical line (span body + via rows, stop before last row) */}
                 <div className="col-start-2 self-stretch flex justify-center items-center -my-3" style={{ gridRow: '2 / -2' }}>
-                    <div className={`w-1 h-full ${colors.iconBg}`}></div>
+                    <div aria-hidden="true" className={`w-1 h-full ${colors.iconBg}`}></div>
                 </div>
 
                 {/* VIA dots (match count of vias) */}
                 {Array.isArray(viaSegmentsList) && viaSegmentsList.length > 0
                     ? viaSegmentsList.map((segs, idx) => {
-                          const keyStr = buildSegmentsKey(segs);
+                          const keyStr = viaUniqueKeys ? viaUniqueKeys[idx] : buildSegmentsKey(segs);
                           return (
                               <div key={`viadotp-${keyStr}`} className="col-start-2 flex items-center justify-center" style={{ gridRowStart: 3 + idx }}>
-                                  <div className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
+                                  <div aria-hidden="true" className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
                               </div>
                           );
                       })
                     : null}
 
-                {/* 8: Small dot (bottom circle) - show only when no vias */}
+                {/* 8: Small dot (bottom circle) - end marker */}
                 <div className="col-start-2 flex items-center justify-center" style={{ gridRowStart: 3 + viaCount }}>
-                    <div className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
+                    <div aria-hidden="true" className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
                 </div>
 
                 {/* 3: Location (departure) */}
@@ -312,7 +320,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                 {/* 6: Body */}
                 <div className={`col-start-3 row-start-2 min-w-0 py-4`}>
                     <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
-                        {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
+                        {eventData.type === 'flight' && typeof eventData.name === 'string' && /^[A-Za-z]{2}\s?\d{1,4}[A-Za-z]?$/.test(eventData.name) && <AirlineLogo flightCode={eventData.name} size={24} />}
                         {titleSegments ? <SegmentedText segments={titleSegments} className={`font-bold ${colors.text} text-lg`} linkClassName="underline text-inherit" /> : null}
                     </div>
                     <EventBodySegments bodySegments={bodySegments} borderClass={colors.border} priceWarningsByKey={priceWarningsByKey} priceInfos={priceInfos} toCurrency={currency} />
@@ -321,7 +329,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                 {/* VIA rows (each via gets its own grid row) */}
                 {Array.isArray(viaSegmentsList) && viaSegmentsList.length > 0
                     ? viaSegmentsList.map((segs, idx) => {
-                          const keyStr = buildSegmentsKey(segs);
+                          const keyStr = viaUniqueKeys ? viaUniqueKeys[idx] : buildSegmentsKey(segs);
                           return (
                               <div key={`via-${keyStr}`} className="col-start-3" style={{ gridRowStart: 3 + idx }}>
                                   <Location segments={segs} className="text-sm font-semibold text-gray-800" />

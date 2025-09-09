@@ -4,6 +4,8 @@ import { getIconForEventType } from '@/components/itinerary/iconMaps';
 import { Location } from '@/components/itinerary/Location';
 import type { TextSegment } from '@/components/itinerary/SegmentedText';
 
+const StayIcon = getIconForEventType('stay');
+
 interface HeadingProps {
     date: string;
     timezone?: string;
@@ -24,7 +26,6 @@ const getDayOfWeekColorClass = (dayOfWeek: string) => {
 export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStaySegments }) => {
     const dt = DateTime.fromISO(date, { zone: timezone || 'UTC' });
     const dayOfWeek = dt.isValid ? dt.setLocale('en').toFormat('ccc') : '';
-    const StayIcon = getIconForEventType('stay');
     return (
         <h2 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-y-2 text-xl font-semibold text-blue-700 border-b-2 border-blue-200 pb-3 mt-8 mb-6">
             <span className="flex items-center">
