@@ -28,6 +28,10 @@ export function EventActionsMenu({ iconBgClass, IconComponent, title, destinatio
     const startDt = startISO ? DateTime.fromISO(startISO, { zone: timezone || undefined }) : null;
     const endDt = endISO ? DateTime.fromISO(endISO, { zone: timezone || undefined }) : null;
 
+    const triggerBaseClass = 'flex items-center justify-center rounded-full size-7 hover:brightness-110 hover:scale-110 transition';
+    const menuItemClass = 'flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-sm text-gray-800 outline-none hover:bg-gray-100';
+    const contentClass = 'min-w-44 rounded-md bg-white p-1 shadow-lg border border-gray-200 focus:outline-none z-50';
+
     const googleSearchUrl = buildGoogleSearchUrl({ title });
     const googleCalendarUrl = buildGoogleCalendarUrl({ title, start: startDt, end: endDt, location: destinationText || undefined });
     const outlookCalendarUrl = buildOutlookCalendarUrl({ title, start: startDt, end: endDt, location: destinationText || undefined });
@@ -50,24 +54,24 @@ export function EventActionsMenu({ iconBgClass, IconComponent, title, destinatio
         <div className="flex items-center justify-center relative z-10">
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                    <button type="button" aria-label="Open event menu" className={`flex items-center justify-center rounded-full size-7 hover:brightness-110 hover:scale-110 transition ${iconBgClass}`}>
+                    <button type="button" aria-label="Open event menu" className={`${triggerBaseClass} ${iconBgClass}`}>
                         <IconComponent className="text-white size-4" />
                     </button>
                 </DropdownMenu.Trigger>
-                <DropdownMenu.Content side="right" align="center" sideOffset={8} alignOffset={0} className="min-w-44 rounded-md bg-white p-1 shadow-lg border border-gray-200 focus:outline-none z-50">
+                <DropdownMenu.Content side="right" align="center" sideOffset={8} alignOffset={0} className={contentClass}>
                     <DropdownMenu.Item asChild>
-                        <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer" className="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-sm text-gray-800 outline-none hover:bg-gray-100">
+                        <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer" className={menuItemClass}>
                             Search {title} on Google
                         </a>
                     </DropdownMenu.Item>
                     <DropdownMenu.Separator className="my-1 h-px bg-gray-200" />
                     <DropdownMenu.Item asChild>
-                        <a href={googleCalendarUrl} target="_blank" rel="noopener noreferrer" className="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-sm text-gray-800 outline-none hover:bg-gray-100">
+                        <a href={googleCalendarUrl} target="_blank" rel="noopener noreferrer" className={menuItemClass}>
                             Add to Google Calendar
                         </a>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
-                        <a href={outlookCalendarUrl} target="_blank" rel="noopener noreferrer" className="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-sm text-gray-800 outline-none hover:bg-gray-100">
+                        <a href={outlookCalendarUrl} target="_blank" rel="noopener noreferrer" className={menuItemClass}>
                             Add to Outlook Calendar
                         </a>
                     </DropdownMenu.Item>
@@ -76,7 +80,7 @@ export function EventActionsMenu({ iconBgClass, IconComponent, title, destinatio
                             e.preventDefault();
                             handleDownloadIcs();
                         }}
-                        className="flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-sm text-gray-800 outline-none hover:bg-gray-100"
+                        className={menuItemClass}
                     >
                         Download .ics
                     </DropdownMenu.Item>

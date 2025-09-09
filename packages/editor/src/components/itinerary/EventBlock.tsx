@@ -205,39 +205,39 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
         return capitalize(String(eventData.type || ''));
     })();
 
-    // Prepare destination-derived segments for grid layout
-    const destination = eventData.destination as
+    // Helpers to extract destination-related segments
+    type Destination =
         | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
         | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
         | { kind: 'single'; at: Array<{ text: string; url?: string }> }
         | undefined;
 
-    const departureSegments = (() => {
-        if (!destination) return undefined;
-        if (destination.kind === 'fromTo' || destination.kind === 'dashPair') return destination.from;
-        return undefined;
-    })();
+    const destination = eventData.destination as Destination;
 
-    const arrivalSegments = (() => {
-        if (!destination) return undefined;
-        if (destination.kind === 'fromTo' || destination.kind === 'dashPair') return destination.to;
-        return undefined;
-    })();
+    const isRangeKind = (d: Destination): d is Extract<NonNullable<Destination>, { kind: 'fromTo' | 'dashPair' }> => {
+        return !!d && (d.kind === 'fromTo' || d.kind === 'dashPair');
+    };
 
-    const viaSegmentsList = (() => {
-        if (!destination) return undefined;
-        if (destination.kind === 'fromTo' || destination.kind === 'dashPair') {
-            const vs = (destination as { vias?: Array<Array<{ text: string; url?: string }>> }).vias;
-            return Array.isArray(vs) && vs.length > 0 ? vs : undefined;
-        }
-        return undefined;
-    })();
+    const getDepartureSegments = (d: Destination) => (isRangeKind(d) ? d.from : undefined);
+    const getArrivalSegments = (d: Destination) => (isRangeKind(d) ? d.to : undefined);
+    const getViaSegmentsList = (d: Destination) => {
+        if (!isRangeKind(d)) return undefined;
+        const vs = d.vias;
+        return Array.isArray(vs) && vs.length > 0 ? vs : undefined;
+    };
+    const getSingleLocationSegments = (d: Destination) => (d && d.kind === 'single' ? d.at : undefined);
 
-    const singleLocationSegments = (() => {
-        if (!destination) return undefined;
-        if (destination.kind === 'single') return destination.at;
-        return undefined;
-    })();
+    const departureSegments = getDepartureSegments(destination);
+    const arrivalSegments = getArrivalSegments(destination);
+    const viaSegmentsList = getViaSegmentsList(destination);
+    const singleLocationSegments = getSingleLocationSegments(destination);
+
+    const buildSegmentsKey = (segs: Array<{ text: string; url?: string }>): string => {
+        return segs
+            .map((s) => `${s.text}-${s.url ?? ''}`)
+            .join('|')
+            .slice(0, 64);
+    };
 
     const titleSegments = (() => {
         if (Array.isArray(nameSegments) && nameSegments.length > 0) return nameSegments;
@@ -283,10 +283,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                 {/* VIA dots (match count of vias) */}
                 {Array.isArray(viaSegmentsList) && viaSegmentsList.length > 0
                     ? viaSegmentsList.map((segs, idx) => {
-                          const keyStr = segs
-                              .map((s) => `${s.text}-${s.url ?? ''}`)
-                              .join('|')
-                              .slice(0, 64);
+                          const keyStr = buildSegmentsKey(segs);
                           return (
                               <div key={`viadotp-${keyStr}`} className="col-start-2 flex items-center justify-center" style={{ gridRowStart: 3 + idx }}>
                                   <div className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
@@ -324,10 +321,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
                 {/* VIA rows (each via gets its own grid row) */}
                 {Array.isArray(viaSegmentsList) && viaSegmentsList.length > 0
                     ? viaSegmentsList.map((segs, idx) => {
-                          const keyStr = segs
-                              .map((s) => `${s.text}-${s.url ?? ''}`)
-                              .join('|')
-                              .slice(0, 64);
+                          const keyStr = buildSegmentsKey(segs);
                           return (
                               <div key={`via-${keyStr}`} className="col-start-3" style={{ gridRowStart: 3 + idx }}>
                                   <Location segments={segs} className="text-sm font-semibold text-gray-800" />
@@ -343,11 +337,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
 
                 {/* 9: Location (arrival) */}
                 <div className="col-start-3" style={{ gridRowStart: 3 + viaCount }}>
-                    {Array.isArray(arrivalSegments) && arrivalSegments.length > 0 ? (
-                        <Location segments={arrivalSegments} className="text-sm font-semibold text-gray-800" />
-                    ) : Array.isArray(singleLocationSegments) && singleLocationSegments.length > 0 ? (
-                        <Location segments={singleLocationSegments} className="text-sm text-gray-300" />
-                    ) : null}
+                    {Array.isArray(arrivalSegments) && arrivalSegments.length > 0 ? <Location segments={arrivalSegments} className="text-sm font-semibold text-gray-800" /> : null}
                 </div>
             </div>
         </div>

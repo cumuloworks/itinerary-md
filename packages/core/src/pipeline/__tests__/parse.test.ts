@@ -241,7 +241,7 @@ describe('parseHeader', () => {
                 type: 'paragraph',
                 children: d.from,
             } as unknown as Parent)
-        ).toBe('A - B');
+        ).toBe('A');
         expect(mdastToString({ type: 'paragraph', children: d.to } as unknown as Parent)).toBe('C');
     });
 
