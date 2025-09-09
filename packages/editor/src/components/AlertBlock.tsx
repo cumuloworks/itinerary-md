@@ -83,7 +83,7 @@ export const AlertBlock: FC<AlertBlockProps> = ({ variant, title, subtitle, chil
                     </div>
                 ) : null}
                 {hasBody ? (
-                    <div className={`pt-2 mt-2 border-t ${colors.border}`}>
+                    <div className={`pt-2 mt-0.5 border-t ${colors.border}`}>
                         <div className="text-gray-700 text-sm">{children}</div>
                     </div>
                 ) : null}

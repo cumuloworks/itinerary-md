@@ -78,7 +78,7 @@ export const EventBodySegments: React.FC<{
     const { data: ratesData } = useRatesUSD();
     if (!Array.isArray(bodySegments) || bodySegments.length === 0) return null;
     return (
-        <div className={`mt-2 pt-2 border-t ${borderClass}`}>
+        <div className={`pt-2 mt-0.5 border-t ${borderClass}`}>
             {bodySegments.map((seg) => {
                 if (!seg) return null;
                 if ((seg as { kind?: string }).kind === 'inline') {
