@@ -14,7 +14,11 @@ const toParagraph = (children: PhrasingContent[]): ParagraphNode => ({
 export type ParsedHeader = {
     eventType?: string;
     title?: PhrasingContent[] | null;
-    destination?: ({ kind: 'single'; at: PhrasingContent[] } | { kind: 'dashPair'; from: PhrasingContent[]; to: PhrasingContent[] } | { kind: 'fromTo'; from: PhrasingContent[]; to: PhrasingContent[] }) | null;
+    destination?:
+        | { kind: 'single'; at: PhrasingContent[] }
+        | { kind: 'dashPair'; from: PhrasingContent[]; to: PhrasingContent[]; vias?: PhrasingContent[][] }
+        | { kind: 'fromTo'; from: PhrasingContent[]; to: PhrasingContent[]; vias?: PhrasingContent[][] }
+        | null;
     time?: EventTime | null;
     positions?: {
         title?: { start: number; end: number };
@@ -275,18 +279,32 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
         const idx = destRaw.lastIndexOf(' - ');
         const lowerDest = destRaw.toLowerCase();
         let handledFromTo = false;
-        // If explicit 'from' is used, prefer 'X to Y'
+        // If explicit 'from' is used, prefer 'X to Y' and collect 'via' segments between them
         if (!destination && sep === 'from') {
             const toIdxRel = lowerDest.indexOf(' to ');
             if (toIdxRel >= 0) {
-                const fromStart = destStartInline;
-                const fromEnd = destStartInline + toIdxRel;
+                const fromStart = destStartInline; // destRaw starts right after 'from '
+                // Split [0, toIdxRel) by ' via '
+                const segsAbs: Array<{ s: number; e: number }> = [];
+                let cursorRel = 0;
+                while (true) {
+                    const nextVia = lowerDest.indexOf(' via ', cursorRel);
+                    if (nextVia < 0 || nextVia >= toIdxRel) break;
+                    segsAbs.push({ s: destStartInline + cursorRel, e: destStartInline + nextVia });
+                    cursorRel = nextVia + ' via '.length;
+                }
+                // Last segment before 'to'
+                segsAbs.push({ s: destStartInline + cursorRel, e: destStartInline + toIdxRel });
+
+                const fromEnd = segsAbs[0]?.e ?? destStartInline + toIdxRel;
                 const toStart = destStartInline + toIdxRel + ' to '.length;
                 const toEnd = destEndInline;
+                const vias: PhrasingContent[][] = segsAbs.length > 1 ? segsAbs.slice(1).map(({ s, e }) => pickInline(s, e)) : [];
                 destination = {
                     kind: 'fromTo',
                     from: pickInline(fromStart, fromEnd),
                     to: pickInline(toStart, toEnd),
+                    ...(vias.length > 0 ? { vias } : {}),
                 } as ParsedHeader['destination'];
                 positions.destination = {
                     from: { start: fromStart, end: fromEnd },
@@ -295,20 +313,33 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
                 handledFromTo = true;
             }
         }
-        // Detect generic ' from X to Y ' pattern
+        // Detect generic ' from X via ... to Y ' or ' from X to Y ' pattern
         if (!destination && !handledFromTo) {
             const fromIdxRel = lowerDest.indexOf(' from ');
             if (fromIdxRel >= 0) {
                 const toIdxRel = lowerDest.indexOf(' to ', fromIdxRel + ' from '.length);
                 if (toIdxRel >= 0) {
                     const fromStart = destStartInline + fromIdxRel + ' from '.length; // after ' from '
-                    const fromEnd = destStartInline + toIdxRel; // before ' to '
+                    // Collect segments between 'from' and 'to' split by ' via '
+                    const segsAbs: Array<{ s: number; e: number }> = [];
+                    let cursorRel = fromIdxRel + ' from '.length;
+                    while (true) {
+                        const nextVia = lowerDest.indexOf(' via ', cursorRel);
+                        if (nextVia < 0 || nextVia >= toIdxRel) break;
+                        segsAbs.push({ s: destStartInline + cursorRel, e: destStartInline + nextVia });
+                        cursorRel = nextVia + ' via '.length;
+                    }
+                    segsAbs.push({ s: destStartInline + cursorRel, e: destStartInline + toIdxRel });
+
+                    const fromEnd = segsAbs[0]?.e ?? destStartInline + toIdxRel;
                     const toStart = destStartInline + toIdxRel + ' to '.length; // after ' to '
                     const toEnd = destEndInline;
+                    const vias: PhrasingContent[][] = segsAbs.length > 1 ? segsAbs.slice(1).map(({ s, e }) => pickInline(s, e)) : [];
                     destination = {
                         kind: 'fromTo',
                         from: pickInline(fromStart, fromEnd),
                         to: pickInline(toStart, toEnd),
+                        ...(vias.length > 0 ? { vias } : {}),
                     } as ParsedHeader['destination'];
                     positions.destination = {
                         from: { start: fromStart, end: fromEnd },
@@ -319,19 +350,35 @@ export function parseHeader(tokens: LexTokens, mdInline: PhrasingContent[], _sv:
             }
         }
         if (!destination && idx >= 0) {
-            const fromStart = destStartInline;
-            const fromEnd = destStartInline + idx;
-            const toStart = destStartInline + idx + 3;
-            const toEnd = destEndInline;
-            destination = {
-                kind: 'dashPair',
-                from: normalizeSoftBreaksInTextNodes(sliceInline(fromStart, fromEnd)),
-                to: normalizeSoftBreaksInTextNodes(sliceInline(toStart, toEnd)),
-            } as ParsedHeader['destination'];
-            positions.destination = {
-                from: { start: fromStart, end: fromEnd },
-                to: { start: toStart, end: toEnd },
-            };
+            // Split all ' - ' occurrences into segments: first=from, last=to, middle=vias
+            const partsAbs: Array<{ s: number; e: number }> = [];
+            let cursorRel = 0;
+            while (true) {
+                const nextDash = destRaw.indexOf(' - ', cursorRel);
+                if (nextDash < 0) break;
+                partsAbs.push({ s: destStartInline + cursorRel, e: destStartInline + nextDash });
+                cursorRel = nextDash + 3;
+            }
+            // tail
+            partsAbs.push({ s: destStartInline + cursorRel, e: destEndInline });
+
+            if (partsAbs.length >= 2) {
+                const fromStart = partsAbs[0].s;
+                const fromEnd = partsAbs[0].e;
+                const toStart = partsAbs[partsAbs.length - 1].s;
+                const toEnd = partsAbs[partsAbs.length - 1].e;
+                const vias: PhrasingContent[][] = partsAbs.slice(1, -1).map(({ s, e }) => normalizeSoftBreaksInTextNodes(sliceInline(s, e)));
+                destination = {
+                    kind: 'dashPair',
+                    from: normalizeSoftBreaksInTextNodes(sliceInline(fromStart, fromEnd)),
+                    to: normalizeSoftBreaksInTextNodes(sliceInline(toStart, toEnd)),
+                    ...(vias.length > 0 ? { vias } : {}),
+                } as ParsedHeader['destination'];
+                positions.destination = {
+                    from: { start: fromStart, end: fromEnd },
+                    to: { start: toStart, end: toEnd },
+                };
+            }
         } else if (sep === 'doublecolon' || sep === 'at') {
             destination = {
                 kind: 'single',
