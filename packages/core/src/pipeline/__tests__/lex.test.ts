@@ -34,6 +34,28 @@ describe('lexLine', () => {
         expect(kinds.includes('to')).toBe(true);
     });
 
+    it('detects via (outside only)', () => {
+        const line = '[08:00] flight JL from Tokyo via Dubai to London';
+        const t = lexLine(line, {}, sv);
+        const kinds = t.seps.map((s) => s.kind);
+        expect(kinds.includes('from')).toBe(true);
+        expect(kinds.includes('via')).toBe(true);
+        expect(kinds.includes('to')).toBe(true);
+    });
+
+    it('detects via at line start/end', () => {
+        const t1 = lexLine('via Osaka to Tokyo', {}, sv);
+        expect(t1.seps.map((s) => s.kind)).toContain('via');
+        const t2 = lexLine('from Osaka via', {}, sv);
+        expect(t2.seps.map((s) => s.kind)).toContain('via');
+    });
+
+    it('detects multiple via', () => {
+        const t = lexLine('from A via B via C to D', {}, sv);
+        const kinds = t.seps.map((s) => s.kind);
+        expect(kinds.filter((k) => k === 'via').length).toBe(2);
+    });
+
     it('ignores from/to inside parentheses', () => {
         const line = '[08:00] flight JL (from Osaka to Sapporo)';
         const t = lexLine(line, {}, sv);
@@ -57,5 +79,16 @@ describe('lexLine', () => {
         expect(kinds.includes('from')).toBe(false);
         // 'to' in outside context is detected
         expect(kinds.includes('to')).toBe(true);
+    });
+
+    it('ignores via inside parentheses/link/code', () => {
+        const t1 = lexLine('[08:00] flight (via Osaka) to Tokyo', {}, sv);
+        expect(t1.seps.map((s) => s.kind).includes('via')).toBe(false);
+
+        const t2 = lexLine('[08:00] activity go [via somewhere](https://ex) to there', {}, sv);
+        expect(t2.seps.map((s) => s.kind).includes('via')).toBe(false);
+
+        const t3 = lexLine('[08:00] note `via code` to X', {}, sv);
+        expect(t3.seps.map((s) => s.kind).includes('via')).toBe(false);
     });
 });

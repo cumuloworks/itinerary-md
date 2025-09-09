@@ -1,7 +1,6 @@
 import { AirlineLogo } from '@/components/itinerary/AirlineLogo';
 import { EventBodySegments } from '@/components/itinerary/EventBodySegments';
 import { Location } from '@/components/itinerary/Location';
-import { Route } from '@/components/itinerary/Route';
 import { SegmentedText } from '@/components/itinerary/SegmentedText';
 import { TimeDisplay } from '@/components/itinerary/TimeDisplay';
 import { isAllowedHref } from '@/utils/url';
@@ -39,8 +38,8 @@ interface EventBlockProps {
             | 'cafe';
         name?: string;
         destination?:
-            | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
-            | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
+            | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
+            | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }>; vias?: Array<Array<{ text: string; url?: string }>> }
             | { kind: 'single'; at: Array<{ text: string; url?: string }> };
         metadata: Record<string, string>;
     };
@@ -193,7 +192,6 @@ import ColorHash from 'color-hash';
 //
 import { EventActionsMenu } from '@/components/itinerary/EventActionsMenu';
 import { getIconForEventType } from '@/components/itinerary/iconMaps';
-import { TimePlaceholder } from '@/components/itinerary/TimePlaceholder';
 
 const getTypeIcon = (type: EventBlockProps['eventData']['type']) => getIconForEventType(type);
 
@@ -207,25 +205,45 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
         return capitalize(String(eventData.type || ''));
     })();
 
-    const routeOrLocationDisplay = (() => {
-        const dest = eventData.destination as
-            | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
-            | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
-            | { kind: 'single'; at: Array<{ text: string; url?: string }> }
-            | undefined;
-        if (!dest) return null;
-        if (dest.kind === 'fromTo' || dest.kind === 'dashPair') {
-            const hasFrom = Array.isArray(dest.from) && dest.from.length > 0;
-            const hasTo = Array.isArray(dest.to) && dest.to.length > 0;
-            if (hasFrom && hasTo) return <Route departureSegments={dest.from} arrivalSegments={dest.to} />;
-            const single = hasFrom ? dest.from : hasTo ? dest.to : [];
-            return single.length > 0 ? <Location location={undefined as unknown as string} segments={single} /> : null;
-        }
-        if (dest.kind === 'single') {
-            return Array.isArray(dest.at) && dest.at.length > 0 ? <Location location={undefined as unknown as string} segments={dest.at} /> : null;
-        }
-        return null;
-    })();
+    // Helpers to extract destination-related segments
+    type Destination = EventBlockProps['eventData']['destination'];
+
+    const destination = eventData.destination as Destination;
+
+    const isRangeKind = (d: Destination): d is Extract<NonNullable<Destination>, { kind: 'fromTo' | 'dashPair' }> => {
+        return !!d && (d.kind === 'fromTo' || d.kind === 'dashPair');
+    };
+
+    const getDepartureSegments = (d: Destination) => (isRangeKind(d) ? d.from : undefined);
+    const getArrivalSegments = (d: Destination) => (isRangeKind(d) ? d.to : undefined);
+    const getViaSegmentsList = (d: Destination) => {
+        if (!isRangeKind(d)) return undefined;
+        const vs = d.vias;
+        return Array.isArray(vs) && vs.length > 0 ? vs : undefined;
+    };
+    const getSingleLocationSegments = (d: Destination) => (d && d.kind === 'single' ? d.at : undefined);
+
+    const departureSegments = getDepartureSegments(destination);
+    const arrivalSegments = getArrivalSegments(destination);
+    const viaSegmentsList = getViaSegmentsList(destination);
+    const singleLocationSegments = getSingleLocationSegments(destination);
+
+    const buildSegmentsKey = (segs: Array<{ text: string; url?: string }>): string => {
+        return segs
+            .map((s, index) => `${index}:${s.text}-${s.url ?? ''}`)
+            .join('|')
+            .slice(0, 64);
+    };
+
+    const buildOccurrenceKeys = (lists: Array<Array<{ text: string; url?: string }>>): string[] => {
+        const seen: Record<string, number> = {};
+        return lists.map((segs) => {
+            const base = buildSegmentsKey(segs);
+            const next = (seen[base] || 0) + 1;
+            seen[base] = next;
+            return `${base}#${next}`.slice(0, 64);
+        });
+    };
 
     const titleSegments = (() => {
         if (Array.isArray(nameSegments) && nameSegments.length > 0) return nameSegments;
@@ -244,26 +262,91 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
     // start/end are computed in EventActionsMenu
     // All action menu logic moved to EventActionsMenu
 
+    const viaCount = Array.isArray(viaSegmentsList) ? viaSegmentsList.length : 0;
+    const gridTemplateRows = (() => {
+        const head = '2rem auto';
+        const vias = viaCount > 0 ? ` repeat(${viaCount}, auto)` : '';
+        const tail = ' 2rem';
+        return `${head}${vias}${tail}`;
+    })();
+
+    const viaUniqueKeys = Array.isArray(viaSegmentsList) ? buildOccurrenceKeys(viaSegmentsList) : undefined;
+
     return (
-        <div className="my-3 flex items-center break-inside-avoid relative group/event">
-            {!startISO && !endISO && !marker ? (
-                <TimePlaceholder />
-            ) : (
-                <div className="flex flex-col gap-5 min-w-0 text-right">
-                    {startISO || marker ? <TimeDisplay iso={startISO ?? undefined} marker={marker ?? undefined} dateStr={dateStr} timezone={timezone} /> : <TimePlaceholder />}
-                    {endISO && <TimeDisplay iso={endISO ?? undefined} dateStr={dateStr} timezone={timezone} />}
-                </div>
-            )}
+        <div className="my-3 break-inside-avoid relative group/event">
+            <div className="grid items-center grid-cols-[min-content_min-content_minmax(0,1fr)] gap-x-3 py-2" style={{ gridTemplateRows }}>
+                {/* 1: Time (departure) */}
+                <div className="col-start-1 row-start-1 text-right">{startISO || marker ? <TimeDisplay iso={startISO ?? undefined} marker={marker ?? undefined} dateStr={dateStr} timezone={timezone} /> : null}</div>
 
-            <EventActionsMenu iconBgClass={colors.iconBg} IconComponent={IconComponent} title={titleTextForCalendar} destination={eventData.destination as any} startISO={startISO} endISO={endISO} timezone={timezone} />
-
-            <div className={`flex-1 min-w-0 p-5 -ml-4.5 pl-8 ${colors.cardBg} border-l-4 ${colors.border}`}>
-                <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
-                    {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
-                    {titleSegments ? <SegmentedText segments={titleSegments} className={`font-bold ${colors.text} text-lg`} linkClassName="underline text-inherit" /> : null}
-                    {routeOrLocationDisplay && <div className="text-gray-700 text-sm font-medium">{routeOrLocationDisplay}</div>}
+                {/* 2: Icon (top circle) */}
+                <div className="col-start-2 row-start-1 flex items-center justify-center">
+                    <EventActionsMenu iconBgClass={colors.iconBg} IconComponent={IconComponent} title={titleTextForCalendar} destination={eventData.destination} startISO={startISO} endISO={endISO} timezone={timezone} />
                 </div>
-                <EventBodySegments bodySegments={bodySegments} borderClass={colors.border} priceWarningsByKey={priceWarningsByKey} priceInfos={priceInfos} toCurrency={currency} />
+
+                {/* 5: Vertical line (span body + via rows, stop before last row) */}
+                <div className="col-start-2 self-stretch flex justify-center items-center -my-3" style={{ gridRow: '2 / -2' }}>
+                    <div aria-hidden="true" className={`w-1 h-full ${colors.iconBg}`}></div>
+                </div>
+
+                {/* VIA dots (match count of vias) */}
+                {Array.isArray(viaSegmentsList) && viaSegmentsList.length > 0
+                    ? viaSegmentsList.map((segs, idx) => {
+                          const keyStr = viaUniqueKeys ? viaUniqueKeys[idx] : buildSegmentsKey(segs);
+                          return (
+                              <div key={`viadotp-${keyStr}`} className="col-start-2 flex items-center justify-center" style={{ gridRowStart: 3 + idx }}>
+                                  <div aria-hidden="true" className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
+                              </div>
+                          );
+                      })
+                    : null}
+
+                {/* 8: Small dot (bottom circle) - end marker */}
+                <div className="col-start-2 flex items-center justify-center" style={{ gridRowStart: 3 + viaCount }}>
+                    <div aria-hidden="true" className={`rounded-full size-3 m-2 ${colors.iconBg}`}></div>
+                </div>
+
+                {/* 3: Location (departure) */}
+                <div className="col-start-3 row-start-1">
+                    {Array.isArray(departureSegments) && departureSegments.length > 0 ? (
+                        <Location segments={departureSegments} className="text-sm font-semibold text-gray-800" />
+                    ) : Array.isArray(singleLocationSegments) && singleLocationSegments.length > 0 ? (
+                        <Location segments={singleLocationSegments} className="text-sm font-semibold text-gray-800" />
+                    ) : null}
+                </div>
+
+                {/* 4: Empty */}
+                <div className="col-start-1 row-start-2"></div>
+
+                {/* 6: Body */}
+                <div className={`col-start-3 row-start-2 min-w-0 py-4`}>
+                    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
+                        {eventData.type === 'flight' && typeof eventData.name === 'string' && /^[A-Za-z]{2}\s?\d{1,4}[A-Za-z]?$/.test(eventData.name) && <AirlineLogo flightCode={eventData.name} size={24} />}
+                        {titleSegments ? <SegmentedText segments={titleSegments} className={`font-bold ${colors.text} text-lg`} linkClassName="underline text-inherit" /> : null}
+                    </div>
+                    <EventBodySegments bodySegments={bodySegments} borderClass={colors.border} priceWarningsByKey={priceWarningsByKey} priceInfos={priceInfos} toCurrency={currency} />
+                </div>
+
+                {/* VIA rows (each via gets its own grid row) */}
+                {Array.isArray(viaSegmentsList) && viaSegmentsList.length > 0
+                    ? viaSegmentsList.map((segs, idx) => {
+                          const keyStr = viaUniqueKeys ? viaUniqueKeys[idx] : buildSegmentsKey(segs);
+                          return (
+                              <div key={`via-${keyStr}`} className="col-start-3" style={{ gridRowStart: 3 + idx }}>
+                                  <Location segments={segs} className="text-sm font-semibold text-gray-800" />
+                              </div>
+                          );
+                      })
+                    : null}
+
+                {/* 7: Time (arrival) */}
+                <div className="col-start-1 text-right" style={{ gridRowStart: 3 + viaCount }}>
+                    {endISO ? <TimeDisplay iso={endISO ?? undefined} dateStr={dateStr} timezone={timezone} /> : null}
+                </div>
+
+                {/* 9: Location (arrival) */}
+                <div className="col-start-3" style={{ gridRowStart: 3 + viaCount }}>
+                    {Array.isArray(arrivalSegments) && arrivalSegments.length > 0 ? <Location segments={arrivalSegments} className="text-sm font-semibold text-gray-800" /> : null}
+                </div>
             </div>
         </div>
     );

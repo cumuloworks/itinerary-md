@@ -1,5 +1,6 @@
+import { Link as LinkIcon, Map as MapIcon } from 'lucide-react';
 import React from 'react';
-import { isAllowedHref } from '@/utils/url';
+import { isAllowedHref, isGoogleMapsSearchUrl } from '@/utils/url';
 
 type InlineRenderOptions = {
     linkClassName?: string;
@@ -36,9 +37,13 @@ export const renderInline = (nodes: any[] | undefined, options?: InlineRenderOpt
             case 'link': {
                 const href = typeof n.url === 'string' ? n.url : undefined;
                 if (!href || !isAllowedHref(href)) return renderInline(n.children, options);
+                const isMaps = isGoogleMapsSearchUrl(href);
                 return (
-                    <a key={key} href={href} target="_blank" rel="noopener noreferrer" className={options?.linkClassName ?? 'underline text-inherit'}>
-                        {renderInline(n.children, options)}
+                    <a key={key} href={href} target="_blank" rel="noopener noreferrer" className={options?.linkClassName ?? 'no-underline text-inherit'}>
+                        <span className="inline-flex items-center gap-1">
+                            {renderInline(n.children, options)}
+                            {isMaps ? <MapIcon aria-hidden="true" className="inline-block size-4 align-[-2px] opacity-70" /> : <LinkIcon aria-hidden="true" className="inline-block size-4 align-[-2px] opacity-70" />}
+                        </span>
                     </a>
                 );
             }

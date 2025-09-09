@@ -5,7 +5,7 @@ export type LexTokens = {
     shadow: string;
     map: (shadowIdx: number) => number;
     seps: Array<{
-        kind: 'doublecolon' | 'at' | 'routeDash' | 'from' | 'to';
+        kind: 'doublecolon' | 'at' | 'routeDash' | 'from' | 'via' | 'to';
         index: number;
     }>;
 };
@@ -55,7 +55,7 @@ export function lexLine(line: string, _ctx: { baseTz?: string }, _sv: Services):
                 seps.push({ kind: 'routeDash', index: i + 1 });
                 continue;
             }
-            // word separators: at/from/to (spaces required; line start/end allowed as boundaries)
+            // word separators: at/from/via/to (spaces required; line start/end allowed as boundaries)
             const rest = s.slice(i);
             const prevIsBoundary = i === 0 || s[i - 1] === ' ';
             if (prevIsBoundary && rest.startsWith('at') && (rest[2] === ' ' || rest.length === 2)) {
@@ -66,6 +66,11 @@ export function lexLine(line: string, _ctx: { baseTz?: string }, _sv: Services):
             if (prevIsBoundary && rest.startsWith('from') && (rest[4] === ' ' || rest.length === 4)) {
                 seps.push({ kind: 'from', index: i });
                 i += 3;
+                continue;
+            }
+            if (prevIsBoundary && rest.startsWith('via') && (rest[3] === ' ' || rest.length === 3)) {
+                seps.push({ kind: 'via', index: i });
+                i += 2;
                 continue;
             }
             if (prevIsBoundary && rest.startsWith('to') && (rest[2] === ' ' || rest.length === 2)) {

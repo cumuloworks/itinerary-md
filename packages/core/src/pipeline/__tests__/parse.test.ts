@@ -138,6 +138,34 @@ describe('parseHeader', () => {
         ).toContain('London Heathrow (LHR)');
     });
 
+    it('destination: from A via B via C to D → normalized to from=A, to=D', () => {
+        const line = '[08:00] flight JL from Tokyo via Dubai via Frankfurt to London';
+        const tokens = lexLine(line, {}, sv);
+        const header = parseHeader(tokens, [], sv);
+        expect(header.destination?.kind).toBe('fromTo');
+        const d = header.destination as Extract<typeof header.destination, { kind: 'fromTo' }>;
+        expect(mdastToString({ type: 'paragraph', children: d.from ?? [] } as unknown as Parent)).toContain('Tokyo');
+        expect(mdastToString({ type: 'paragraph', children: d.to ?? [] } as unknown as Parent)).toContain('London');
+        expect(Array.isArray((d as any).vias)).toBe(true);
+        expect(((d as any).vias || []).length).toBe(2);
+        const vias = ((d as any).vias || []) as any[];
+        expect(mdastToString({ type: 'paragraph', children: vias[0] } as unknown as Parent)).toContain('Dubai');
+        expect(mdastToString({ type: 'paragraph', children: vias[1] } as unknown as Parent)).toContain('Frankfurt');
+    });
+
+    it('destination: :: A - B - C → from=A, via=[B], to=C', () => {
+        const tokens = lexLine('[08:00] route :: A - B - C', {}, sv);
+        const h = parseHeader(tokens, [], sv);
+        expect(h.destination?.kind).toBe('dashPair');
+        const d = h.destination as Extract<typeof h.destination, { kind: 'dashPair' }> & { vias?: any[] };
+        expect(mdastToString({ type: 'paragraph', children: d.from } as unknown as Parent)).toBe('A');
+        expect(mdastToString({ type: 'paragraph', children: d.to } as unknown as Parent)).toBe('C');
+        expect(Array.isArray(d.vias)).toBe(true);
+        expect((d.vias || []).length).toBe(1);
+        const firstVia = d.vias?.[0] as any[];
+        expect(mdastToString({ type: 'paragraph', children: firstVia } as unknown as Parent)).toBe('B');
+    });
+
     it('extracts time: point/range/marker/none', () => {
         // point
         let tokens = lexLine('[08:00] flight X', {}, sv);
@@ -216,7 +244,7 @@ describe('parseHeader', () => {
                 type: 'paragraph',
                 children: d.from,
             } as unknown as Parent)
-        ).toBe('A - B');
+        ).toBe('A');
         expect(mdastToString({ type: 'paragraph', children: d.to } as unknown as Parent)).toBe('C');
     });
 

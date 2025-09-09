@@ -1,7 +1,10 @@
 import { DateTime } from 'luxon';
 import type React from 'react';
+import { getIconForEventType } from '@/components/itinerary/iconMaps';
 import { Location } from '@/components/itinerary/Location';
 import type { TextSegment } from '@/components/itinerary/SegmentedText';
+
+const StayIcon = getIconForEventType('stay');
 
 interface HeadingProps {
     date: string;
@@ -32,7 +35,8 @@ export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStaySegmen
             </span>
             {prevStaySegments && prevStaySegments.length > 0 ? (
                 <span className="flex items-center text-gray-700 text-sm gap-2">
-                    <Location segments={prevStaySegments} />
+                    <StayIcon className="size-4 text-gray-500" />
+                    <Location segments={prevStaySegments} className="text-sm font-semibold text-gray-800" />
                 </span>
             ) : null}
         </h2>
