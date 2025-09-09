@@ -12,8 +12,8 @@ vi.mock('@radix-ui/react-dropdown-menu', () => ({
     },
     Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     Content: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Item: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
-        <button type="button" onClick={onClick}>
+    Item: ({ children, onSelect }: { children: React.ReactNode; onSelect?: () => void }) => (
+        <button type="button" onClick={onSelect}>
             {children}
         </button>
     ),
@@ -31,6 +31,7 @@ vi.mock('@radix-ui/react-dropdown-menu', () => ({
         </button>
     ),
     ItemIndicator: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Separator: () => <div />,
 }));
 
 vi.mock('@radix-ui/react-select', () => ({
@@ -120,7 +121,6 @@ describe('TopBar', () => {
 
             // Toggle buttons
             expect(screen.getByText('Hide Past: OFF')).toBeInTheDocument();
-            expect(screen.getByText('Auto Scroll: ON')).toBeInTheDocument();
 
             // Action buttons
             expect(screen.getByTitle('Copy Markdown')).toBeInTheDocument();
@@ -228,28 +228,7 @@ describe('TopBar', () => {
         });
     });
 
-    describe('Auto scroll', () => {
-        it('shows ON when autoScroll is true', () => {
-            render(<TopBar {...mockProps} />);
-            expect(screen.getByText('Auto Scroll: ON')).toBeInTheDocument();
-        });
-
-        it('shows OFF when autoScroll is false', () => {
-            render(<TopBar {...mockProps} topbar={{ ...mockProps.topbar, autoScroll: false }} />);
-            expect(screen.getByText('Auto Scroll: OFF')).toBeInTheDocument();
-        });
-
-        it('toggles autoScroll on click', () => {
-            render(<TopBar {...mockProps} />);
-
-            const button = screen.getByTitle('Disable auto scroll');
-            fireEvent.click(button);
-
-            expect(mockProps.onTopbarChange).toHaveBeenCalledWith({
-                autoScroll: false,
-            });
-        });
-    });
+    // Auto scroll toggle moved to PreviewPane header; no longer tested here
 
     describe('Actions', () => {
         it('clicks Copy Markdown button', () => {
@@ -287,7 +266,7 @@ describe('TopBar', () => {
             expect(screen.getByLabelText('Copy Markdown')).toBeInTheDocument();
             expect(screen.getByLabelText('Share via URL')).toBeInTheDocument();
             expect(screen.getByLabelText('Hide past days')).toBeInTheDocument();
-            expect(screen.getByLabelText('Disable auto scroll')).toBeInTheDocument();
+            // Auto scroll control not present in TopBar anymore
         });
 
         it('timezone select has the correct ID', () => {

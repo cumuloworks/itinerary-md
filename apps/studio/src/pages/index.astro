@@ -4,19 +4,23 @@ import '@itinerary-md/editor/index.css';
 import { Editor } from '@itinerary-md/editor';
 import Analytics from '@vercel/analytics/astro';
 import Header from '@/components/Header.astro';
+import PWAUpdater from '@/components/PWAUpdater.tsx';
 import { reactTelemetryAdapter } from '@/telemetry-adapter';
 
 void Editor;
 void Header;
 void Analytics;
+void PWAUpdater;
 void reactTelemetryAdapter;
 ---
 
 <html lang="ja">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" href="/favicon.ico" />
-		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+		<link rel="icon" href="/favicon.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 		<link rel="manifest" href="/manifest.webmanifest" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="generator" content={Astro.generator} />
@@ -52,23 +56,6 @@ void reactTelemetryAdapter;
 			})}
 		</script>
 		<Analytics />
-		{import.meta.env.PROD && (
-			<script>
-				{`
-				if ('serviceWorker' in navigator) {
-					window.addEventListener('load', () => {
-						navigator.serviceWorker.register('/sw.js', { scope: '/' })
-							.then((registration) => {
-								console.log('SW registered: ', registration);
-							})
-							.catch((registrationError) => {
-								console.log('SW registration failed: ', registrationError);
-							});
-					});
-				}
-				`}
-			</script>
-		)}
 	</head>
 	<body class="bg-gray-100">
         <div class="max-w-screen-2xl mx-auto h-svh overflow-hidden flex flex-col pt-8 pb-0 md:pb-8">
@@ -82,5 +69,6 @@ void reactTelemetryAdapter;
 			/>
 		</div>
 		</div>
+		<PWAUpdater client:only="react" />
 	</body>
 </html>

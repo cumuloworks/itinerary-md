@@ -11,6 +11,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://astro.build/config
 export default defineConfig({
+    output: 'static', // Static site generation for offline support
     adapter: vercel(),
     integrations: [
         sentry({
@@ -42,14 +43,16 @@ export default defineConfig({
             },
             tailwindcss(),
             VitePWA({
-                registerType: 'autoUpdate',
-                injectRegister: 'script',
+                registerType: 'prompt',
+                injectRegister: 'auto',
                 devOptions: {
                     // Disable PWA service worker in dev to avoid caching stale hashed chunks
                     enabled: false,
                 },
                 includeAssets: [
-                    'favicon.ico',
+                    'favicon.png',
+                    'favicon-16x16.png',
+                    'favicon-32x32.png',
                     'apple-touch-icon.png',
                     'android-chrome-192x192.png',
                     'android-chrome-512x512.png',
@@ -63,45 +66,96 @@ export default defineConfig({
                     start_url: '/',
                     scope: '/',
                     display: 'standalone',
-                    background_color: '#ffffff',
+                    orientation: 'any',
+                    background_color: '#f3f4f6',
                     theme_color: '#155dfc',
                     icons: [
                         {
+                            src: '/favicon-16x16.png',
+                            sizes: '16x16',
+                            type: 'image/png',
+                            purpose: 'any'
+                        },
+                        {
+                            src: '/favicon-32x32.png',
+                            sizes: '32x32',
+                            type: 'image/png',
+                            purpose: 'any'
+                        },
+                        {
                             src: '/android-chrome-192x192.png',
                             sizes: '192x192',
-                            type: 'image/png'
+                            type: 'image/png',
+                            purpose: 'any'
                         },
                         {
                             src: '/android-chrome-512x512.png',
                             sizes: '512x512',
-                            type: 'image/png'
+                            type: 'image/png',
+                            purpose: 'any'
+                        },
+                        {
+                            src: '/android-chrome-192x192.png',
+                            sizes: '192x192',
+                            type: 'image/png',
+                            purpose: 'maskable'
+                        },
+                        {
+                            src: '/android-chrome-512x512.png',
+                            sizes: '512x512',
+                            type: 'image/png',
+                            purpose: 'maskable'
                         }
                     ]
                 },
                 workbox: {
                     clientsClaim: true,
                     skipWaiting: true,
+                    cleanupOutdatedCaches: true,
                     navigateFallback: '/index.html',
-                    globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2,ttf,otf}'],
-                    additionalManifestEntries: [
-                        { url: '/index.html', revision: null },
-                    ],
+                    navigateFallbackAllowlist: [/^\/$/],
+                    globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest,woff,woff2,ttf,otf,md,json}'],
+                    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
                     navigateFallbackDenylist: [
                         /^\/api(\/|$)/,
                         /^\/_astro(\/|$)/,
                         /^\/workbox-.*\.js$/,
                         /^\/sw\.js$/,
                         /^\/registerSW\.js$/,
-                        /^\/favicon\.ico$/,
+                        /^\/favicon\.png$/,
                         /^\/manifest\.webmanifest$/,
                         /^\/site\.webmanifest$/,
                         /^\/apple-touch-icon\.png$/,
                         /^\/android-chrome-\d+x\d+\.png$/,
                         /^\/ogp\.png$/,
-                        /\/[^\/?]+\.[^/]+$/, // file-like URLs with extensions
+                        /\/[^\/?]+\.(js|css|map)$/, // Only exclude JS/CSS/map files
                     ],
                     // Runtime caching for better offline experience
                     runtimeCaching: [
+                        // Cache the main app shell
+                        {
+                            urlPattern: /^\/$|^\/index\.html$/,
+                            handler: 'NetworkFirst',
+                            options: {
+                                cacheName: 'app-shell',
+                                expiration: {
+                                    maxEntries: 1,
+                                    maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+                                }
+                            }
+                        },
+                        // Cache JavaScript and CSS files
+                        {
+                            urlPattern: /\.(?:js|css)$/i,
+                            handler: 'StaleWhileRevalidate',
+                            options: {
+                                cacheName: 'static-resources',
+                                expiration: {
+                                    maxEntries: 60,
+                                    maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                                }
+                            }
+                        },
                         {
                             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
                             handler: 'StaleWhileRevalidate',
@@ -150,12 +204,25 @@ export default defineConfig({
                         },
                         {
                             urlPattern: /\/sample_.*\.md$/,
-                            handler: 'StaleWhileRevalidate',
+                            handler: 'CacheFirst',
                             options: {
                                 cacheName: 'sample-files-cache',
                                 expiration: {
                                     maxEntries: 10,
-                                    maxAgeSeconds: 60 * 60 * 24 * 7 // <== 7 days
+                                    maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                                }
+                            }
+                        },
+                        // API calls (if any)
+                        {
+                            urlPattern: /^\/api\//,
+                            handler: 'NetworkFirst',
+                            options: {
+                                cacheName: 'api-cache',
+                                networkTimeoutSeconds: 5,
+                                expiration: {
+                                    maxEntries: 50,
+                                    maxAgeSeconds: 60 * 5 // 5 minutes
                                 }
                             }
                         }

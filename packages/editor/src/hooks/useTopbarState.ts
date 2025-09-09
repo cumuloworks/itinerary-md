@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { notifyError } from '@/core/errors';
+import { tInstant } from '@/i18n';
 import type { TopbarState, ViewMode } from '@/types/itinerary';
 import { isValidIanaTimeZone } from '@/utils/timezone';
 
@@ -47,7 +48,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
                 if (isValidIanaTimeZone(tz)) {
                     patch.timezone = tz;
                 } else {
-                    notifyError(`URL timezone "${tz}" is invalid. Using current selection.`);
+                    notifyError(tInstant('toast.url.tz.invalid', { tz }));
                 }
             }
 

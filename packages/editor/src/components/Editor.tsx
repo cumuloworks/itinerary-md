@@ -1,4 +1,4 @@
-import { type FC, memo, useCallback, useId, useMemo, useState } from 'react';
+import { type FC, memo, useCallback, useId, useMemo, useRef, useState } from 'react';
 import { ClearAllDialog } from '@/components/dialog/ClearAllDialog';
 import { ImportDialog } from '@/components/dialog/ImportDialog';
 import { LoadSampleDialog } from '@/components/dialog/LoadSampleDialog';
@@ -17,8 +17,11 @@ import { useTopbarState } from '@/hooks/useTopbarState';
 import { useI18n } from '@/i18n';
 import { writeTextToClipboard } from '@/utils/clipboard';
 import { COMMON_CURRENCIES } from '@/utils/currency';
+import { triggerDownload } from '@/utils/download';
 import { buildShareUrlFromContent } from '@/utils/hash';
+import { openPrintWindow } from '@/utils/print';
 import { getTimezoneOptions } from '@/utils/timezone';
+import { sanitizeFileName } from '@/utils/url';
 
 export interface EditorProps {
     storageKey?: string;
@@ -58,7 +61,7 @@ function getLanguageAwareSamplePath(basePath: string, lang: string): string {
 }
 
 const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT, rate }) => {
-    const { lang } = useI18n();
+    const { lang, t } = useI18n();
     const effectiveSamplePath = useMemo(() => getLanguageAwareSamplePath(samplePath, lang), [samplePath, lang]);
     const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
     const tzSelectId = useId();
@@ -84,6 +87,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
 
     const latestContent = useLatest(content);
     const [pendingClearAll, setPendingClearAll] = useState(false);
+    const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
     const handleContentChange = useCallback(
         (newContent: string) => {
@@ -96,22 +100,52 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
         try {
             const url = buildShareUrlFromContent(latestContent.current);
             await writeTextToClipboard(url);
-            notifySuccess('Shareable URL copied to clipboard');
+            notifySuccess(t('toast.url.copied'));
         } catch (error) {
             console.error('Failed to generate URL:', error);
-            notifyError('Failed to generate URL');
+            notifyError(t('toast.url.failed'));
         }
-    }, [latestContent]);
+    }, [latestContent, t]);
 
     const handleCopyMarkdown = useCallback(async () => {
         try {
             await writeTextToClipboard(latestContent.current);
-            notifySuccess('Markdown copied to clipboard');
+            notifySuccess(t('toast.copy.ok'));
         } catch (error) {
             console.error('Copy failed:', error);
-            notifyError('Copy failed');
+            notifyError(t('toast.copy.failed'));
         }
-    }, [latestContent]);
+    }, [latestContent, t]);
+    const handlePrint = useCallback(() => {
+        try {
+            openPrintWindow({
+                title: (frontmatterTitle || 'Itinerary').toString(),
+                container: previewContainerRef.current,
+                fallbackMarkdown: latestContent.current,
+            });
+            notifySuccess(t('toast.print.opened'));
+        } catch (error) {
+            console.error('Print failed:', error);
+            notifyError(t('toast.print.failed'));
+        }
+    }, [frontmatterTitle, latestContent, t]);
+
+    const handleDownloadMarkdown = useCallback(() => {
+        try {
+            const nameFromTitle = (frontmatterTitle || 'itinerary').toString();
+            const safeBase = sanitizeFileName(nameFromTitle).trim() || 'itinerary';
+            const fileName = `${safeBase}.md`;
+            triggerDownload({
+                data: latestContent.current,
+                fileName,
+                mimeType: 'text/markdown;charset=utf-8',
+            });
+            notifySuccess(t('toast.download.started'));
+        } catch (error) {
+            console.error('Download failed:', error);
+            notifyError(t('toast.download.failed'));
+        }
+    }, [frontmatterTitle, latestContent, t]);
 
     const handleOpenClearAll = useCallback(() => {
         setPendingClearAll(true);
@@ -124,7 +158,8 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
     const handleConfirmClearAll = useCallback(() => {
         setContent('');
         setPendingClearAll(false);
-    }, [setContent]);
+        notifySuccess(t('toast.clear.ok'));
+    }, [setContent, t]);
 
     const hashImport = useHashImport(
         (hashContent: string) => setContent(hashContent),
@@ -146,6 +181,8 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                 onTopbarChange={updateTopbar}
                 onCopyMarkdown={handleCopyMarkdown}
                 onShareUrl={handleShareUrl}
+                onDownloadMarkdown={handleDownloadMarkdown}
+                onPrint={handlePrint}
                 onLoadSample={loadSample}
                 onClearAll={handleOpenClearAll}
             />
@@ -168,6 +205,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                             <PreviewPane
                                 showMdast={topbar.showMdast ?? false}
                                 toggleMdast={() => updateTopbar({ showMdast: !topbar.showMdast })}
+                                toggleAutoScroll={() => updateTopbar({ autoScroll: !topbar.autoScroll })}
                                 previewContent={previewContent}
                                 frontmatterTitle={frontmatterTitle}
                                 frontmatterDescription={frontmatterDescription}
@@ -181,6 +219,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                                 onShowPast={() => updateTopbar({ showPast: true })}
                                 className="h-full"
                                 preferAltNames={topbar.altNames}
+                                externalContainerRef={previewContainerRef}
                             />
                         </MarkdownPreviewErrorBoundary>
                     </div>

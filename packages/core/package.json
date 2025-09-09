@@ -1,6 +1,6 @@
 {
     "name": "remark-itinerary",
-    "version": "0.2.2",
+    "version": "0.3.1",
     "private": false,
     "type": "module",
     "license": "MIT",
@@ -56,7 +56,8 @@
     "dependencies": {
         "luxon": "^3.7.1",
         "mdast-util-to-string": "4.0.0",
-        "unist-util-visit": "^5.0.0"
+        "unist-util-visit": "^5.0.0",
+        "expr-eval": "^2.0.2"
     },
     "peerDependencies": {
         "unified": "^11.0.0"
