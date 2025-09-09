@@ -44,11 +44,11 @@
             opacity: 1;
         }
     }
-    
+
     .animate-slide-up {
         animation: slide-up 0.3s ease-out;
     }
-    
+
     @keyframes spin {
         from {
             transform: rotate(0deg);
@@ -57,7 +57,7 @@
             transform: rotate(360deg);
         }
     }
-    
+
     .animate-spin {
         animation: spin 1s linear infinite;
     }

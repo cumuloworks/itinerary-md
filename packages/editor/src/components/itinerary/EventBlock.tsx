@@ -274,7 +274,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
 
     return (
         <div className="my-3 break-inside-avoid relative group/event">
-            <div className="grid items-center grid-cols-[min-content_min-content_minmax(0,1fr)] gap-x-3 py-2" style={{ gridTemplateRows }}>
+            <div className="grid items-center grid-cols-[3.5rem_min-content_minmax(0,1fr)] gap-x-3 py-2" style={{ gridTemplateRows }}>
                 {/* 1: Time (departure) */}
                 <div className="col-start-1 row-start-1 text-right">{startISO || marker ? <TimeDisplay iso={startISO ?? undefined} marker={marker ?? undefined} dateStr={dateStr} timezone={timezone} /> : null}</div>
 
