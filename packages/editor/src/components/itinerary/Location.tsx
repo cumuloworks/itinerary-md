@@ -1,54 +1,23 @@
-import { MapPin } from 'lucide-react';
 import type React from 'react';
 import { SegmentedText, type TextSegment } from '@/components/itinerary/SegmentedText';
-import { buildGoogleMapsSearchUrl, isAllowedHref } from '@/utils/url';
+import { buildGoogleMapsSearchUrl } from '@/utils/url';
 
-interface LocationProps {
-    location?: string;
-    url?: string;
+export interface LocationProps {
     segments?: TextSegment[];
+    className?: string;
+    linkClassName?: string;
 }
 
-export const Location: React.FC<LocationProps> = ({ location, url, segments }) => {
-    if (!location && (!segments || segments.length === 0)) return null;
+export const Location: React.FC<LocationProps> = ({ segments, className, linkClassName }) => {
+    if (!segments || segments.length === 0) return null;
 
-    const userProvidedUrl = Boolean(url?.trim() || segments?.some((s) => s.url && s.url.trim() !== ''));
+    const hasValidUrl = segments.some((seg) => seg.url && seg.url.trim() !== '');
 
     const finalSegments: TextSegment[] = (() => {
-        if (segments && segments.length > 0) {
-            return segments;
-        }
-
-        if (location) {
-            if (url && isAllowedHref(url)) {
-                return [{ text: location, url }];
-            }
-            return [{ text: location }];
-        }
-
-        return [];
+        if (hasValidUrl) return segments;
+        const fullText = segments.map((s) => s.text).join('');
+        return [{ text: fullText, url: buildGoogleMapsSearchUrl(fullText) }];
     })();
 
-    if (finalSegments.length === 0) return null;
-
-    const hasValidUrl = finalSegments.some((seg) => seg.url && seg.url.trim() !== '');
-    if (!userProvidedUrl && !hasValidUrl) {
-        const fullText = finalSegments.map((s) => s.text).join('');
-        const googleMapsUrl = buildGoogleMapsSearchUrl(fullText);
-        const googleMapsSegments: TextSegment[] = [{ text: fullText, url: googleMapsUrl }];
-
-        return (
-            <span className="flex items-center">
-                <MapPin size={14} className="mr-1 text-gray-500 shrink-0" />
-                <SegmentedText segments={googleMapsSegments} className="break-all" linkClassName="underline" />
-            </span>
-        );
-    }
-
-    return (
-        <span className="flex items-center">
-            <MapPin size={14} className="mr-1 text-gray-500 shrink-0" />
-            <SegmentedText segments={finalSegments} className="break-all" linkClassName="underline" />
-        </span>
-    );
+    return <SegmentedText segments={finalSegments} className={className || 'break-all'} linkClassName={linkClassName || 'underline'} />;
 };

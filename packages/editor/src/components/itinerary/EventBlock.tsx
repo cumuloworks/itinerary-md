@@ -1,7 +1,6 @@
 import { AirlineLogo } from '@/components/itinerary/AirlineLogo';
 import { EventBodySegments } from '@/components/itinerary/EventBodySegments';
 import { Location } from '@/components/itinerary/Location';
-import { Route } from '@/components/itinerary/Route';
 import { SegmentedText } from '@/components/itinerary/SegmentedText';
 import { TimeDisplay } from '@/components/itinerary/TimeDisplay';
 import { isAllowedHref } from '@/utils/url';
@@ -193,7 +192,6 @@ import ColorHash from 'color-hash';
 //
 import { EventActionsMenu } from '@/components/itinerary/EventActionsMenu';
 import { getIconForEventType } from '@/components/itinerary/iconMaps';
-import { TimePlaceholder } from '@/components/itinerary/TimePlaceholder';
 
 const getTypeIcon = (type: EventBlockProps['eventData']['type']) => getIconForEventType(type);
 
@@ -207,24 +205,29 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
         return capitalize(String(eventData.type || ''));
     })();
 
-    const routeOrLocationDisplay = (() => {
-        const dest = eventData.destination as
-            | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
-            | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
-            | { kind: 'single'; at: Array<{ text: string; url?: string }> }
-            | undefined;
-        if (!dest) return null;
-        if (dest.kind === 'fromTo' || dest.kind === 'dashPair') {
-            const hasFrom = Array.isArray(dest.from) && dest.from.length > 0;
-            const hasTo = Array.isArray(dest.to) && dest.to.length > 0;
-            if (hasFrom && hasTo) return <Route departureSegments={dest.from} arrivalSegments={dest.to} />;
-            const single = hasFrom ? dest.from : hasTo ? dest.to : [];
-            return single.length > 0 ? <Location location={undefined as unknown as string} segments={single} /> : null;
-        }
-        if (dest.kind === 'single') {
-            return Array.isArray(dest.at) && dest.at.length > 0 ? <Location location={undefined as unknown as string} segments={dest.at} /> : null;
-        }
-        return null;
+    // Prepare destination-derived segments for grid layout
+    const destination = eventData.destination as
+        | { kind: 'fromTo'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
+        | { kind: 'dashPair'; from: Array<{ text: string; url?: string }>; to: Array<{ text: string; url?: string }> }
+        | { kind: 'single'; at: Array<{ text: string; url?: string }> }
+        | undefined;
+
+    const departureSegments = (() => {
+        if (!destination) return undefined;
+        if (destination.kind === 'fromTo' || destination.kind === 'dashPair') return destination.from;
+        return undefined;
+    })();
+
+    const arrivalSegments = (() => {
+        if (!destination) return undefined;
+        if (destination.kind === 'fromTo' || destination.kind === 'dashPair') return destination.to;
+        return undefined;
+    })();
+
+    const singleLocationSegments = (() => {
+        if (!destination) return undefined;
+        if (destination.kind === 'single') return destination.at;
+        return undefined;
     })();
 
     const titleSegments = (() => {
@@ -245,25 +248,58 @@ export const EventBlock: React.FC<EventBlockProps> = ({ eventData, dateStr, time
     // All action menu logic moved to EventActionsMenu
 
     return (
-        <div className="my-3 flex items-center break-inside-avoid relative group/event">
-            {!startISO && !endISO && !marker ? (
-                <TimePlaceholder />
-            ) : (
-                <div className="flex flex-col gap-5 min-w-0 text-right">
-                    {startISO || marker ? <TimeDisplay iso={startISO ?? undefined} marker={marker ?? undefined} dateStr={dateStr} timezone={timezone} /> : <TimePlaceholder />}
-                    {endISO && <TimeDisplay iso={endISO ?? undefined} dateStr={dateStr} timezone={timezone} />}
-                </div>
-            )}
+        <div className="my-3 break-inside-avoid relative group/event">
+            <div className="grid items-center grid-cols-[min-content_min-content_minmax(0,1fr)] grid-rows-[2rem_1fr_2rem] gap-x-3 py-2">
+                {/* 1: Time (departure) */}
+                <div className="col-start-1 row-start-1 text-right">{startISO || marker ? <TimeDisplay iso={startISO ?? undefined} marker={marker ?? undefined} dateStr={dateStr} timezone={timezone} /> : null}</div>
 
-            <EventActionsMenu iconBgClass={colors.iconBg} IconComponent={IconComponent} title={titleTextForCalendar} destination={eventData.destination as any} startISO={startISO} endISO={endISO} timezone={timezone} />
-
-            <div className={`flex-1 min-w-0 p-5 -ml-4.5 pl-8 ${colors.cardBg} border-l-4 ${colors.border}`}>
-                <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
-                    {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
-                    {titleSegments ? <SegmentedText segments={titleSegments} className={`font-bold ${colors.text} text-lg`} linkClassName="underline text-inherit" /> : null}
-                    {routeOrLocationDisplay && <div className="text-gray-700 text-sm font-medium">{routeOrLocationDisplay}</div>}
+                {/* 2: Icon (top circle) */}
+                <div className="col-start-2 row-start-1 flex items-center justify-center">
+                    <EventActionsMenu iconBgClass={colors.iconBg} IconComponent={IconComponent} title={titleTextForCalendar} destination={eventData.destination as any} startISO={startISO} endISO={endISO} timezone={timezone} />
                 </div>
-                <EventBodySegments bodySegments={bodySegments} borderClass={colors.border} priceWarningsByKey={priceWarningsByKey} priceInfos={priceInfos} toCurrency={currency} />
+
+                {/* 5: Vertical line */}
+                <div className="col-start-2 row-start-2 self-stretch flex justify-center items-center -my-3">
+                    <div className={`w-1 h-full ${colors.iconBg}`}></div>
+                </div>
+
+                {/* 8: Small dot (bottom circle) */}
+                <div className="col-start-2 row-start-3 flex items-center justify-center">
+                    <div className={`rounded-full size-3 ${colors.iconBg}`}></div>
+                </div>
+
+                {/* 3: Location (departure) */}
+                <div className="col-start-3 row-start-1">
+                    {Array.isArray(departureSegments) && departureSegments.length > 0 ? (
+                        <Location segments={departureSegments} className="text-sm font-semibold text-gray-800" />
+                    ) : Array.isArray(singleLocationSegments) && singleLocationSegments.length > 0 ? (
+                        <Location segments={singleLocationSegments} className="text-sm font-semibold text-gray-800" />
+                    ) : null}
+                </div>
+
+                {/* 4: Empty */}
+                <div className="col-start-1 row-start-2"></div>
+
+                {/* 6: Body */}
+                <div className={`col-start-3 row-start-2 min-w-0 py-4`}>
+                    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
+                        {eventData.type === 'flight' && 'name' in eventData && eventData.name && <AirlineLogo flightCode={eventData.name} size={24} />}
+                        {titleSegments ? <SegmentedText segments={titleSegments} className={`font-bold ${colors.text} text-lg`} linkClassName="underline text-inherit" /> : null}
+                    </div>
+                    <EventBodySegments bodySegments={bodySegments} borderClass={colors.border} priceWarningsByKey={priceWarningsByKey} priceInfos={priceInfos} toCurrency={currency} />
+                </div>
+
+                {/* 7: Time (arrival) */}
+                <div className="col-start-1 row-start-3 text-right">{endISO ? <TimeDisplay iso={endISO ?? undefined} dateStr={dateStr} timezone={timezone} /> : null}</div>
+
+                {/* 9: Location (arrival) */}
+                <div className="col-start-3 row-start-3">
+                    {Array.isArray(arrivalSegments) && arrivalSegments.length > 0 ? (
+                        <Location segments={arrivalSegments} className="text-sm font-semibold text-gray-800" />
+                    ) : Array.isArray(singleLocationSegments) && singleLocationSegments.length > 0 ? (
+                        <Location segments={singleLocationSegments} className="text-sm text-gray-300" />
+                    ) : null}
+                </div>
             </div>
         </div>
     );

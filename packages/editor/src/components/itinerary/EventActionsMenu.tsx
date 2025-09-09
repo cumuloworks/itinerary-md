@@ -47,11 +47,11 @@ export function EventActionsMenu({ iconBgClass, IconComponent, title, destinatio
     }
 
     return (
-        <div className="flex items-center justify-center relative z-10 ml-3">
+        <div className="flex items-center justify-center relative z-10">
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                    <button type="button" aria-label="Open event menu" className={`flex items-center justify-center w-8 h-8 rounded-full hover:brightness-110 hover:scale-110 transition ${iconBgClass}`}>
-                        <IconComponent size={20} className="text-white" />
+                    <button type="button" aria-label="Open event menu" className={`flex items-center justify-center rounded-full size-8 hover:brightness-110 hover:scale-110 transition ${iconBgClass}`}>
+                        <IconComponent className="text-white size-4" />
                     </button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content side="right" align="center" sideOffset={8} alignOffset={0} className="min-w-44 rounded-md bg-white p-1 shadow-lg border border-gray-200 focus:outline-none z-50">

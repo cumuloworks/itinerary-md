@@ -29,6 +29,19 @@ export function buildGoogleMapsSearchUrl(location: string): string {
 }
 
 /**
+ * Detect if the given href is a Google Maps search URL we generate
+ */
+export function isGoogleMapsSearchUrl(href?: string): boolean {
+    if (!href) return false;
+    try {
+        const u = new URL(href, 'https://example.com');
+        return /(^|\.)google\.com$/i.test(u.hostname) && u.pathname.toLowerCase().startsWith('/maps/search') && (u.searchParams.has('api') || u.searchParams.has('query'));
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Make a safe file name from arbitrary input by removing reserved characters and trimming length.
  * Allows Unicode letters and numbers (e.g. Japanese), spaces, dashes, underscores and dots.
  * Replaces reserved/control characters with spaces, collapses whitespace, trims, and shortens.

@@ -15,7 +15,7 @@ interface SegmentedTextProps {
     title?: string;
 }
 
-export const SegmentedText: React.FC<SegmentedTextProps> = ({ segments, fallbackText, className = '', linkClassName = 'underline text-inherit', title }) => {
+export const SegmentedText: React.FC<SegmentedTextProps> = ({ segments, fallbackText, className = '', linkClassName = 'no-underline text-inherit', title }) => {
     if (!segments || segments.length === 0) {
         if (!fallbackText) return null;
         return (
