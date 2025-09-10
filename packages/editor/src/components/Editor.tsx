@@ -194,7 +194,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                             onChange={handleContentChange}
                             onSave={saveNow}
                             onCursorLineChange={(ln) => {
-                                if (topbar.autoScroll) setEditedLine(ln);
+                                setEditedLine(ln);
                             }}
                         />
                     </div>
@@ -213,8 +213,8 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                                 timezone={topbar.timezone}
                                 currency={topbar.currency}
                                 rate={rate}
-                                activeLine={editedLine}
-                                autoScroll={topbar.autoScroll}
+                                activeLine={topbar.viewMode === 'split' ? editedLine : undefined}
+                                autoScroll={topbar.viewMode === 'split' && topbar.autoScroll}
                                 showPast={topbar.showPast}
                                 onShowPast={() => updateTopbar({ showPast: true })}
                                 className="h-full"

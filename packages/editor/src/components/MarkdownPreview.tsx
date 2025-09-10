@@ -241,6 +241,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
     }, [frontmatterTz]);
 
     const containerRef = React.useRef<HTMLDivElement | null>(null);
+    const highlightTimeoutRef = React.useRef<number | undefined>(undefined);
 
     const setContainerRef = React.useCallback(
         (el: HTMLDivElement | null) => {
@@ -250,6 +251,82 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
         },
         [externalContainerRef]
     );
+
+    // Highlight current block for activeLine
+    React.useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        // clear previous highlights
+        if (highlightTimeoutRef.current) {
+            clearTimeout(highlightTimeoutRef.current);
+            highlightTimeoutRef.current = undefined;
+        }
+        for (const el of Array.from(container.querySelectorAll<HTMLElement>('.itmd-active'))) {
+            el.classList.remove('itmd-active');
+        }
+        if (!activeLine) return;
+        // find best matching element using the same heuristic as auto-scroll
+        let nodes = Array.from(container.querySelectorAll<HTMLElement>('[data-itin-line-start], [data-itin-line-end]'));
+        if (nodes.length === 0) nodes = Array.from(container.querySelectorAll<HTMLElement>('[data-sourcepos]'));
+        if (nodes.length === 0) return;
+        const line = activeLine;
+        let best: { el: HTMLElement; score: number } | null = null;
+        for (const el of nodes) {
+            const ds = (el as any).dataset || {};
+            let start = Number((ds as any).itinLineStart || (ds as any).lineStart || NaN);
+            let end = Number((ds as any).itinLineEnd || (ds as any).lineEnd || NaN);
+            if ((!Number.isFinite(start) || !Number.isFinite(end)) && typeof (ds as any).sourcepos === 'string') {
+                const parts = ((ds as any).sourcepos as string).split('-');
+                if (parts.length === 2) {
+                    const s = Number(parts[0].split(':')[0]);
+                    const e = Number(parts[1].split(':')[0]);
+                    if (Number.isFinite(s)) start = s;
+                    if (Number.isFinite(e)) end = e;
+                }
+            }
+            const hasStart = Number.isFinite(start);
+            const hasEnd = Number.isFinite(end);
+            let contains = false;
+            if (hasStart && hasEnd) contains = start <= line && line <= end;
+            else if (hasStart) contains = start === line;
+            else if (hasEnd) contains = end === line;
+            if (contains) {
+                best = { el, score: 0 };
+                break;
+            }
+            if (hasStart && start <= line) {
+                const score = line - start;
+                if (!best || score < best.score) best = { el, score };
+            }
+        }
+        const target = best?.el || nodes[0];
+        if (!target) return;
+        // choose a visible box (avoid display: contents wrappers)
+        const hasBox = (el: Element) => el.getClientRects().length > 0;
+        let boxTarget: HTMLElement | null = hasBox(target) ? (target as HTMLElement) : null;
+        if (!boxTarget) {
+            const descendants = target.querySelectorAll<HTMLElement>(' *');
+            for (const el of Array.from(descendants)) {
+                if (hasBox(el)) {
+                    boxTarget = el;
+                    break;
+                }
+            }
+        }
+        const applyEl = boxTarget || (target as HTMLElement);
+        applyEl.classList.add('itmd-active');
+        // auto-remove highlight after 2 seconds
+        highlightTimeoutRef.current = window.setTimeout(() => {
+            applyEl.classList.remove('itmd-active');
+            highlightTimeoutRef.current = undefined;
+        }, 2000);
+        return () => {
+            if (highlightTimeoutRef.current) {
+                clearTimeout(highlightTimeoutRef.current);
+                highlightTimeoutRef.current = undefined;
+            }
+        };
+    }, [activeLine]);
 
     React.useEffect(() => {
         if (!autoScroll) return;

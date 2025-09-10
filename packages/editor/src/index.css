@@ -31,6 +31,22 @@
         display: none;
         /* Chrome/Safari */
     }
+
+    /* Highlight for active preview block (solid outline, no blur) */
+    .itmd-active {
+        outline: 2px solid rgba(59, 130, 246, 0.85);
+        outline-offset: 8px;
+        @apply animate-[itmd-highlight-fade_2s_ease-out_forwards];
+    }
+
+    @keyframes itmd-highlight-fade {
+        0% {
+            outline-color: rgba(59, 130, 246, 0.85);
+        }
+        100% {
+            outline-color: rgba(59, 130, 246, 0);
+        }
+    }
 }
 
 * {
