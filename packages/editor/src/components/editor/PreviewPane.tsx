@@ -23,6 +23,8 @@ export const PreviewPane: React.FC<{
     onShowPast?: () => void;
     preferAltNames?: boolean;
     externalContainerRef?: React.MutableRefObject<HTMLDivElement | null>;
+    /** Whether to show the auto-scroll toggle button */
+    showAutoScrollToggle?: boolean;
 }> = ({
     showMdast,
     toggleMdast,
@@ -41,6 +43,7 @@ export const PreviewPane: React.FC<{
     onShowPast,
     preferAltNames,
     externalContainerRef,
+    showAutoScrollToggle = true,
 }) => {
     const { t } = useI18n();
     return (
@@ -57,16 +60,18 @@ export const PreviewPane: React.FC<{
                     >
                         <Bug size={12} />
                     </Toggle.Root>
-                    <Toggle.Root
-                        pressed={!!autoScroll}
-                        onPressedChange={toggleAutoScroll}
-                        aria-label={!autoScroll ? t('autoScroll.enable') : t('autoScroll.disable')}
-                        title={!autoScroll ? t('autoScroll.enable') : t('autoScroll.disable')}
-                        className={`text-sm opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center px-1.5 h-6 rounded border ${autoScroll ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-600 border-gray-300 bg-white hover:bg-gray-50'} ${showMdast ? 'opacity-100' : ''}`}
-                    >
-                        <ChevronsDown size={12} />
-                        <span className="hidden md:inline text-xs ml-1">{t('autoScroll.label', { state: autoScroll ? t('past.on') : t('past.off') })}</span>
-                    </Toggle.Root>
+                    {showAutoScrollToggle && (
+                        <Toggle.Root
+                            pressed={!!autoScroll}
+                            onPressedChange={toggleAutoScroll}
+                            aria-label={!autoScroll ? t('autoScroll.enable') : t('autoScroll.disable')}
+                            title={!autoScroll ? t('autoScroll.enable') : t('autoScroll.disable')}
+                            className={`text-sm opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center px-1.5 h-6 rounded border ${autoScroll ? 'text-white bg-gray-700 border-gray-700' : 'text-gray-600 border-gray-300 bg-white hover:bg-gray-50'} ${showMdast ? 'opacity-100' : ''}`}
+                        >
+                            <ChevronsDown size={12} />
+                            <span className="hidden md:inline text-xs ml-1">{t('autoScroll.label', { state: autoScroll ? t('past.on') : t('past.off') })}</span>
+                        </Toggle.Root>
+                    )}
                 </div>
             </div>
             <div className="h-[calc(100%-41px)] min-h-0">

@@ -1,6 +1,7 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import en from '@/i18n/en.json';
 import ja from '@/i18n/ja.json';
+import { prefKeys, readString, writeString } from '@/utils/prefs';
 
 type Dictionary = Record<string, string>;
 type SupportedLang = 'en' | 'ja';
@@ -51,16 +52,17 @@ export interface I18nProviderProps {
     children: ReactNode;
 }
 
-const STORAGE_KEY = 'itinerary-md-language';
+const STORAGE_KEY = prefKeys.language;
 
 // Global language for instant translation outside React, lazily initialized
 let currentLang: SupportedLang | undefined;
 
 function readPersistedLanguage(): string | undefined {
     try {
+        const ls = readString(STORAGE_KEY);
+        if (ls) return ls;
+        // Fallbacks kept for backward compatibility
         if (typeof window !== 'undefined') {
-            const ls = window.localStorage?.getItem(STORAGE_KEY) || undefined;
-            if (ls) return ls;
             const ss = window.sessionStorage?.getItem(STORAGE_KEY) || undefined;
             if (ss) return ss;
             const cookieMatch = typeof document !== 'undefined' ? document.cookie.match(new RegExp(`${STORAGE_KEY}=([^;]+)`)) : null;
@@ -90,7 +92,7 @@ export function tInstant(key: string, vars?: Record<string, string | number>): s
 export function I18nProvider({ language, children }: I18nProviderProps) {
     const initialLang = useMemo<SupportedLang>(() => {
         try {
-            const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
+            const stored = readString(STORAGE_KEY);
             if (stored) return normalizeLang(stored);
         } catch {}
         return normalizeLang(language);
@@ -105,10 +107,10 @@ export function I18nProvider({ language, children }: I18nProviderProps) {
         }
     }, [language]);
 
-    // Persist to localStorage
+    // Persist to localStorage via prefs utils
     useEffect(() => {
         try {
-            if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, lang);
+            writeString(STORAGE_KEY, lang);
         } catch {}
     }, [lang]);
 

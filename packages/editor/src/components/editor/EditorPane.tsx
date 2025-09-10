@@ -4,6 +4,7 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { MonacoEditor } from '@/components/MonacoEditor';
 import { useI18n } from '@/i18n';
+import { prefKeys, readBoolean, writeBoolean } from '@/utils/prefs';
 
 export const EditorPane: React.FC<{
     value: string;
@@ -15,27 +16,12 @@ export const EditorPane: React.FC<{
     const { t } = useI18n();
     const [assistOn, setAssistOn] = useState<boolean>(() => {
         if (typeof window === 'undefined') return true;
-        try {
-            const url = new URL(window.location.href);
-            const v = url.searchParams.get('assist');
-            if (!v) return true;
-            const s = v.toLowerCase();
-            if (s === '0' || s === 'off' || s === 'false') return false;
-            if (s === '1' || s === 'on' || s === 'true') return true;
-            return true;
-        } catch {
-            return true;
-        }
+        return readBoolean(prefKeys.editorAssist, true);
     });
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        try {
-            const url = new URL(window.location.href);
-            url.searchParams.set('assist', assistOn ? '1' : '0');
-            const next = url.toString();
-            window.history.replaceState(null, '', next);
-        } catch {}
+        writeBoolean(prefKeys.editorAssist, assistOn);
     }, [assistOn]);
     return (
         <div className={`h-full min-h-0 flex flex-col group ${className}`}>

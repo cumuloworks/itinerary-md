@@ -220,6 +220,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                                 className="h-full"
                                 preferAltNames={topbar.altNames}
                                 externalContainerRef={previewContainerRef}
+                                showAutoScrollToggle={topbar.viewMode === 'split'}
                             />
                         </MarkdownPreviewErrorBoundary>
                     </div>
