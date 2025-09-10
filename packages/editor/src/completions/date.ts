@@ -30,9 +30,8 @@ export function registerDateCompletion(monaco: any): { dispose: () => void } {
             const m = textUntil.match(/^##(?!#)(\s*)([0-9-]*)$/);
             if (!m) return { suggestions: [] };
 
-            const spacesAfter = m[1]?.length ?? 0;
-            // Replace from after '##' and any spaces following it
-            const startColumn = 3 + spacesAfter; // 1-based column after '##' + spaces
+            // Replace from just after '##' and include any spaces following it
+            const startColumn = 3; // 1-based column immediately after '##'
             const range = {
                 startLineNumber: position.lineNumber,
                 endLineNumber: position.lineNumber,

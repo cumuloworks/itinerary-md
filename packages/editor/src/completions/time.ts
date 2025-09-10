@@ -2,7 +2,7 @@
 export function registerTimeCompletion(monaco: any): { dispose: () => void } {
     const P = '$'; // escape placeholder to avoid linter complaining about template-like strings
     return monaco.languages.registerCompletionItemProvider('mdx', {
-        triggerCharacters: ['['],
+        triggerCharacters: ['[', '@'],
         provideCompletionItems: (model: any, position: any) => {
             const lineText = model.getLineContent(position.lineNumber);
             const textUntil = lineText.slice(0, position.column - 1);

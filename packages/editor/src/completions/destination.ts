@@ -1,7 +1,8 @@
 // Destination separators and route helpers
 
 function currentTokenRange(until: string, position: any) {
-    const m = until.match(/([A-Za-z:\-\s]+)$/);
+    // Allow Unicode letters and numbers, plus colon, hyphen, slash, and whitespace
+    const m = until.match(/([\p{L}\p{N}:\-/\s]+)$/u);
     const token = m ? m[1] : '';
     return {
         startLineNumber: position.lineNumber,

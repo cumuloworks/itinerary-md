@@ -42,13 +42,22 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
                 theme="vs-light"
                 onMount={(editor, monaco) => {
                     monacoRef.current = monaco;
+                    // Always register dispose handler to clean up latest disposables
+                    if ((editor as any).onDidDispose) {
+                        (editor as any).onDidDispose(() => {
+                            const current = disposablesRef.current;
+                            if (current?.dispose) {
+                                try {
+                                    current.dispose();
+                                } catch {}
+                            }
+                            disposablesRef.current = null;
+                        });
+                    }
                     // Register completions based on flag
                     if (completionsEnabled) {
                         const allDisp = registerItineraryCompletions(monaco);
                         disposablesRef.current = allDisp;
-                        if ((editor as any).onDidDispose && allDisp?.dispose) {
-                            (editor as any).onDidDispose(() => allDisp.dispose());
-                        }
                     }
                     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
                         onSave();
