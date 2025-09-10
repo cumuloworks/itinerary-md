@@ -10,10 +10,12 @@ export function registerAlertCompletion(monaco: any): { dispose: () => void } {
             const until = line.slice(0, position.column - 1);
             if (!/^\s*>\s*/.test(until)) return { suggestions: [] };
 
+            // 直前の"["や"[!"(および続く英字)を含めて置換して重複を防ぐ
+            const prefix = until.match(/\[!?[A-Za-z]*$/);
             const range = {
                 startLineNumber: position.lineNumber,
                 endLineNumber: position.lineNumber,
-                startColumn: position.column,
+                startColumn: position.column - (prefix ? prefix[0].length : 0),
                 endColumn: position.column,
             };
             const suggestions = ALERTS.map((a) => ({
