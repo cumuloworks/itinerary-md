@@ -1,6 +1,6 @@
 import Editor from '@monaco-editor/react';
 import { type FC, memo, useEffect, useRef } from 'react';
-import { registerTimezoneCompletion } from '@/completions/timezone';
+import { registerItineraryCompletions } from '@/completions/index';
 
 interface MonacoEditorProps {
     value: string;
@@ -8,11 +8,14 @@ interface MonacoEditorProps {
     onSave: () => void;
     onCursorLineChange?: (line: number) => void;
     onChangedLines?: (lines: number[]) => void;
+    completionsEnabled?: boolean;
 }
 
-const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave, onCursorLineChange, onChangedLines }) => {
+const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave, onCursorLineChange, onChangedLines, completionsEnabled = true }) => {
     const cursorLineChangeRef = useRef<MonacoEditorProps['onCursorLineChange']>(undefined);
     const changedLinesRef = useRef<MonacoEditorProps['onChangedLines']>(undefined);
+    const disposablesRef = useRef<{ dispose: () => void } | null>(null);
+    const monacoRef = useRef<any>(null);
 
     useEffect(() => {
         cursorLineChangeRef.current = onCursorLineChange;
@@ -26,18 +29,26 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
         onChange(value || '');
     };
 
+    // React to completionsEnabled changes at runtime
+    useToggleCompletions(completionsEnabled, monacoRef, disposablesRef);
+
     return (
         <div className="h-full">
             <Editor
                 height="100%"
-                language="mdx"
+                language={completionsEnabled ? 'mdx' : 'markdown'}
                 value={value}
                 onChange={handleEditorChange}
                 theme="vs-light"
                 onMount={(editor, monaco) => {
-                    const tzDisposable = registerTimezoneCompletion(monaco);
-                    if ((editor as any).onDidDispose && tzDisposable?.dispose) {
-                        (editor as any).onDidDispose(() => tzDisposable.dispose());
+                    monacoRef.current = monaco;
+                    // Register completions based on flag
+                    if (completionsEnabled) {
+                        const allDisp = registerItineraryCompletions(monaco);
+                        disposablesRef.current = allDisp;
+                        if ((editor as any).onDidDispose && allDisp?.dispose) {
+                            (editor as any).onDidDispose(() => allDisp.dispose());
+                        }
                     }
                     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
                         onSave();
@@ -82,5 +93,26 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
         </div>
     );
 };
+
+// Toggle completions at runtime when completionsEnabled changes
+MonacoEditorComponent.displayName = 'MonacoEditor';
+
+// Wrap the logic to respond to prop changes
+function useToggleCompletions(enabled: boolean, monacoRef: React.MutableRefObject<any>, disposablesRef: React.MutableRefObject<{ dispose: () => void } | null>): void {
+    useEffect(() => {
+        const monaco = monacoRef.current;
+        if (!monaco) return;
+        if (enabled) {
+            if (!disposablesRef.current) {
+                disposablesRef.current = registerItineraryCompletions(monaco);
+            }
+        } else if (disposablesRef.current) {
+            try {
+                disposablesRef.current.dispose();
+            } catch {}
+            disposablesRef.current = null;
+        }
+    }, [enabled, monacoRef, disposablesRef]);
+}
 
 export const MonacoEditor = memo(MonacoEditorComponent);
