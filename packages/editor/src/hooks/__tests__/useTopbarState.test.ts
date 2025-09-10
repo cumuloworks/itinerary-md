@@ -80,14 +80,12 @@ describe('useTopbarState', () => {
             });
         });
 
-        it('loads currency from localStorage', () => {
-            const getItemMock = vi.fn().mockReturnValue('EUR');
-            window.localStorage.getItem = getItemMock;
+        it('loads currency from URL (query param)', () => {
+            window.location.search = '?cur=EUR';
 
             const { result } = renderHook(() => useTopbarState());
             const [state] = result.current;
 
-            expect(getItemMock).toHaveBeenCalledWith('itinerary-md-currency');
             expect(state.currency).toBe('EUR');
         });
 
@@ -103,7 +101,7 @@ describe('useTopbarState', () => {
     });
 
     describe('Initialization from URL params', () => {
-        it('sets state from valid URL params', () => {
+        it('sets state from valid URL params (prefs are not URL-driven)', () => {
             window.location.search = '?tz=Asia/Tokyo&cur=JPY&view=editor&past=0&scroll=0';
 
             const { result } = renderHook(() => useTopbarState());
@@ -113,9 +111,10 @@ describe('useTopbarState', () => {
                 timezone: 'Asia/Tokyo',
                 currency: 'JPY',
                 viewMode: 'editor',
-                showPast: false,
-                autoScroll: false,
             });
+            // prefs-managed flags remain unchanged (local defaults)
+            expect(state.showPast).toBe(true);
+            expect(state.autoScroll).toBe(true);
         });
 
         it('notifies errors for invalid timezone', () => {
@@ -199,7 +198,7 @@ describe('useTopbarState', () => {
     });
 
     describe('Sync with localStorage', () => {
-        it('saves to localStorage on currency change', () => {
+        it('does not persist currency to localStorage (URL-driven only)', () => {
             const setItemMock = vi.fn();
             window.localStorage.setItem = setItemMock;
 
@@ -210,7 +209,7 @@ describe('useTopbarState', () => {
                 updateState({ currency: 'AUD' });
             });
 
-            expect(setItemMock).toHaveBeenCalledWith('itinerary-md-currency', 'AUD');
+            expect(setItemMock).not.toHaveBeenCalledWith('itinerary-md-currency', 'AUD');
         });
 
         it('ignores localStorage errors', () => {
@@ -264,7 +263,7 @@ describe('useTopbarState', () => {
             expect(url).not.toContain('tz=Invalid/Zone');
         });
 
-        it('reflects all parameters to URL correctly', () => {
+        it('reflects URL parameters for tz/cur/view only (prefs excluded)', () => {
             const replaceStateMock = vi.fn();
             window.history.replaceState = replaceStateMock;
 
@@ -286,12 +285,13 @@ describe('useTopbarState', () => {
             expect(url).toContain('tz=Asia%2FSeoul');
             expect(url).toContain('cur=KRW');
             expect(url).toContain('view=editor');
-            expect(url).toContain('past=0');
-            expect(url).toContain('scroll=0');
+            expect(url).not.toContain('past=');
+            expect(url).not.toContain('scroll=');
+            expect(url).not.toContain('alt=');
         });
 
         it('does not update when URL is already the same', () => {
-            window.location.search = '?tz=UTC&cur=USD&view=split&past=1&scroll=1&alt=0';
+            window.location.search = '?tz=UTC&cur=USD&view=split';
             const replaceStateMock = vi.fn();
             window.history.replaceState = replaceStateMock;
 

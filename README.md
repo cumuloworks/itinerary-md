@@ -5,8 +5,9 @@ Tools for writing and previewing travel itineraries in Markdown. This repository
 - remark plugins published to npm (e.g. `remark-itinerary`, `remark-itinerary-alert`)
 - a reusable editor bundle (`@itinerary-md/editor`)
 - a demo application (`apps/studio`) showcasing authoring and preview
-
 – Demo site: [tripmd.dev](https://tripmd.dev)
+
+For overall structure and high-level notes, see DeepWiki (AI-generated; may be incomplete or outdated): [deepwiki.com/cumuloworks/itinerary-md](https://deepwiki.com/cumuloworks/itinerary-md).
 
 ## Packages
 
@@ -124,12 +125,6 @@ Workspace tips:
 - Run a script in a specific workspace: `npm -w packages/core run build`
 - Run a script across all workspaces (if present): `npm -ws run test --if-present`
 - Add a dependency to a workspace: `npm -w packages/core i <pkg>`
-
-Notes:
-
-- Linting/formatting is powered by [Biome](https://biomejs.dev/).
-- Tests use [Vitest](https://vitest.dev/). We prefer a TDD-style workflow (write tests first).
-- For production license reporting, you can run `npm run licenses:prod` to generate `THIRD_PARTY_LICENSES.json`.
 
 ## Monorepo structure
 

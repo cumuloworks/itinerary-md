@@ -18,6 +18,7 @@ import { Statistics } from '@/components/itinerary/Statistics';
 import { createRenderBlock } from '@/components/render';
 import type { MdNode } from '@/components/render/types';
 import { Tags } from '@/components/Tags';
+import { findBestTargetForLine, isElementVisibleWithin, scrollElementIntoCenteredView } from '@/utils/dom';
 
 interface MarkdownPreviewProps {
     content: string;
@@ -57,6 +58,8 @@ const inlineToSegments = (inline?: PhrasingContent[] | null): TextSegment[] | un
 };
 
 const segmentsToPlainText = (segments?: TextSegment[]): string | undefined => (Array.isArray(segments) ? segments.map((s) => s.text).join('') : undefined);
+
+// moved to utils/dom.ts
 
 const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true, onShowPast, preferAltNames, externalContainerRef }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -241,6 +244,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
     }, [frontmatterTz]);
 
     const containerRef = React.useRef<HTMLDivElement | null>(null);
+    const highlightTimeoutRef = React.useRef<number | undefined>(undefined);
 
     const setContainerRef = React.useCallback(
         (el: HTMLDivElement | null) => {
@@ -251,69 +255,47 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
         [externalContainerRef]
     );
 
+    // Highlight current block for activeLine
+    React.useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        // clear previous highlights
+        if (highlightTimeoutRef.current) {
+            clearTimeout(highlightTimeoutRef.current);
+            highlightTimeoutRef.current = undefined;
+        }
+        for (const el of Array.from(container.querySelectorAll<HTMLElement>('.itmd-active'))) {
+            el.classList.remove('itmd-active');
+        }
+        if (!activeLine) return;
+        const line = activeLine;
+        const { target, boxTarget } = findBestTargetForLine(container, line);
+        if (!target) return;
+        const applyEl = (boxTarget || target) as HTMLElement;
+        applyEl.classList.add('itmd-active');
+        // auto-remove highlight after 2 seconds
+        highlightTimeoutRef.current = window.setTimeout(() => {
+            applyEl.classList.remove('itmd-active');
+            highlightTimeoutRef.current = undefined;
+        }, 2000);
+        return () => {
+            if (highlightTimeoutRef.current) {
+                clearTimeout(highlightTimeoutRef.current);
+                highlightTimeoutRef.current = undefined;
+            }
+        };
+    }, [activeLine]);
+
     React.useEffect(() => {
         if (!autoScroll) return;
         if (!activeLine || !containerRef.current) return;
         const container = containerRef.current;
-        let nodes = Array.from(container.querySelectorAll<HTMLElement>('[data-itin-line-start], [data-itin-line-end]'));
-        if (nodes.length === 0) {
-            nodes = Array.from(container.querySelectorAll<HTMLElement>('[data-sourcepos]'));
-        }
-        if (nodes.length === 0) return;
-        const line = activeLine;
-        let best: { el: HTMLElement; score: number } | null = null;
-        for (const el of nodes) {
-            const ds = el.dataset || {};
-            let start = Number(ds.itinLineStart || ds.lineStart || NaN);
-            let end = Number(ds.itinLineEnd || ds.lineEnd || NaN);
-            if ((!Number.isFinite(start) || !Number.isFinite(end)) && typeof ds.sourcepos === 'string') {
-                const sp = ds.sourcepos;
-                const parts = sp.split('-');
-                if (parts.length === 2) {
-                    const s = parts[0].split(':')[0];
-                    const e = parts[1].split(':')[0];
-                    const sNum = Number(s);
-                    const eNum = Number(e);
-                    if (Number.isFinite(sNum)) start = sNum;
-                    if (Number.isFinite(eNum)) end = eNum;
-                }
-            }
-            const hasStart = Number.isFinite(start);
-            const hasEnd = Number.isFinite(end);
-            let contains = false;
-            if (hasStart && hasEnd) contains = start <= line && line <= end;
-            else if (hasStart) contains = start === line;
-            else if (hasEnd) contains = end === line;
-            if (contains) {
-                best = { el, score: 0 };
-                break;
-            }
-            if (hasStart && start <= line) {
-                const score = line - start;
-                if (!best || score < best.score) best = { el, score };
-            }
-        }
-        const target = best?.el || nodes[0];
+        const { target, boxTarget } = findBestTargetForLine(container, activeLine);
         if (!target) return;
-        const hasBox = (el: Element) => el.getClientRects().length > 0;
-        let boxTarget: HTMLElement | null = hasBox(target) ? target : null;
-        if (!boxTarget) {
-            const descendants = target.querySelectorAll<HTMLElement>(' *');
-            for (const el of Array.from(descendants)) {
-                if (hasBox(el)) {
-                    boxTarget = el;
-                    break;
-                }
-            }
-        }
-        if (!boxTarget) boxTarget = target;
-        const cRect = container.getBoundingClientRect();
-        const tRect = boxTarget.getBoundingClientRect();
-        const margin = 8;
-        const visible = tRect.bottom > cRect.top + margin && tRect.top < cRect.bottom - margin;
+        const applyEl = (boxTarget || target) as HTMLElement;
+        const visible = isElementVisibleWithin(container, applyEl, 8);
         if (visible) return;
-        const delta = tRect.top - cRect.top - container.clientHeight / 2 + tRect.height / 2;
-        container.scrollBy({ top: delta, behavior: 'smooth' });
+        scrollElementIntoCenteredView(container, applyEl);
     }, [activeLine, autoScroll]);
 
     return (

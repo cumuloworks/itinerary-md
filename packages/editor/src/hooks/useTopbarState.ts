@@ -2,11 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { notifyError } from '@/core/errors';
 import { tInstant } from '@/i18n';
 import type { TopbarState, ViewMode } from '@/types/itinerary';
+import { prefKeys, readBoolean, writeBoolean } from '@/utils/prefs';
 import { isValidIanaTimeZone } from '@/utils/timezone';
 
-const CURRENCY_STORAGE_KEY = 'itinerary-md-currency';
+// currency is managed only via URL query; no localStorage key
 
 const VIEW_VALUES: readonly ViewMode[] = ['split', 'editor', 'preview'];
+
+// Default values for flags that are persisted in local storage
+const DEFAULTS = {
+    showPast: true,
+    autoScroll: true,
+    altNames: false,
+} as const;
 
 /**
  * Hook to manage Topbar state (initialization and sync are separated).
@@ -26,14 +34,17 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
     }));
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            try {
-                const storedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
-                if (storedCurrency) {
-                    setState((prevState) => ({ ...prevState, currency: storedCurrency }));
-                }
-            } catch {}
-        }
+        if (typeof window === 'undefined') return;
+        // Load persisted values for non-URL flags from localStorage
+        const storedPast = readBoolean(prefKeys.showPast, DEFAULTS.showPast);
+        const storedScroll = readBoolean(prefKeys.autoScroll, DEFAULTS.autoScroll);
+        const storedAlt = readBoolean(prefKeys.altNames, DEFAULTS.altNames);
+        setState((prev) => ({
+            ...prev,
+            showPast: storedPast,
+            autoScroll: storedScroll,
+            altNames: storedAlt,
+        }));
     }, []);
 
     useEffect(() => {
@@ -60,16 +71,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
                 patch.viewMode = view as ViewMode;
             }
 
-            const past = searchParams.get('past');
-            if (past) patch.showPast = past === '1';
-
-            const scroll = searchParams.get('scroll');
-            if (scroll) patch.autoScroll = scroll === '1';
-
-            const alt = searchParams.get('alt');
-            if (alt) patch.altNames = alt === '1';
-
-            // mdast flag is ephemeral and should not be driven by URL
+            // Do not read past/scroll/alt from URL
 
             if (Object.keys(patch).length > 0) {
                 setState((prevState) => ({ ...prevState, ...patch }));
@@ -79,13 +81,19 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
         isInitializedRef.current = true;
     }, []);
 
+    // Persist other booleans to localStorage
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            try {
-                localStorage.setItem(CURRENCY_STORAGE_KEY, state.currency);
-            } catch {}
-        }
-    }, [state.currency]);
+        if (typeof window === 'undefined') return;
+        writeBoolean(prefKeys.showPast, !!state.showPast);
+    }, [state.showPast]);
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        writeBoolean(prefKeys.autoScroll, !!state.autoScroll);
+    }, [state.autoScroll]);
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        writeBoolean(prefKeys.altNames, !!state.altNames);
+    }, [state.altNames]);
 
     const updateState = useCallback((patch: Partial<TopbarState>) => {
         setState((prevState) => ({ ...prevState, ...patch }));
@@ -103,14 +111,10 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
                 next.set('tz', state.timezone);
             }
 
-            // always reflect these
+            // Always reflect these in URL
             next.set('cur', state.currency);
             next.set('view', state.viewMode);
-            next.set('past', state.showPast ? '1' : '0');
-            next.set('scroll', state.autoScroll ? '1' : '0');
-
-            // alt is explicitly represented as 0/1 for consistency
-            next.set('alt', state.altNames ? '1' : '0');
+            // Do not reflect prefs booleans in URL
 
             // If no change, skip updating history
             if (curr.toString() === next.toString()) return;
@@ -119,7 +123,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
             history.replaceState(null, '', newUrl);
         } catch {}
-    }, [state.timezone, state.currency, state.viewMode, state.showPast, state.autoScroll, state.altNames]);
+    }, [state.timezone, state.currency, state.viewMode]);
 
     return [state, updateState];
 }
