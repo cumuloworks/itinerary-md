@@ -24,7 +24,7 @@ export function registerPriceCompletion(monaco: any): { dispose: () => void } {
                         kind: monaco.languages.CompletionItemKind.Snippet,
                         insertText: ((): string => {
                             const P = '$';
-                            return [P + '{1:2}', '*', P + '{2:100}'].join('');
+                            return [`${P}{1:2}`, '*', `${P}{2:100}`].join('');
                         })(),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'math expression',
@@ -35,7 +35,7 @@ export function registerPriceCompletion(monaco: any): { dispose: () => void } {
                         kind: monaco.languages.CompletionItemKind.Snippet,
                         insertText: ((): string => {
                             const P = '$';
-                            return ['(', P + '{1:a}', '+', P + '{2:b}', ')*', P + '{3:c}'].join('');
+                            return ['(', `${P}{1:a}`, '+', `${P}{2:b}`, ')*', `${P}{3:c}`].join('');
                         })(),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'grouping',

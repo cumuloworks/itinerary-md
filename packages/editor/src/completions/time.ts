@@ -33,7 +33,7 @@ export function registerTimeCompletion(monaco: any): { dispose: () => void } {
                     {
                         label: '[hh:mm] time',
                         kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: ['[', P + '{1:09}', ':', P + '{2:00}', '] '].join(''),
+                        insertText: ['[', `${P}{1:09}`, ':', `${P}{2:00}`, '] '].join(''),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'Insert time',
                         range,
@@ -41,7 +41,7 @@ export function registerTimeCompletion(monaco: any): { dispose: () => void } {
                     {
                         label: '[hh:mm] - [hh:mm] range',
                         kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: ['[', P + '{1:09}', ':', P + '{2:00}', '] - [', P + '{3:11}', ':', P + '{4:30}', '] '].join(''),
+                        insertText: ['[', `${P}{1:09}`, ':', `${P}{2:00}`, '] - [', `${P}{3:11}`, ':', `${P}{4:30}`, '] '].join(''),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'Insert time range',
                         range,
@@ -49,7 +49,7 @@ export function registerTimeCompletion(monaco: any): { dispose: () => void } {
                     {
                         label: '[AM]/[PM] marker',
                         kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: ['[', P + '{1|AM,PM|}', '] '].join(''),
+                        insertText: ['[', `${P}{1|AM,PM|}`, '] '].join(''),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'Insert AM/PM marker',
                         range,

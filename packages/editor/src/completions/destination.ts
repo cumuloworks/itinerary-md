@@ -46,7 +46,7 @@ export function registerDestinationCompletion(monaco: any): { dispose: () => voi
                         kind: monaco.languages.CompletionItemKind.Snippet,
                         insertText: ((): string => {
                             const P = '$';
-                            return [' from ', P + '{1:Origin}', ' to ', P + '{2:Destination}'].join('');
+                            return [' from ', `${P}{1:Origin}`, ' to ', `${P}{2:Destination}`].join('');
                         })(),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'route separator',
@@ -57,7 +57,7 @@ export function registerDestinationCompletion(monaco: any): { dispose: () => voi
                         kind: monaco.languages.CompletionItemKind.Snippet,
                         insertText: ((): string => {
                             const P = '$';
-                            return [' from ', P + '{1:Origin}', ' via ', P + '{2:Stop}', ' to ', P + '{3:Destination}'].join('');
+                            return [' from ', `${P}{1:Origin}`, ' via ', `${P}{2:Stop}`, ' to ', `${P}{3:Destination}`].join('');
                         })(),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'route with via',
@@ -68,7 +68,7 @@ export function registerDestinationCompletion(monaco: any): { dispose: () => voi
                         kind: monaco.languages.CompletionItemKind.Snippet,
                         insertText: ((): string => {
                             const P = '$';
-                            return [' ', P + '{1:A}', ' - ', P + '{2:B}', ' - ', P + '{3:C}'].join('');
+                            return [' ', `${P}{1:A}`, ' - ', `${P}{2:B}`, ' - ', `${P}{3:C}`].join('');
                         })(),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'dash separated route',
@@ -85,7 +85,7 @@ export function registerDestinationCompletion(monaco: any): { dispose: () => voi
                             kind: monaco.languages.CompletionItemKind.Snippet,
                             insertText: ((): string => {
                                 const P = '$';
-                                return [' to ', P + '{1:Destination}'].join('');
+                                return [' to ', `${P}{1:Destination}`].join('');
                             })(),
                             insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                             detail: 'complete route with destination',
@@ -96,7 +96,7 @@ export function registerDestinationCompletion(monaco: any): { dispose: () => voi
                             kind: monaco.languages.CompletionItemKind.Snippet,
                             insertText: ((): string => {
                                 const P = '$';
-                                return [' via ', P + '{1:Stop}'].join('');
+                                return [' via ', `${P}{1:Stop}`].join('');
                             })(),
                             insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                             detail: 'add stopover',
@@ -109,7 +109,7 @@ export function registerDestinationCompletion(monaco: any): { dispose: () => voi
                         kind: monaco.languages.CompletionItemKind.Snippet,
                         insertText: ((): string => {
                             const P = '$';
-                            return [' - ', P + '{1:Next}'].join('');
+                            return [' - ', `${P}{1:Next}`].join('');
                         })(),
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         detail: 'add next stop',
