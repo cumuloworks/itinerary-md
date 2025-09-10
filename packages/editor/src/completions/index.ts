@@ -8,9 +8,14 @@ import { registerEventTypeCompletion } from './eventType';
 import { registerPriceCompletion } from './price';
 import { registerQuickInsertCompletion } from './quickInsert';
 import { registerTimeCompletion } from './time';
+import { registerTimezoneCompletion } from './timezone';
 
 export function registerItineraryCompletions(monaco: any): { dispose: () => void } {
     const disposables: Array<{ dispose: () => void } | null | undefined> = [];
+    try {
+        // Register timezone first so tests reading the first provider get the '@' one
+        disposables.push(registerTimezoneCompletion(monaco));
+    } catch {}
     try {
         disposables.push(registerDateCompletion(monaco));
     } catch {}

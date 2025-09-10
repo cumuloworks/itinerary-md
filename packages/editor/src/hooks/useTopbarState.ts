@@ -71,9 +71,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
                 patch.viewMode = view as ViewMode;
             }
 
-            // past/scroll/alt should not be driven by URL anymore
-
-            // mdast flag is ephemeral and should not be driven by URL
+            // Do not read past/scroll/alt from URL
 
             if (Object.keys(patch).length > 0) {
                 setState((prevState) => ({ ...prevState, ...patch }));
@@ -82,8 +80,6 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
 
         isInitializedRef.current = true;
     }, []);
-
-    // currency is not persisted to localStorage
 
     // Persist other booleans to localStorage
     useEffect(() => {
@@ -118,11 +114,7 @@ export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) =>
             // Always reflect these in URL
             next.set('cur', state.currency);
             next.set('view', state.viewMode);
-
-            // Remove no-longer-URL params
-            next.delete('past');
-            next.delete('scroll');
-            next.delete('alt');
+            // Do not reflect prefs booleans in URL
 
             // If no change, skip updating history
             if (curr.toString() === next.toString()) return;
