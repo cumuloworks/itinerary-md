@@ -33,7 +33,8 @@ export function findBestTargetForLine(container: HTMLElement, line: number): { t
         }
     }
 
-    const target = (best?.el || nodes[0]) as HTMLElement;
+    const target = best?.el ?? null;
+    if (!target) return { target: null, boxTarget: null };
     const hasBox = (el: Element) => el.getClientRects().length > 0;
     let boxTarget: HTMLElement | null = hasBox(target) ? target : null;
     if (!boxTarget) {
