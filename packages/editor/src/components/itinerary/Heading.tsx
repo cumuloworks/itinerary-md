@@ -10,6 +10,7 @@ interface HeadingProps {
     date: string;
     timezone?: string;
     prevStaySegments?: TextSegment[];
+    onTimezoneClick?: (timezone: string) => void;
 }
 
 const getDayOfWeekColorClass = (dayOfWeek: string) => {
@@ -23,7 +24,7 @@ const getDayOfWeekColorClass = (dayOfWeek: string) => {
     }
 };
 
-export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStaySegments }) => {
+export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStaySegments, onTimezoneClick }) => {
     const dt = DateTime.fromISO(date, { zone: timezone || 'UTC' });
     const dayOfWeek = dt.isValid ? dt.setLocale('en').toFormat('ccc') : '';
     return (
@@ -31,7 +32,11 @@ export const Heading: React.FC<HeadingProps> = ({ date, timezone, prevStaySegmen
             <span className="flex items-center">
                 <span className="text-2xl whitespace-nowrap">{date}</span>
                 <span className={`whitespace-nowrap ml-2 text-sm px-2 py-0.5 bg-gray-200 ${getDayOfWeekColorClass(dayOfWeek)}`}>{dayOfWeek}</span>
-                {timezone && <span className="whitespace-nowrap ml-3 text-xs text-gray-500 font-normal">({timezone})</span>}
+                {timezone && (
+                    <button type="button" className="whitespace-nowrap ml-3 text-xs text-gray-500 font-normal cursor-pointer hover:underline" onClick={() => onTimezoneClick?.(timezone)}>
+                        ({timezone})
+                    </button>
+                )}
             </span>
             {prevStaySegments && prevStaySegments.length > 0 ? (
                 <span className="flex items-center text-gray-700 text-sm gap-2">

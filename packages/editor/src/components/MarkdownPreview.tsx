@@ -35,6 +35,7 @@ interface MarkdownPreviewProps {
     onShowPast?: () => void;
     preferAltNames?: boolean;
     externalContainerRef?: React.Ref<HTMLDivElement>;
+    onTimezoneChange?: (timezone: string) => void;
 }
 
 //
@@ -61,7 +62,7 @@ const segmentsToPlainText = (segments?: TextSegment[]): string | undefined => (A
 
 // moved to utils/dom.ts
 
-const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true, onShowPast, preferAltNames, externalContainerRef }) => {
+const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone, currency, rate, showPast, title, description, tags, activeLine, autoScroll = true, onShowPast, preferAltNames, externalContainerRef, onTimezoneChange }) => {
     const displayTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const showPastEffective = typeof showPast === 'boolean' ? showPast : true;
@@ -174,11 +175,13 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 getLineEnd,
                 getNodeDateAttr,
                 displayTimezone,
+                defaultTimezone,
                 currency,
                 lastStaySegmentsByDate,
                 inlineToSegments,
                 segmentsToPlainText,
                 preferAltNames,
+                onTimezoneClick: onTimezoneChange,
             });
 
             let sawAnyHidden = false;
@@ -232,7 +235,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
                 isItmd: false,
             } as any;
         }
-    }, [content, timezone, currency, showPastEffective, displayTimezone, onShowPast, preferAltNames]);
+    }, [content, timezone, currency, showPastEffective, displayTimezone, onShowPast, preferAltNames, onTimezoneChange]);
 
     const safeParsedFrontmatter = parsedFrontmatter as Record<string, unknown>;
 

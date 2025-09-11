@@ -221,6 +221,7 @@ const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, sa
                                 preferAltNames={topbar.altNames}
                                 externalContainerRef={previewContainerRef}
                                 showAutoScrollToggle={topbar.viewMode === 'split'}
+                                onTimezoneChange={(tz) => updateTopbar({ timezone: tz })}
                             />
                         </MarkdownPreviewErrorBoundary>
                     </div>

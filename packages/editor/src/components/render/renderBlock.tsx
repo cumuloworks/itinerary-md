@@ -12,8 +12,8 @@ import type { MdNode, RenderBlockContext } from '@/components/render/types';
 
 // Types are centralized in ./types
 
-export const createRenderBlock = (ctx: RenderBlockContext) => {
-    const { getLineStart, getLineEnd, getNodeDateAttr, displayTimezone, currency, lastStaySegmentsByDate, inlineToSegments, segmentsToPlainText, preferAltNames } = ctx as any;
+export const createRenderBlock = (ctx: RenderBlockContext & { onTimezoneClick?: (timezone: string) => void }) => {
+    const { getLineStart, getLineEnd, getNodeDateAttr, displayTimezone, defaultTimezone, currency, lastStaySegmentsByDate, inlineToSegments, segmentsToPlainText, preferAltNames, onTimezoneClick } = ctx as any;
 
     const renderBlock = (node: MdNode, idx: number): React.ReactNode => {
         if (!node) return null;
@@ -28,7 +28,7 @@ export const createRenderBlock = (ctx: RenderBlockContext) => {
         };
 
         if (type === 'itmdHeading') {
-            return <ItmdHeadingBlock key={`itmdh-${lineStart ?? idx}`} node={node} commonDataProps={commonDataProps} lastStaySegmentsByDate={lastStaySegmentsByDate} />;
+            return <ItmdHeadingBlock key={`itmdh-${lineStart ?? idx}`} node={node} commonDataProps={commonDataProps} lastStaySegmentsByDate={lastStaySegmentsByDate} onTimezoneClick={onTimezoneClick} defaultTimezone={defaultTimezone} />;
         }
 
         if (type === 'itmdAlert') {

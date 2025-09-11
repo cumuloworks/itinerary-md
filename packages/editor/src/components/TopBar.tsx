@@ -1,4 +1,6 @@
+import { Combobox, ComboboxItem, ComboboxLabel, ComboboxList, ComboboxProvider } from '@ariakit/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import * as Popover from '@radix-ui/react-popover';
 import * as Select from '@radix-ui/react-select';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import * as Toolbar from '@radix-ui/react-toolbar';
@@ -26,6 +28,10 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
     const tzLabelId = React.useId();
     const currencyLabelId = React.useId();
     const { t, lang, setLanguage } = useI18n();
+    const [tzQuery, setTzQuery] = React.useState('');
+    const [tzOpen, setTzOpen] = React.useState(false);
+    const tzInputRef = React.useRef<HTMLInputElement>(null);
+    const tzListRef = React.useRef<HTMLDivElement>(null);
     const timezoneItems = React.useMemo(() => {
         const now = new Date();
         const toOffsetInfo = (tz: string) => {
@@ -70,6 +76,22 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
         };
         return timezoneOptions.map(toOffsetInfo).sort((a, b) => a.offsetMinutes - b.offsetMinutes || a.tz.localeCompare(b.tz));
     }, [timezoneOptions]);
+    const filteredTimezoneItems = React.useMemo(() => {
+        if (!tzQuery) return timezoneItems;
+        const q = tzQuery.toLowerCase();
+        return timezoneItems.filter((item) => item.tz.toLowerCase().includes(q) || item.offsetLabel.toLowerCase().includes(q) || item.label.toLowerCase().includes(q));
+    }, [timezoneItems, tzQuery]);
+
+    const selectedTimezoneLabel = React.useMemo(() => {
+        const found = timezoneItems.find((i) => i.tz === topbar.timezone);
+        return found ? found.label : topbar.timezone;
+    }, [timezoneItems, topbar.timezone]);
+
+    React.useEffect(() => {
+        if (tzOpen) {
+            tzInputRef.current?.focus();
+        }
+    }, [tzOpen]);
 
     return (
         <div className="w-full">
@@ -83,32 +105,91 @@ const TopBarComponent: React.FC<TopBarProps> = ({ tzSelectId, timezoneOptions, c
                         <span aria-hidden>{t('timezone.labelShort')}</span>
                         <span className="sr-only">{t('timezone.labelSr')}</span>
                     </span>
-                    <Select.Root value={topbar.timezone} onValueChange={(v) => onTopbarChange({ timezone: v })}>
-                        <Select.Trigger id={tzSelectId} aria-labelledby={tzLabelId} className="inline-flex items-center justify-between gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[260px] h-full">
-                            <Select.Value />
-                            <Select.Icon>
-                                <ChevronDown size={12} />
-                            </Select.Icon>
-                        </Select.Trigger>
-                        <Select.Portal>
-                            <Select.Content position="popper" sideOffset={4} className="z-50 overflow-auto rounded-md border border-gray-200 bg-white ">
-                                <Select.Viewport className="p-1 max-h-[240px] min-w-[var(--radix-select-trigger-width)] w-max max-w-[90vw]">
-                                    {timezoneItems.map((item) => (
-                                        <Select.Item
-                                            key={item.tz}
-                                            value={item.tz}
-                                            className="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs text-gray-800 whitespace-nowrap outline-none data-[highlighted]:bg-gray-100"
-                                        >
-                                            <Select.ItemText>{item.label}</Select.ItemText>
-                                            <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
-                                                <Check size={12} />
-                                            </Select.ItemIndicator>
-                                        </Select.Item>
-                                    ))}
-                                </Select.Viewport>
-                            </Select.Content>
-                        </Select.Portal>
-                    </Select.Root>
+                    <Popover.Root
+                        open={tzOpen}
+                        onOpenChange={(open) => {
+                            setTzOpen(open);
+                            if (!open) setTzQuery('');
+                        }}
+                    >
+                        <ComboboxProvider open={tzOpen} setOpen={setTzOpen} value={tzQuery} setValue={setTzQuery}>
+                            <ComboboxLabel className="sr-only">Timezone</ComboboxLabel>
+                            <Popover.Anchor asChild>
+                                <Combobox
+                                    ref={tzInputRef}
+                                    id={tzSelectId}
+                                    aria-labelledby={tzLabelId}
+                                    placeholder={lang === 'ja' ? 'タイムゾーンを検索' : 'Search timezones'}
+                                    value={tzOpen ? tzQuery : selectedTimezoneLabel}
+                                    onChange={(e) => setTzQuery(e.target.value)}
+                                    onMouseDown={() => setTzQuery('')}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            let nextTz: string | undefined;
+                                            const activeEl = tzListRef.current?.querySelector('[data-active-item]') as HTMLElement | null;
+                                            const activeTz = activeEl?.getAttribute('data-tz') || undefined;
+                                            if (activeTz) {
+                                                nextTz = activeTz;
+                                            } else if (filteredTimezoneItems.length > 0) {
+                                                nextTz = filteredTimezoneItems[0].tz;
+                                            }
+                                            if (nextTz) {
+                                                onTopbarChange({ timezone: nextTz });
+                                                setTzOpen(false);
+                                                setTzQuery('');
+                                            }
+                                        } else if (e.key === 'Escape') {
+                                            e.preventDefault();
+                                            setTzOpen(false);
+                                            setTzQuery('');
+                                        }
+                                    }}
+                                    onFocus={() => setTzOpen(true)}
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-white max-w-[260px] h-full w-[260px]"
+                                />
+                            </Popover.Anchor>
+                            <Popover.Portal>
+                                <Popover.Content
+                                    asChild
+                                    sideOffset={4}
+                                    onOpenAutoFocus={(event) => event.preventDefault()}
+                                    onInteractOutside={(event) => {
+                                        const target = event.target as Element | null;
+                                        const isCombobox = target === tzInputRef.current;
+                                        const inListbox = target && tzListRef.current?.contains(target);
+                                        if (isCombobox || inListbox) {
+                                            event.preventDefault();
+                                        }
+                                    }}
+                                >
+                                    <ComboboxList ref={tzListRef} role="listbox" className="z-50 rounded-md border border-gray-200 bg-white shadow-md w-[min(90vw,320px)] p-1 max-h-[240px] overflow-auto">
+                                        {filteredTimezoneItems.length === 0 ? (
+                                            <div className="px-2 py-1.5 text-xs text-gray-500">{lang === 'ja' ? '該当なし' : 'No results'}</div>
+                                        ) : (
+                                            filteredTimezoneItems.map((item) => (
+                                                <ComboboxItem
+                                                    key={item.tz}
+                                                    value={item.label}
+                                                    focusOnHover
+                                                    data-tz={item.tz}
+                                                    className="relative flex w-full items-center rounded px-2 py-1.5 text-xs whitespace-nowrap text-gray-800 data-[active-item]:bg-gray-100 hover:bg-gray-50"
+                                                    onClick={() => {
+                                                        onTopbarChange({ timezone: item.tz });
+                                                        setTzOpen(false);
+                                                        setTzQuery('');
+                                                    }}
+                                                >
+                                                    <span className="truncate pr-6">{item.label}</span>
+                                                    {topbar.timezone === item.tz && <Check size={12} className="absolute right-2" />}
+                                                </ComboboxItem>
+                                            ))
+                                        )}
+                                    </ComboboxList>
+                                </Popover.Content>
+                            </Popover.Portal>
+                        </ComboboxProvider>
+                    </Popover.Root>
                     <Toolbar.Button
                         type="button"
                         aria-label={t('timezone.resetTitle')}

@@ -7,10 +7,12 @@ export const ItmdHeadingBlock: React.FC<{
     node: any;
     commonDataProps: any;
     lastStaySegmentsByDate: Map<string, Array<{ text: string; url?: string }>>;
-}> = ({ node, commonDataProps, lastStaySegmentsByDate }) => {
+    onTimezoneClick?: (timezone: string) => void;
+    defaultTimezone?: string;
+}> = ({ node, commonDataProps, lastStaySegmentsByDate, onTimezoneClick, defaultTimezone }) => {
     const d = node as { dateISO?: string; timezone?: string };
     const date = d?.dateISO;
-    const tz = d?.timezone;
+    const tz = d?.timezone || defaultTimezone;
     if (!date) return null;
     const prevStaySegments = (() => {
         try {
@@ -26,7 +28,7 @@ export const ItmdHeadingBlock: React.FC<{
     const mergedClassName = mergeClassNames('contents', extraClass as string | undefined);
     return (
         <div className={mergedClassName} {...rest}>
-            <Heading date={date} timezone={tz} prevStaySegments={prevStaySegments} />
+            <Heading date={date} timezone={tz} prevStaySegments={prevStaySegments} onTimezoneClick={onTimezoneClick} />
         </div>
     );
 };

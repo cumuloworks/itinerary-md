@@ -3,6 +3,15 @@ import * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TopBar } from '@/components/TopBar';
 
+// Mock for Radix Popover
+vi.mock('@radix-ui/react-popover', () => ({
+    Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Trigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild && React.isValidElement(children) ? (children as React.ReactElement) : <button type="button">{children}</button>),
+    Anchor: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild && React.isValidElement(children) ? (children as React.ReactElement) : <div>{children}</div>),
+    Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Content: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild ? <>{children}</> : <div>{children}</div>),
+}));
+
 // Mock for Radix UI
 vi.mock('@radix-ui/react-dropdown-menu', () => ({
     Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -139,8 +148,10 @@ describe('TopBar', () => {
     describe('Timezone features', () => {
         it('shows current timezone', () => {
             render(<TopBar {...mockProps} />);
-            const selects = screen.getAllByTestId('select-root');
-            expect(selects[0]).toHaveAttribute('data-value', 'UTC');
+            const input = document.getElementById('tz-select') as HTMLInputElement | null;
+            expect(input).toBeInTheDocument();
+            // When closed, combobox shows selected label as value
+            expect(input?.value || '').toContain('UTC');
         });
 
         it('resets to device timezone', () => {
@@ -176,8 +187,8 @@ describe('TopBar', () => {
     describe('Currency features', () => {
         it('shows current currency', () => {
             render(<TopBar {...mockProps} />);
-            const selects = screen.getAllByTestId('select-root');
-            expect(selects[1]).toHaveAttribute('data-value', 'USD');
+            const currencySelect = screen.getByTestId('select-root');
+            expect(currencySelect).toHaveAttribute('data-value', 'USD');
         });
 
         it('has available currency options', () => {
@@ -269,11 +280,32 @@ describe('TopBar', () => {
             // Auto scroll control not present in TopBar anymore
         });
 
-        it('timezone select has the correct ID', () => {
+        it('timezone input has the correct ID', () => {
             render(<TopBar {...mockProps} />);
 
             const select = document.getElementById('tz-select');
             expect(select).toBeInTheDocument();
+        });
+    });
+
+    describe('Timezone combobox behavior', () => {
+        it('clears query on click', () => {
+            render(<TopBar {...mockProps} />);
+            const input = document.getElementById('tz-select') as HTMLInputElement;
+            expect(input).toBeInTheDocument();
+            fireEvent.mouseDown(input);
+            fireEvent.focus(input);
+            expect(input.value).toBe('');
+        });
+
+        it('filters and selects by Enter', () => {
+            render(<TopBar {...mockProps} />);
+            const input = document.getElementById('tz-select') as HTMLInputElement;
+            fireEvent.mouseDown(input);
+            fireEvent.focus(input);
+            fireEvent.change(input, { target: { value: 'tokyo' } });
+            fireEvent.keyDown(input, { key: 'Enter' });
+            expect(mockProps.onTopbarChange).toHaveBeenCalledWith({ timezone: 'Asia/Tokyo' });
         });
     });
 
