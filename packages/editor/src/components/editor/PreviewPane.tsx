@@ -25,6 +25,7 @@ export const PreviewPane: React.FC<{
     externalContainerRef?: React.MutableRefObject<HTMLDivElement | null>;
     /** Whether to show the auto-scroll toggle button */
     showAutoScrollToggle?: boolean;
+    onTimezoneChange?: (timezone: string) => void;
 }> = ({
     showMdast,
     toggleMdast,
@@ -44,6 +45,7 @@ export const PreviewPane: React.FC<{
     preferAltNames,
     externalContainerRef,
     showAutoScrollToggle = true,
+    onTimezoneChange,
 }) => {
     const { t } = useI18n();
     return (
@@ -92,6 +94,7 @@ export const PreviewPane: React.FC<{
                         onShowPast={onShowPast}
                         preferAltNames={preferAltNames}
                         externalContainerRef={externalContainerRef}
+                        onTimezoneChange={onTimezoneChange}
                     />
                 )}
             </div>

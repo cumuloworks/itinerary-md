@@ -15,9 +15,11 @@ export type RenderBlockContext = {
     getLineEnd: (n: { position?: { end?: { line?: number } } } | undefined) => number | undefined;
     getNodeDateAttr: (n: unknown) => string | undefined;
     displayTimezone: string;
+    defaultTimezone?: string;
     currency?: string;
     lastStaySegmentsByDate: Map<string, Array<{ text: string; url?: string }>>;
     inlineToSegments: (inline?: PhrasingContent[] | null) => Array<{ text: string; url?: string; kind?: 'text' | 'code' }> | undefined;
     segmentsToPlainText: (segments?: Array<{ text: string; url?: string }>) => string | undefined;
     preferAltNames?: boolean;
+    onTimezoneClick?: (timezone: string) => void;
 };
