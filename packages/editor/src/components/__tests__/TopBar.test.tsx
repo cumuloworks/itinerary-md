@@ -9,7 +9,7 @@ vi.mock('@radix-ui/react-popover', () => ({
     Trigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild && React.isValidElement(children) ? (children as React.ReactElement) : <button type="button">{children}</button>),
     Anchor: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild && React.isValidElement(children) ? (children as React.ReactElement) : <div>{children}</div>),
     Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Content: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild ? <>{children}</> : <div>{children}</div>),
+    Content: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild ? children : <div>{children}</div>),
 }));
 
 // Mock for Radix UI
