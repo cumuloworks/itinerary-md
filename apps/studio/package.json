@@ -9,25 +9,25 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "@astrojs/react": "^4.3.0",
-    "@astrojs/sitemap": "^3.5.1",
-    "@astrojs/vercel": "^8.2.7",
+    "@astrojs/react": "^4.4.2",
+    "@astrojs/sitemap": "^3.6.0",
+    "@astrojs/vercel": "^9.0.2",
     "@itinerary-md/editor": "^0.3.2",
-    "@sentry/astro": "^10.10.0",
-    "@sentry/react": "^10.10.0",
-    "@tailwindcss/vite": "^4.1.13",
+    "@sentry/astro": "^10.27.0",
+    "@sentry/react": "^10.27.0",
+    "@tailwindcss/vite": "^4.1.17",
     "@vercel/analytics": "^1.5.0",
-    "astro": "^5.13.5",
-    "lucide-react": "^0.542.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "astro": "^5.16.1",
+    "lucide-react": "^0.555.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "react-focus-lock": "2.13.6",
     "react-icons": "^5.5.0",
-    "tailwindcss": "^4.1.13"
+    "tailwindcss": "^4.1.17"
   },
   "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.7",
-    "vite-plugin-pwa": "^1.0.3"
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "vite-plugin-pwa": "^1.1.0"
   }
 }
