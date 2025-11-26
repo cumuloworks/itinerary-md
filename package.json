@@ -28,18 +28,18 @@
         "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.2.3",
-        "@commitlint/cli": "^19.8.1",
-        "@commitlint/config-conventional": "^19.8.1",
-        "@cumuloworks/configs": "^1.0.5",
-        "@vitest/coverage-v8": "^3.2.4",
+        "@biomejs/biome": "^2.3.7",
+        "@commitlint/cli": "^20.1.0",
+        "@commitlint/config-conventional": "^20.0.0",
+        "@cumuloworks/configs": "^1.1.0",
+        "@vitest/coverage-v8": "^4.0.14",
         "concurrently": "^9.2.1",
         "husky": "^9.1.7",
-        "jsdom": "^26.1.0",
+        "jsdom": "^27.2.0",
         "license-checker": "^25.0.1",
-        "lint-staged": "^16.1.6",
+        "lint-staged": "^16.2.7",
         "tsc-alias": "^1.8.16",
-        "vitest": "^3.2.4"
+        "vitest": "^4.0.14"
     },
     "lint-staged": {
         "*.{ts,tsx,js,jsx}": [
