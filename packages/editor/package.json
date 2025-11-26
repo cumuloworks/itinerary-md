@@ -27,8 +27,8 @@
         "dist"
     ],
     "peerDependencies": {
-        "react": ">=18 <19",
-        "react-dom": ">=18 <19"
+        "react": ">=18 <20",
+        "react-dom": ">=18 <20"
     },
     "dependencies": {
         "@ariakit/react": "^0.4.20",
