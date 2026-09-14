@@ -12,6 +12,8 @@ const EXTERNAL = [
   'react-dom',
   'react/jsx-runtime',
   'react/jsx-dev-runtime',
+  // emitted by the React Compiler; provided by React 19 itself
+  'react/compiler-runtime',
   'remark-itinerary',
   'remark-itinerary/utils',
   'remark-itinerary-alert',
