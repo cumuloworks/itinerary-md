@@ -1,6 +1,9 @@
 node_modules
 dist
-bash.exe.stackdump
+coverage
+.astro
+.vitest
 .vercel
+bash.exe.stackdump
 *.tgz
 .DS_Store

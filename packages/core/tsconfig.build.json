@@ -3,9 +3,10 @@
         "target": "ES2020",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
-        "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": [
+                "./src/*"
+            ]
         },
         "outDir": "dist",
         "rootDir": "src",
@@ -17,7 +18,9 @@
         "resolveJsonModule": true,
         "noEmitOnError": true
     },
-    "include": ["src"],
+    "include": [
+        "src"
+    ],
     "exclude": [
         "src/**/__tests__/**",
         "src/**/*.test.*",

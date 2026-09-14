@@ -1,4 +1,4 @@
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { DropdownMenu } from 'radix-ui';
 import { DateTime } from 'luxon';
 import type { ComponentType } from 'react';
 import { buildGoogleCalendarUrl, buildICS, buildOutlookCalendarUrl, formatDestinationToString } from '@/utils/calendar';

@@ -2,17 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vite
 import { COMMON_CURRENCIES, convertAmountUSDBase, fetchRatesUSD, formatCurrency, getCachedRatesUSD, getRatesUSD, initializeRates, parseAmountWithCurrency, setCachedRatesUSD } from '@/utils/currency';
 
 describe('currency utilities', () => {
-    const originalFetch = global.fetch;
+    const originalFetch = globalThis.fetch;
     const originalDateNow = Date.now;
 
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
-        global.fetch = vi.fn() as Mock;
+        globalThis.fetch = vi.fn() as Mock;
     });
 
     afterEach(() => {
-        global.fetch = originalFetch;
+        globalThis.fetch = originalFetch;
         Date.now = originalDateNow;
     });
 
@@ -355,7 +355,7 @@ describe('currency utilities', () => {
 
         describe('fetchRatesUSD', () => {
             it('fetches rates from API', async () => {
-                (global.fetch as Mock).mockResolvedValueOnce({
+                (globalThis.fetch as Mock).mockResolvedValueOnce({
                     ok: true,
                     json: async () => mockRates,
                 });
@@ -363,11 +363,11 @@ describe('currency utilities', () => {
                 const result = await fetchRatesUSD();
 
                 expect(result).toEqual(mockRates);
-                expect(global.fetch).toHaveBeenCalledWith('https://open.er-api.com/v6/latest/USD');
+                expect(globalThis.fetch).toHaveBeenCalledWith('https://open.er-api.com/v6/latest/USD');
             });
 
             it('stores fetched data into cache', async () => {
-                (global.fetch as Mock).mockResolvedValueOnce({
+                (globalThis.fetch as Mock).mockResolvedValueOnce({
                     ok: true,
                     json: async () => mockRates,
                 });
@@ -379,7 +379,7 @@ describe('currency utilities', () => {
             });
 
             it('throws on API error', async () => {
-                (global.fetch as Mock).mockResolvedValueOnce({
+                (globalThis.fetch as Mock).mockResolvedValueOnce({
                     ok: false,
                 });
 
@@ -387,7 +387,7 @@ describe('currency utilities', () => {
             });
 
             it('throws on invalid response', async () => {
-                (global.fetch as Mock).mockResolvedValueOnce({
+                (globalThis.fetch as Mock).mockResolvedValueOnce({
                     ok: true,
                     json: async () => ({ invalid: 'data' }),
                 });
@@ -398,14 +398,14 @@ describe('currency utilities', () => {
 
         describe('initializeRates', () => {
             it('fetches new rates when no cache', async () => {
-                (global.fetch as Mock).mockResolvedValueOnce({
+                (globalThis.fetch as Mock).mockResolvedValueOnce({
                     ok: true,
                     json: async () => mockRates,
                 });
 
                 await initializeRates();
 
-                expect(global.fetch).toHaveBeenCalled();
+                expect(globalThis.fetch).toHaveBeenCalled();
                 expect(getCachedRatesUSD()).toEqual(mockRates);
             });
 
@@ -414,12 +414,12 @@ describe('currency utilities', () => {
 
                 await initializeRates();
 
-                expect(global.fetch).not.toHaveBeenCalled();
+                expect(globalThis.fetch).not.toHaveBeenCalled();
             });
 
             it('logs errors as warnings', async () => {
                 const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-                (global.fetch as Mock).mockRejectedValueOnce(new Error('Network error'));
+                (globalThis.fetch as Mock).mockRejectedValueOnce(new Error('Network error'));
 
                 await initializeRates();
 

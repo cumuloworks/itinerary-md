@@ -152,7 +152,7 @@ describe('useDebouncedValue', () => {
 
     describe('Cleanup', () => {
         it('clears timer on unmount', () => {
-            const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+            const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
 
             const { rerender, unmount } = renderHook(({ value }) => useDebouncedValue(value, 500), { initialProps: { value: 'first' } });
 
@@ -164,7 +164,7 @@ describe('useDebouncedValue', () => {
         });
 
         it('clears previous timer on each value change', () => {
-            const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+            const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
 
             const { rerender } = renderHook(({ value }) => useDebouncedValue(value, 500), { initialProps: { value: 'first' } });
 

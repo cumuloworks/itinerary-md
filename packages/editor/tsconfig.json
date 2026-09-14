@@ -2,17 +2,30 @@
     "compilerOptions": {
         "target": "ES2020",
         "useDefineForClassFields": true,
-        "lib": ["ES2020", "DOM", "DOM.Iterable"],
+        "lib": [
+            "ES2020",
+            "DOM",
+            "DOM.Iterable"
+        ],
         "module": "ESNext",
         "skipLibCheck": true,
         "moduleResolution": "bundler",
-        "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"],
-            "remark-itinerary": ["../core/src"],
-            "remark-itinerary/*": ["../core/src/*"],
-            "remark-itinerary-alert": ["../alert/src"],
-            "remark-itinerary-alert/*": ["../alert/src/*"]
+            "@/*": [
+                "./src/*"
+            ],
+            "remark-itinerary": [
+                "../core/src"
+            ],
+            "remark-itinerary/*": [
+                "../core/src/*"
+            ],
+            "remark-itinerary-alert": [
+                "../alert/src"
+            ],
+            "remark-itinerary-alert/*": [
+                "../alert/src/*"
+            ]
         },
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,
@@ -23,9 +36,22 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
-        "types": ["vitest/globals", "react", "react-dom", "@testing-library/jest-dom", "vite/client"]
+        "types": [
+            "vitest/globals",
+            "react",
+            "react-dom",
+            "@testing-library/jest-dom/vitest",
+            "vite/client"
+        ]
     },
-    "include": ["src", "@test", "types", "test/event-parser.test.ts", "test/time-parser.test.ts", "test/date-parser.test.ts"],
+    "include": [
+        "src",
+        "@test",
+        "types",
+        "test/event-parser.test.ts",
+        "test/time-parser.test.ts",
+        "test/date-parser.test.ts"
+    ],
     "references": [
         {
             "path": "./tsconfig.node.json"

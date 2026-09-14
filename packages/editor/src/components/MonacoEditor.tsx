@@ -107,7 +107,7 @@ const MonacoEditorComponent: FC<MonacoEditorProps> = ({ value, onChange, onSave,
 MonacoEditorComponent.displayName = 'MonacoEditor';
 
 // Wrap the logic to respond to prop changes
-function useToggleCompletions(enabled: boolean, monacoRef: React.MutableRefObject<any>, disposablesRef: React.MutableRefObject<{ dispose: () => void } | null>): void {
+function useToggleCompletions(enabled: boolean, monacoRef: React.RefObject<any>, disposablesRef: React.RefObject<{ dispose: () => void } | null>): void {
     useEffect(() => {
         const monaco = monacoRef.current;
         if (!monaco) return;

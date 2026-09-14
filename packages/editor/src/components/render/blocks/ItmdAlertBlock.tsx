@@ -1,4 +1,4 @@
-import { AlertCircle, AlertOctagon, AlertTriangle, Info, Lightbulb, type LucideIcon } from 'lucide-react';
+import { CircleAlert, OctagonAlert, TriangleAlert, Info, Lightbulb, type LucideIcon } from 'lucide-react';
 import React from 'react';
 import { renderInline } from '@/components/render/renderInline';
 import { mergeClassNames } from '@/components/render/utils';
@@ -25,9 +25,9 @@ export const ItmdAlertBlock: React.FC<{
     function getIconByVariant(kind?: string): LucideIcon {
         const vv = String(kind || '').toLowerCase();
         if (vv === 'tip') return Lightbulb;
-        if (vv === 'warning') return AlertTriangle;
-        if (vv === 'caution' || vv === 'danger') return AlertOctagon;
-        if (vv === 'important') return AlertCircle;
+        if (vv === 'warning') return TriangleAlert;
+        if (vv === 'caution' || vv === 'danger') return OctagonAlert;
+        if (vv === 'important') return CircleAlert;
         return Info; // note/info/default
     }
 

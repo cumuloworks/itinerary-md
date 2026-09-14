@@ -269,7 +269,7 @@ describe('useAutosave', () => {
 
     describe('Cleanup', () => {
         it('clears timer on unmount', () => {
-            const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+            const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
 
             const { unmount } = renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 1000 }));
 
@@ -280,7 +280,7 @@ describe('useAutosave', () => {
         });
 
         it('clears previous timer when value changes', () => {
-            const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+            const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
 
             const { rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 1000 }), { initialProps: { value: 'first' } });
 

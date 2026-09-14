@@ -1,4 +1,4 @@
-import * as Toggle from '@radix-ui/react-toggle';
+import { Toggle } from 'radix-ui';
 import { Bug, ChevronsDown } from 'lucide-react';
 import type React from 'react';
 import { MarkdownPreview } from '@/components/MarkdownPreview';
@@ -22,7 +22,7 @@ export const PreviewPane: React.FC<{
     showPast?: boolean;
     onShowPast?: () => void;
     preferAltNames?: boolean;
-    externalContainerRef?: React.MutableRefObject<HTMLDivElement | null>;
+    externalContainerRef?: React.RefObject<HTMLDivElement | null>;
     /** Whether to show the auto-scroll toggle button */
     showAutoScrollToggle?: boolean;
     onTimezoneChange?: (timezone: string) => void;

@@ -1,4 +1,4 @@
-import * as Toggle from '@radix-ui/react-toggle';
+import { Toggle } from 'radix-ui';
 import { List } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';

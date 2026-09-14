@@ -3,92 +3,89 @@ import * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TopBar } from '@/components/TopBar';
 
-// Mock for Radix Popover
-vi.mock('@radix-ui/react-popover', () => ({
-    Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Trigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild && React.isValidElement(children) ? (children as React.ReactElement) : <button type="button">{children}</button>),
-    Anchor: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild && React.isValidElement(children) ? (children as React.ReactElement) : <div>{children}</div>),
-    Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Content: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild ? <>{children}</> : <div>{children}</div>),
-}));
-
-// Mock for Radix UI
-vi.mock('@radix-ui/react-dropdown-menu', () => ({
-    Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Trigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => {
-        const child = asChild && React.isValidElement(children) ? (children as React.ReactElement<{ children?: React.ReactNode }>).props.children : children;
-        return <div>{child}</div>;
+// Mock the Radix UI primitives used by TopBar
+vi.mock('radix-ui', () => ({
+    Popover: {
+        Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Trigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild && React.isValidElement(children) ? (children as React.ReactElement) : <button type="button">{children}</button>),
+        Anchor: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild && React.isValidElement(children) ? (children as React.ReactElement) : <div>{children}</div>),
+        Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Content: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => (asChild ? <>{children}</> : <div>{children}</div>),
     },
-    Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Content: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Item: ({ children, onSelect }: { children: React.ReactNode; onSelect?: () => void }) => (
-        <button type="button" onClick={onSelect}>
-            {children}
-        </button>
-    ),
-    Sub: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    SubTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    SubContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    RadioGroup: ({ children, value, onValueChange }: { children: React.ReactNode; value?: string; onValueChange?: (v: string) => void }) => (
-        <div data-testid="dropdown-radio-group" data-value={value} data-change={typeof onValueChange === 'function'}>
-            {children}
-        </div>
-    ),
-    RadioItem: ({ children, value, onClick }: { children: React.ReactNode; value: string; onClick?: (value: string) => void }) => (
-        <button type="button" data-value={value} onClick={() => onClick?.(value)}>
-            {children}
-        </button>
-    ),
-    ItemIndicator: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-    Separator: () => <div />,
-}));
-
-vi.mock('@radix-ui/react-select', () => ({
-    Root: ({ children, value, onValueChange }: { children: React.ReactNode | ((props: { value: string; onValueChange: (v: string) => void }) => React.ReactNode); value: string; onValueChange: (v: string) => void }) => (
-        <div data-testid="select-root" data-value={value}>
-            {typeof children === 'function' ? children({ value, onValueChange }) : children}
-        </div>
-    ),
-    Trigger: ({ children, id, className, 'aria-labelledby': ariaLabelledBy }: { children: React.ReactNode; id?: string; className?: string; 'aria-labelledby'?: string }) => (
-        <button type="button" id={id} className={className} aria-labelledby={ariaLabelledBy}>
-            {children}
-        </button>
-    ),
-    Value: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-    Icon: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-    Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Content: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Viewport: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Item: ({ children, value, onClick }: { children: React.ReactNode; value: string; onClick?: (value: string) => void }) => (
-        <button type="button" data-value={value} onClick={() => onClick?.(value)}>
-            {children}
-        </button>
-    ),
-    ItemText: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-    ItemIndicator: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-}));
-
-vi.mock('@radix-ui/react-toggle-group', () => ({
-    Root: ({ children, value, onValueChange }: { children: React.ReactNode | ((props: { value: string; onValueChange: (v: string) => void }) => React.ReactNode); value: string; onValueChange: (v: string) => void }) => (
-        <div data-testid="toggle-group" data-value={value}>
-            {typeof children === 'function' ? children({ value, onValueChange }) : children}
-        </div>
-    ),
-    Item: ({ children, value, onClick, className }: { children: React.ReactNode; value: string; onClick?: (value: string) => void; className?: string }) => (
-        <button type="button" data-value={value} onClick={() => onClick?.(value)} className={className}>
-            {children}
-        </button>
-    ),
-}));
-
-vi.mock('@radix-ui/react-toolbar', () => ({
-    Root: ({ children, className }: { children: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
-    Button: ({ children, onClick, title, className, type, 'aria-label': ariaLabel }: { children: React.ReactNode; onClick?: () => void; title?: string; className?: string; type?: 'button' | 'submit' | 'reset'; 'aria-label'?: string }) => (
-        <button type={type} onClick={onClick} title={title} className={className} aria-label={ariaLabel}>
-            {children}
-        </button>
-    ),
-    Separator: () => <div />,
+    DropdownMenu: {
+        Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Trigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => {
+            const child = asChild && React.isValidElement(children) ? (children as React.ReactElement<{ children?: React.ReactNode }>).props.children : children;
+            return <div>{child}</div>;
+        },
+        Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Content: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Item: ({ children, onSelect }: { children: React.ReactNode; onSelect?: () => void }) => (
+            <button type="button" onClick={onSelect}>
+                {children}
+            </button>
+        ),
+        Sub: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        SubTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        SubContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        RadioGroup: ({ children, value, onValueChange }: { children: React.ReactNode; value?: string; onValueChange?: (v: string) => void }) => (
+            <div data-testid="dropdown-radio-group" data-value={value} data-change={typeof onValueChange === 'function'}>
+                {children}
+            </div>
+        ),
+        RadioItem: ({ children, value, onClick }: { children: React.ReactNode; value: string; onClick?: (value: string) => void }) => (
+            <button type="button" data-value={value} onClick={() => onClick?.(value)}>
+                {children}
+            </button>
+        ),
+        ItemIndicator: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+        Separator: () => <div />,
+    },
+    Select: {
+        Root: ({ children, value, onValueChange }: { children: React.ReactNode | ((props: { value: string; onValueChange: (v: string) => void }) => React.ReactNode); value: string; onValueChange: (v: string) => void }) => (
+            <div data-testid="select-root" data-value={value}>
+                {typeof children === 'function' ? children({ value, onValueChange }) : children}
+            </div>
+        ),
+        Trigger: ({ children, id, className, 'aria-labelledby': ariaLabelledBy }: { children: React.ReactNode; id?: string; className?: string; 'aria-labelledby'?: string }) => (
+            <button type="button" id={id} className={className} aria-labelledby={ariaLabelledBy}>
+                {children}
+            </button>
+        ),
+        Value: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+        Icon: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+        Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Content: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Viewport: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Item: ({ children, value, onClick }: { children: React.ReactNode; value: string; onClick?: (value: string) => void }) => (
+            <button type="button" data-value={value} onClick={() => onClick?.(value)}>
+                {children}
+            </button>
+        ),
+        ItemText: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+        ItemIndicator: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    },
+    ToggleGroup: {
+        Root: ({ children, value, onValueChange }: { children: React.ReactNode | ((props: { value: string; onValueChange: (v: string) => void }) => React.ReactNode); value: string; onValueChange: (v: string) => void }) => (
+            <div data-testid="toggle-group" data-value={value}>
+                {typeof children === 'function' ? children({ value, onValueChange }) : children}
+            </div>
+        ),
+        Item: ({ children, value, onClick, className }: { children: React.ReactNode; value: string; onClick?: (value: string) => void; className?: string }) => (
+            <button type="button" data-value={value} onClick={() => onClick?.(value)} className={className}>
+                {children}
+            </button>
+        ),
+    },
+    Toolbar: {
+        Root: ({ children, className }: { children: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
+        Button: ({ children, onClick, title, className, type, 'aria-label': ariaLabel }: { children: React.ReactNode; onClick?: () => void; title?: string; className?: string; type?: 'button' | 'submit' | 'reset'; 'aria-label'?: string }) => (
+            <button type={type} onClick={onClick} title={title} className={className} aria-label={ariaLabel}>
+                {children}
+            </button>
+        ),
+        Separator: () => <div />,
+    },
 }));
 
 describe('TopBar', () => {
@@ -155,8 +152,8 @@ describe('TopBar', () => {
         });
 
         it('resets to device timezone', () => {
-            const originalIntl = global.Intl;
-            global.Intl = {
+            const originalIntl = globalThis.Intl;
+            globalThis.Intl = {
                 ...originalIntl,
                 DateTimeFormat: vi.fn(() => ({
                     resolvedOptions: () => ({ timeZone: 'Europe/London' }),
@@ -173,7 +170,7 @@ describe('TopBar', () => {
                 timezone: 'Europe/London',
             });
 
-            global.Intl = originalIntl;
+            globalThis.Intl = originalIntl;
         });
 
         it('sorts timezones by offset', () => {
@@ -327,14 +324,14 @@ describe('TopBar', () => {
         });
 
         it('works without Intl API', () => {
-            const originalIntl = global.Intl;
-            delete (global as { Intl?: typeof Intl }).Intl;
+            const originalIntl = globalThis.Intl;
+            delete (globalThis as { Intl?: typeof Intl }).Intl;
 
             expect(() => {
                 render(<TopBar {...mockProps} />);
             }).not.toThrow();
 
-            global.Intl = originalIntl;
+            globalThis.Intl = originalIntl;
         });
     });
 

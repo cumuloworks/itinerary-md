@@ -7,7 +7,7 @@ import { defineConfig } from 'vite';
 export default defineConfig(({ command }) => {
     const isServe = command === 'serve';
     return {
-        plugins: [react(), tailwindcss()],
+        plugins: [react({ compiler: true }), tailwindcss()],
         resolve: {
             alias: {
                 '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -26,7 +26,7 @@ export default defineConfig(({ command }) => {
                 fileName: 'index',
                 formats: ['es'],
             },
-            rollupOptions: {
+            rolldownOptions: {
                 external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'remark-itinerary', 'remark-itinerary/utils', 'remark-itinerary-alert'],
             },
             sourcemap: false,

@@ -294,7 +294,7 @@ describe('useLatest', () => {
             const { result } = renderHook(() => useLatest(value));
 
             // Ensure TypeScript infers types correctly
-            const ref: React.MutableRefObject<CustomType> = result.current;
+            const ref: React.RefObject<CustomType> = result.current;
             expect(ref.current.id).toBe(1);
             expect(ref.current.name).toBe('test');
         });

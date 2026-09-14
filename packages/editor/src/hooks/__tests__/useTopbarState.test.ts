@@ -16,13 +16,13 @@ vi.mock('@/core/errors', () => ({
 describe('useTopbarState', () => {
     const originalLocation = window.location;
     const originalHistory = window.history;
-    const originalIntl = global.Intl;
+    const originalIntl = globalThis.Intl;
 
     beforeEach(() => {
         vi.clearAllMocks();
 
         // Default timezone mock
-        global.Intl = {
+        globalThis.Intl = {
             ...originalIntl,
             DateTimeFormat: vi.fn(() => ({
                 resolvedOptions: () => ({ timeZone: 'UTC' }),
@@ -63,7 +63,7 @@ describe('useTopbarState', () => {
     afterEach(() => {
         (window as { location?: Location }).location = originalLocation;
         window.history.replaceState = originalHistory.replaceState;
-        global.Intl = originalIntl;
+        globalThis.Intl = originalIntl;
     });
 
     describe('Initialization', () => {

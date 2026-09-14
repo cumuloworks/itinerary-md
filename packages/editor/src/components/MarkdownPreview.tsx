@@ -253,7 +253,7 @@ const MarkdownPreviewComponent: FC<MarkdownPreviewProps> = ({ content, timezone,
         (el: HTMLDivElement | null) => {
             containerRef.current = el;
             if (typeof externalContainerRef === 'function') externalContainerRef(el);
-            else if (externalContainerRef && typeof externalContainerRef === 'object') (externalContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+            else if (externalContainerRef && typeof externalContainerRef === 'object') (externalContainerRef as React.RefObject<HTMLDivElement | null>).current = el;
         },
         [externalContainerRef]
     );

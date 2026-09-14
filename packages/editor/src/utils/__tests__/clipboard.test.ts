@@ -33,7 +33,7 @@ describe('clipboard utilities', () => {
             }
         }
         document.execCommand = originalExecCommand;
-        consoleWarnSpy.mockRestore();
+        vi.restoreAllMocks();
     });
 
     describe('writeTextToClipboard', () => {

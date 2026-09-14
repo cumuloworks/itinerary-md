@@ -6,8 +6,8 @@ import { useEffect, useRef } from 'react';
  * @param value Value to keep up-to-date.
  * @returns A ref to the latest value.
  */
-export function useLatest<T>(value: T): React.MutableRefObject<T> {
-    const ref = useRef(value) as React.MutableRefObject<T>;
+export function useLatest<T>(value: T): React.RefObject<T> {
+    const ref = useRef(value) as React.RefObject<T>;
     useEffect(() => {
         ref.current = value;
     }, [value]);

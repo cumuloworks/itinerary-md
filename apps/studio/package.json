@@ -6,28 +6,30 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@astrojs/react": "^4.3.0",
-    "@astrojs/sitemap": "^3.5.1",
-    "@astrojs/vercel": "^8.2.7",
+    "@astrojs/react": "^6.0.5",
+    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/vercel": "^11.0.10",
     "@itinerary-md/editor": "^0.3.2",
-    "@sentry/astro": "^10.10.0",
-    "@sentry/react": "^10.10.0",
-    "@tailwindcss/vite": "^4.1.13",
-    "@vercel/analytics": "^1.5.0",
-    "astro": "^5.14.3",
-    "lucide-react": "^0.542.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-focus-lock": "2.13.6",
-    "react-icons": "^5.5.0",
-    "tailwindcss": "^4.1.13"
+    "@sentry/astro": "^10.74.0",
+    "@sentry/react": "^10.74.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vercel/analytics": "^2.0.1",
+    "astro": "^7.3.2",
+    "lucide-react": "^1.46.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-focus-lock": "2.13.7",
+    "react-icons": "^5.7.0",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.7",
-    "vite-plugin-pwa": "^1.0.3"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vite-plugin-pwa": "^1.3.0"
   }
 }

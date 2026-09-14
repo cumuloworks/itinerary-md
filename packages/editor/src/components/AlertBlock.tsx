@@ -1,4 +1,4 @@
-import { AlertCircle, AlertOctagon, AlertTriangle, Info, Lightbulb, type LucideIcon } from 'lucide-react';
+import { CircleAlert, OctagonAlert, TriangleAlert, Info, Lightbulb, type LucideIcon } from 'lucide-react';
 import React, { type FC, type ReactNode } from 'react';
 import { TimePlaceholder } from '@/components/itinerary/TimePlaceholder';
 
@@ -15,9 +15,9 @@ type AlertBlockProps = {
 function getIconByVariant(variant?: string): LucideIcon {
     const v = String(variant || '').toLowerCase();
     if (v === 'tip') return Lightbulb;
-    if (v === 'warning') return AlertTriangle;
-    if (v === 'caution' || v === 'danger') return AlertOctagon;
-    if (v === 'important') return AlertCircle;
+    if (v === 'warning') return TriangleAlert;
+    if (v === 'caution' || v === 'danger') return OctagonAlert;
+    if (v === 'important') return CircleAlert;
     return Info; // note/info/default
 }
 

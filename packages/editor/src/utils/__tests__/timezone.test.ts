@@ -7,20 +7,20 @@ vi.mock('@/core/errors', () => ({
 }));
 
 describe('timezone utilities', () => {
-    const originalIntl = global.Intl;
+    const originalIntl = globalThis.Intl;
 
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     afterEach(() => {
-        global.Intl = originalIntl;
+        globalThis.Intl = originalIntl;
     });
 
     describe('getTimezoneOptions', () => {
         it('returns the list of supported timezones', () => {
             const mockTimezones = ['UTC', 'Asia/Tokyo', 'Europe/London', 'America/New_York'];
-            global.Intl = {
+            globalThis.Intl = {
                 ...originalIntl,
                 supportedValuesOf: vi.fn((key) => {
                     if (key === 'timeZone') return mockTimezones;
@@ -33,7 +33,7 @@ describe('timezone utilities', () => {
         });
 
         it('returns fallback list when supportedValuesOf is unavailable', () => {
-            global.Intl = {
+            globalThis.Intl = {
                 ...originalIntl,
                 supportedValuesOf: undefined,
             } as typeof Intl;
@@ -47,7 +47,7 @@ describe('timezone utilities', () => {
         });
 
         it('propagates error when supportedValuesOf throws', () => {
-            global.Intl = {
+            globalThis.Intl = {
                 ...originalIntl,
                 supportedValuesOf: vi.fn(() => {
                     throw new Error('Not supported');
@@ -61,7 +61,7 @@ describe('timezone utilities', () => {
         });
 
         it('returns empty array when an empty list is returned', () => {
-            global.Intl = {
+            globalThis.Intl = {
                 ...originalIntl,
                 supportedValuesOf: vi.fn(() => []),
             } as typeof Intl;
@@ -73,7 +73,7 @@ describe('timezone utilities', () => {
 
         it('returns a de-duplicated timezone list', () => {
             const mockTimezones = ['UTC', 'Asia/Tokyo', 'UTC', 'Asia/Tokyo', 'Europe/London'];
-            global.Intl = {
+            globalThis.Intl = {
                 ...originalIntl,
                 supportedValuesOf: vi.fn((key) => {
                     if (key === 'timeZone') return [...new Set(mockTimezones)];
@@ -89,10 +89,12 @@ describe('timezone utilities', () => {
 
     describe('coerceTimezoneWithToast', () => {
         it('returns valid timezone as-is', () => {
-            const mockDateTimeFormat = vi.fn(() => ({
+            const mockDateTimeFormat = vi.fn(function () {
+                return {
                 resolvedOptions: () => ({ timeZone: 'Asia/Tokyo' }),
-            }));
-            global.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
+                };
+            });
+            globalThis.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
 
             const result = coerceTimezoneWithToast('Asia/Tokyo', 'UTC', 'Test');
 
@@ -101,10 +103,12 @@ describe('timezone utilities', () => {
         });
 
         it('returns fallback for invalid timezone', () => {
-            const mockDateTimeFormat = vi.fn(() => ({
+            const mockDateTimeFormat = vi.fn(function () {
+                return {
                 resolvedOptions: () => ({ timeZone: 'UTC' }),
-            }));
-            global.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
+                };
+            });
+            globalThis.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
 
             const result = coerceTimezoneWithToast('Invalid/Zone', 'America/New_York', 'Test');
 
@@ -113,7 +117,7 @@ describe('timezone utilities', () => {
         });
 
         it('returns fallback when DateTimeFormat throws', () => {
-            global.Intl.DateTimeFormat = vi.fn(() => {
+            globalThis.Intl.DateTimeFormat = vi.fn(() => {
                 throw new Error('Invalid timezone');
             }) as unknown as Intl.DateTimeFormatConstructor;
 
@@ -152,10 +156,12 @@ describe('timezone utilities', () => {
         });
 
         it('validates timezone with different casing', () => {
-            const mockDateTimeFormat = vi.fn(() => ({
+            const mockDateTimeFormat = vi.fn(function () {
+                return {
                 resolvedOptions: () => ({ timeZone: 'UTC' }),
-            }));
-            global.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
+                };
+            });
+            globalThis.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
 
             const result = coerceTimezoneWithToast('asia/tokyo', 'UTC', 'Case test');
 
@@ -164,10 +170,12 @@ describe('timezone utilities', () => {
         });
 
         it('returns fallback when resolvedOptions timezone mismatches input', () => {
-            const mockDateTimeFormat = vi.fn(() => ({
+            const mockDateTimeFormat = vi.fn(function () {
+                return {
                 resolvedOptions: () => ({ timeZone: 'Europe/Paris' }),
-            }));
-            global.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
+                };
+            });
+            globalThis.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
 
             const result = coerceTimezoneWithToast('Europe/London', 'UTC', 'Mismatch');
 
@@ -179,10 +187,12 @@ describe('timezone utilities', () => {
             const validTimezones = ['UTC', 'GMT', 'Asia/Tokyo', 'Asia/Seoul', 'Europe/London', 'Europe/Paris', 'America/New_York', 'America/Los_Angeles', 'Pacific/Auckland', 'Australia/Sydney', 'Africa/Cairo', 'Etc/GMT+9', 'Etc/GMT-5'];
 
             validTimezones.forEach((tz) => {
-                const mockDateTimeFormat = vi.fn(() => ({
+                const mockDateTimeFormat = vi.fn(function () {
+                    return {
                     resolvedOptions: () => ({ timeZone: tz }),
-                }));
-                global.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
+                    };
+                });
+                globalThis.Intl.DateTimeFormat = mockDateTimeFormat as unknown as Intl.DateTimeFormatConstructor;
 
                 const result = coerceTimezoneWithToast(tz, 'UTC', 'Valid test');
                 expect(result).toBe(tz);
@@ -192,7 +202,7 @@ describe('timezone utilities', () => {
         });
 
         it('includes source info in error message', () => {
-            global.Intl.DateTimeFormat = vi.fn(() => {
+            globalThis.Intl.DateTimeFormat = vi.fn(() => {
                 throw new Error('Invalid');
             }) as unknown as Intl.DateTimeFormatConstructor;
 
@@ -202,7 +212,7 @@ describe('timezone utilities', () => {
         });
 
         it('includes fallback value in error message', () => {
-            global.Intl.DateTimeFormat = vi.fn(() => {
+            globalThis.Intl.DateTimeFormat = vi.fn(() => {
                 throw new Error('Invalid');
             }) as unknown as Intl.DateTimeFormatConstructor;
 

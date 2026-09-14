@@ -1,4 +1,4 @@
-import { Parser } from 'expr-eval';
+import { Parser } from 'expr-eval-fork';
 
 // Reuse a single parser instance across evaluations
 const SHARED_MATH_PARSER = new Parser();

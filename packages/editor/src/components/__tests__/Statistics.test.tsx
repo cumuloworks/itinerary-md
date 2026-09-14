@@ -171,7 +171,7 @@ describe('Statistics', () => {
             children: [itmdEvent('bus', '50 USD')],
         };
         const originalCtor = Intl.NumberFormat;
-        const spy = vi.spyOn(Intl, 'NumberFormat').mockImplementation(((locales?: unknown, options?: unknown) => {
+        const spy = vi.spyOn(Intl, 'NumberFormat').mockImplementation((function (locales?: unknown, options?: unknown) {
             const opts = options as Intl.NumberFormatOptions | undefined;
             if (opts && opts.currency === 'EUR') {
                 throw new RangeError('invalid currency');
