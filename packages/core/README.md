@@ -15,9 +15,7 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkItinerary from 'remark-itinerary';
 
-const processor = unified()
-  .use(remarkParse)
-  .use(remarkItinerary);
+const processor = unified().use(remarkParse).use(remarkItinerary);
 ```
 
 Demo: <https://tripmd.dev/>

@@ -7,9 +7,9 @@ import { useEffect, useRef } from 'react';
  * @returns A ref to the latest value.
  */
 export function useLatest<T>(value: T): React.RefObject<T> {
-    const ref = useRef(value) as React.RefObject<T>;
-    useEffect(() => {
-        ref.current = value;
-    }, [value]);
-    return ref;
+  const ref = useRef(value) as React.RefObject<T>;
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref;
 }

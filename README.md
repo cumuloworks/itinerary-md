@@ -5,7 +5,7 @@ Tools for writing and previewing travel itineraries in Markdown. This repository
 - remark plugins published to npm (e.g. `remark-itinerary`, `remark-itinerary-alert`)
 - a reusable editor bundle (`@itinerary-md/editor`)
 - a demo application (`apps/studio`) showcasing authoring and preview
-– Demo site: [tripmd.dev](https://tripmd.dev)
+  – Demo site: [tripmd.dev](https://tripmd.dev)
 
 For overall structure and high-level notes, see DeepWiki (AI-generated; may be incomplete or outdated): [deepwiki.com/cumuloworks/itinerary-md](https://deepwiki.com/cumuloworks/itinerary-md).
 

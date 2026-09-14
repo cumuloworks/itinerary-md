@@ -1,45 +1,45 @@
 {
-    "name": "itinerary-md",
-    "version": "0.1.0",
-    "private": true,
-    "type": "module",
-    "license": "UNLICENSED",
-    "workspaces": [
-        "apps/*",
-        "packages/*"
-    ],
-    "scripts": {
-        "dev": "npm run dev:all",
-        "dev:all": "concurrently \"npm -w packages/core run dev\" \"npm -w packages/editor run pack:watch\" \"npm -w apps/studio run dev\"",
-        "dev:studio": "npm -w apps/studio run dev",
-        "preview": "npm -w apps/studio run preview",
-        "typecheck": "npm -ws run typecheck --if-present",
-        "lint": "oxlint .",
-        "lint:fix": "oxlint --fix .",
-        "format": "oxfmt .",
-        "format:check": "oxfmt --check .",
-        "prepare": "lefthook install",
-        "test": "npm -ws run test --if-present",
-        "test:watch": "npm -ws run test:watch --if-present",
-        "build": "npm run build:deps && npm -w apps/studio run build",
-        "build:deps": "npm -w packages/alert run build && npm -w packages/core run build && npm -w packages/editor run build",
-        "clean": "git clean -xfd -e node_modules",
-        "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
-    },
-    "devDependencies": {
-        "@commitlint/cli": "^21.2.2",
-        "@commitlint/config-conventional": "^21.2.2",
-        "@vitest/coverage-v8": "^5.0.0",
-        "concurrently": "^10.0.5",
-        "jsdom": "^30.0.1",
-        "lefthook": "^2.1.14",
-        "license-checker": "^25.0.1",
-        "oxfmt": "^0.68.0",
-        "oxlint": "^1.83.0",
-        "tsc-alias": "^1.9.5",
-        "vitest": "^5.0.0"
-    },
-    "engines": {
-        "node": ">=24"
-    }
+  "name": "itinerary-md",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "npm run dev:all",
+    "dev:all": "concurrently \"npm -w packages/core run dev\" \"npm -w packages/editor run pack:watch\" \"npm -w apps/studio run dev\"",
+    "dev:studio": "npm -w apps/studio run dev",
+    "preview": "npm -w apps/studio run preview",
+    "typecheck": "npm -ws run typecheck --if-present",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "prepare": "lefthook install",
+    "test": "npm -ws run test --if-present",
+    "test:watch": "npm -ws run test:watch --if-present",
+    "build": "npm run build:deps && npm -w apps/studio run build",
+    "build:deps": "npm -w packages/alert run build && npm -w packages/core run build && npm -w packages/editor run build",
+    "clean": "git clean -xfd -e node_modules",
+    "licenses:prod": "license-checker --production --json > THIRD_PARTY_LICENSES.json"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@vitest/coverage-v8": "^5.0.0",
+    "concurrently": "^10.0.5",
+    "jsdom": "^30.0.1",
+    "lefthook": "^2.1.14",
+    "license-checker": "^25.0.1",
+    "oxfmt": "^0.68.0",
+    "oxlint": "^1.83.0",
+    "tsc-alias": "^1.9.5",
+    "vitest": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
 }

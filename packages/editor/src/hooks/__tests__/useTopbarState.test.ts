@@ -1,365 +1,375 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { notifyError } from '@/core/errors';
 import { useTopbarState } from '@/hooks/useTopbarState';
 import { isValidIanaTimeZone } from '@/utils/timezone';
 
 // Mocks
 vi.mock('@/utils/timezone', () => ({
-    isValidIanaTimeZone: vi.fn(),
+  isValidIanaTimeZone: vi.fn(),
 }));
 
 vi.mock('@/core/errors', () => ({
-    notifyError: vi.fn(),
+  notifyError: vi.fn(),
 }));
 
 describe('useTopbarState', () => {
-    const originalLocation = window.location;
-    const originalHistory = window.history;
-    const originalIntl = globalThis.Intl;
+  const originalLocation = window.location;
+  const originalHistory = window.history;
+  const originalIntl = globalThis.Intl;
 
-    beforeEach(() => {
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
 
-        // Default timezone mock
-        globalThis.Intl = {
-            ...originalIntl,
-            DateTimeFormat: vi.fn(() => ({
-                resolvedOptions: () => ({ timeZone: 'UTC' }),
-            })) as unknown as Intl.DateTimeFormatConstructor,
-        } as typeof Intl;
+    // Default timezone mock
+    globalThis.Intl = {
+      ...originalIntl,
+      DateTimeFormat: vi.fn(() => ({
+        resolvedOptions: () => ({ timeZone: 'UTC' }),
+      })) as unknown as Intl.DateTimeFormatConstructor,
+    } as typeof Intl;
 
-        // Mock location
-        delete (window as { location?: Location }).location;
-        (window as { location?: Location }).location = {
-            ...originalLocation,
-            search: '',
-            pathname: '/',
-            hash: '',
-        } as Location;
+    // Mock location
+    delete (window as { location?: Location }).location;
+    (window as { location?: Location }).location = {
+      ...originalLocation,
+      search: '',
+      pathname: '/',
+      hash: '',
+    } as Location;
 
-        // Mock history
-        window.history.replaceState = vi.fn();
+    // Mock history
+    window.history.replaceState = vi.fn();
 
-        // Mock localStorage
-        const localStorageMock = {
-            getItem: vi.fn(),
-            setItem: vi.fn(),
-            removeItem: vi.fn(),
-            clear: vi.fn(),
-            length: 0,
-            key: vi.fn(),
-        };
-        Object.defineProperty(window, 'localStorage', {
-            value: localStorageMock,
-            writable: true,
-        });
-
-        // Default implementation of isValidIanaTimeZone
-        const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
-        mockIsValidIana.mockReturnValue(true);
+    // Mock localStorage
+    const localStorageMock = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      length: 0,
+      key: vi.fn(),
+    };
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      writable: true,
     });
 
-    afterEach(() => {
-        (window as { location?: Location }).location = originalLocation;
-        window.history.replaceState = originalHistory.replaceState;
-        globalThis.Intl = originalIntl;
+    // Default implementation of isValidIanaTimeZone
+    const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
+    mockIsValidIana.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    (window as { location?: Location }).location = originalLocation;
+    window.history.replaceState = originalHistory.replaceState;
+    globalThis.Intl = originalIntl;
+  });
+
+  describe('Initialization', () => {
+    it('initializes with default values', () => {
+      const { result } = renderHook(() => useTopbarState());
+      const [state] = result.current;
+
+      expect(state).toMatchObject({
+        timezone: 'UTC',
+        currency: 'USD',
+        viewMode: 'split',
+        showPast: true,
+        autoScroll: true,
+      });
     });
 
-    describe('Initialization', () => {
-        it('initializes with default values', () => {
-            const { result } = renderHook(() => useTopbarState());
-            const [state] = result.current;
+    it('loads currency from URL (query param)', () => {
+      window.location.search = '?cur=EUR';
 
-            expect(state).toMatchObject({
-                timezone: 'UTC',
-                currency: 'USD',
-                viewMode: 'split',
-                showPast: true,
-                autoScroll: true,
-            });
-        });
+      const { result } = renderHook(() => useTopbarState());
+      const [state] = result.current;
 
-        it('loads currency from URL (query param)', () => {
-            window.location.search = '?cur=EUR';
-
-            const { result } = renderHook(() => useTopbarState());
-            const [state] = result.current;
-
-            expect(state.currency).toBe('EUR');
-        });
-
-        it('ignores localStorage errors', () => {
-            window.localStorage.getItem = vi.fn().mockImplementation(() => {
-                throw new Error('Storage error');
-            });
-
-            expect(() => {
-                renderHook(() => useTopbarState());
-            }).not.toThrow();
-        });
+      expect(state.currency).toBe('EUR');
     });
 
-    describe('Initialization from URL params', () => {
-        it('sets state from valid URL params (prefs are not URL-driven)', () => {
-            window.location.search = '?tz=Asia/Tokyo&cur=JPY&view=editor&past=0&scroll=0';
+    it('ignores localStorage errors', () => {
+      window.localStorage.getItem = vi.fn().mockImplementation(() => {
+        throw new Error('Storage error');
+      });
 
-            const { result } = renderHook(() => useTopbarState());
-            const [state] = result.current;
+      expect(() => {
+        renderHook(() => useTopbarState());
+      }).not.toThrow();
+    });
+  });
 
-            expect(state).toMatchObject({
-                timezone: 'Asia/Tokyo',
-                currency: 'JPY',
-                viewMode: 'editor',
-            });
-            // prefs-managed flags remain unchanged (local defaults)
-            expect(state.showPast).toBe(true);
-            expect(state.autoScroll).toBe(true);
-        });
+  describe('Initialization from URL params', () => {
+    it('sets state from valid URL params (prefs are not URL-driven)', () => {
+      window.location.search =
+        '?tz=Asia/Tokyo&cur=JPY&view=editor&past=0&scroll=0';
 
-        it('notifies errors for invalid timezone', () => {
-            window.location.search = '?tz=Invalid/Zone';
-            const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
-            mockIsValidIana.mockReturnValue(false);
+      const { result } = renderHook(() => useTopbarState());
+      const [state] = result.current;
 
-            renderHook(() => useTopbarState());
-
-            expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('Invalid/Zone'));
-        });
-
-        it('ignores invalid view mode', () => {
-            window.location.search = '?view=invalid';
-
-            const { result } = renderHook(() => useTopbarState());
-            const [state] = result.current;
-
-            expect(state.viewMode).toBe('split'); // default value
-        });
-
-        it('ignores errors when reading URL params', () => {
-            // Save existing location
-            const originalSearch = window.location.search;
-
-            // Mock search getter to throw when reading
-            Object.defineProperty(window.location, 'search', {
-                get() {
-                    throw new Error('Location error');
-                },
-                configurable: true,
-            });
-
-            // Should not crash even on errors
-            expect(() => {
-                renderHook(() => useTopbarState());
-            }).not.toThrow();
-
-            // Restore original
-            Object.defineProperty(window.location, 'search', {
-                value: originalSearch,
-                writable: true,
-                configurable: true,
-            });
-        });
+      expect(state).toMatchObject({
+        timezone: 'Asia/Tokyo',
+        currency: 'JPY',
+        viewMode: 'editor',
+      });
+      // prefs-managed flags remain unchanged (local defaults)
+      expect(state.showPast).toBe(true);
+      expect(state.autoScroll).toBe(true);
     });
 
-    describe('State updates', () => {
-        it('allows partial updates', () => {
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
+    it('notifies errors for invalid timezone', () => {
+      window.location.search = '?tz=Invalid/Zone';
+      const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
+      mockIsValidIana.mockReturnValue(false);
 
-            act(() => {
-                updateState({ currency: 'GBP' });
-            });
+      renderHook(() => useTopbarState());
 
-            const [newState] = result.current;
-            expect(newState.currency).toBe('GBP');
-            expect(newState.viewMode).toBe('split'); // other values remain unchanged
-        });
-
-        it('updates multiple properties at once', () => {
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
-
-            act(() => {
-                updateState({
-                    timezone: 'America/New_York',
-                    viewMode: 'preview',
-                    showPast: false,
-                });
-            });
-
-            const [newState] = result.current;
-            expect(newState).toMatchObject({
-                timezone: 'America/New_York',
-                viewMode: 'preview',
-                showPast: false,
-            });
-        });
+      expect(notifyError).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid/Zone')
+      );
     });
 
-    describe('Sync with localStorage', () => {
-        it('does not persist currency to localStorage (URL-driven only)', () => {
-            const setItemMock = vi.fn();
-            window.localStorage.setItem = setItemMock;
+    it('ignores invalid view mode', () => {
+      window.location.search = '?view=invalid';
 
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
+      const { result } = renderHook(() => useTopbarState());
+      const [state] = result.current;
 
-            act(() => {
-                updateState({ currency: 'AUD' });
-            });
-
-            expect(setItemMock).not.toHaveBeenCalledWith('itinerary-md-currency', 'AUD');
-        });
-
-        it('ignores localStorage errors', () => {
-            window.localStorage.setItem = vi.fn().mockImplementation(() => {
-                throw new Error('Storage error');
-            });
-
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
-
-            expect(() => {
-                act(() => {
-                    updateState({ currency: 'CAD' });
-                });
-            }).not.toThrow();
-        });
+      expect(state.viewMode).toBe('split'); // default value
     });
 
-    describe('Sync with URL', () => {
-        it('updates URL on state changes', () => {
-            const replaceStateMock = vi.fn();
-            window.history.replaceState = replaceStateMock;
+    it('ignores errors when reading URL params', () => {
+      // Save existing location
+      const originalSearch = window.location.search;
 
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
+      // Mock search getter to throw when reading
+      Object.defineProperty(window.location, 'search', {
+        get() {
+          throw new Error('Location error');
+        },
+        configurable: true,
+      });
 
-            act(() => {
-                updateState({ timezone: 'Europe/London' });
-            });
+      // Should not crash even on errors
+      expect(() => {
+        renderHook(() => useTopbarState());
+      }).not.toThrow();
 
-            expect(replaceStateMock).toHaveBeenCalled();
-            const [, , url] = replaceStateMock.mock.calls[replaceStateMock.mock.calls.length - 1];
-            // URLSearchParams encodes automatically; check the encoded form
-            expect(url).toContain('tz=Europe%2FLondon');
-        });
+      // Restore original
+      Object.defineProperty(window.location, 'search', {
+        value: originalSearch,
+        writable: true,
+        configurable: true,
+      });
+    });
+  });
 
-        it('does not set invalid timezone to URL', () => {
-            const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
-            mockIsValidIana.mockReturnValue(false);
-            const replaceStateMock = vi.fn();
-            window.history.replaceState = replaceStateMock;
+  describe('State updates', () => {
+    it('allows partial updates', () => {
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
 
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
+      act(() => {
+        updateState({ currency: 'GBP' });
+      });
 
-            act(() => {
-                updateState({ timezone: 'Invalid/Zone' });
-            });
-
-            const [, , url] = replaceStateMock.mock.calls[replaceStateMock.mock.calls.length - 1];
-            expect(url).not.toContain('tz=Invalid/Zone');
-        });
-
-        it('reflects URL parameters for tz/cur/view only (prefs excluded)', () => {
-            const replaceStateMock = vi.fn();
-            window.history.replaceState = replaceStateMock;
-
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
-
-            act(() => {
-                updateState({
-                    timezone: 'Asia/Seoul',
-                    currency: 'KRW',
-                    viewMode: 'editor',
-                    showPast: false,
-                    autoScroll: false,
-                });
-            });
-
-            const [, , url] = replaceStateMock.mock.calls[replaceStateMock.mock.calls.length - 1];
-            // URLSearchParams encodes automatically; check the encoded form
-            expect(url).toContain('tz=Asia%2FSeoul');
-            expect(url).toContain('cur=KRW');
-            expect(url).toContain('view=editor');
-            expect(url).not.toContain('past=');
-            expect(url).not.toContain('scroll=');
-            expect(url).not.toContain('alt=');
-        });
-
-        it('does not update when URL is already the same', () => {
-            window.location.search = '?tz=UTC&cur=USD&view=split';
-            const replaceStateMock = vi.fn();
-            window.history.replaceState = replaceStateMock;
-
-            renderHook(() => useTopbarState());
-
-            // replaceState should not be called after initialization
-            expect(replaceStateMock).not.toHaveBeenCalled();
-        });
-
-        it('ignores errors when updating URL', () => {
-            window.history.replaceState = vi.fn().mockImplementation(() => {
-                throw new Error('History error');
-            });
-
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
-
-            expect(() => {
-                act(() => {
-                    updateState({ currency: 'INR' });
-                });
-            }).not.toThrow();
-        });
+      const [newState] = result.current;
+      expect(newState.currency).toBe('GBP');
+      expect(newState.viewMode).toBe('split'); // other values remain unchanged
     });
 
-    describe('Edge cases', () => {
-        it('works even when window is undefined (conceptually)', () => {
-            // useTopbarState assumes a browser environment,
-            // so this test case is not actually appropriate.
-            // Instead, test under the assumption that window exists.
-            expect(typeof window).toBeDefined();
+    it('updates multiple properties at once', () => {
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
 
-            const { result } = renderHook(() => useTopbarState());
-            const [state] = result.current;
-
-            expect(state).toBeDefined();
-            expect(state.timezone).toBeDefined();
-            expect(state.currency).toBeDefined();
+      act(() => {
+        updateState({
+          timezone: 'America/New_York',
+          viewMode: 'preview',
+          showPast: false,
         });
+      });
 
-        it('no-op patch does not change state', () => {
-            const { result } = renderHook(() => useTopbarState());
-            const [initialState, updateState] = result.current;
-
-            act(() => {
-                updateState({});
-            });
-
-            const [newState] = result.current;
-            expect(newState).toEqual(initialState);
-        });
-
-        it('handles multiple successive updates correctly', () => {
-            const { result } = renderHook(() => useTopbarState());
-            const [, updateState] = result.current;
-
-            act(() => {
-                updateState({ currency: 'EUR' });
-                updateState({ viewMode: 'preview' });
-                updateState({ showPast: false });
-            });
-
-            const [finalState] = result.current;
-            expect(finalState).toMatchObject({
-                currency: 'EUR',
-                viewMode: 'preview',
-                showPast: false,
-            });
-        });
+      const [newState] = result.current;
+      expect(newState).toMatchObject({
+        timezone: 'America/New_York',
+        viewMode: 'preview',
+        showPast: false,
+      });
     });
+  });
+
+  describe('Sync with localStorage', () => {
+    it('does not persist currency to localStorage (URL-driven only)', () => {
+      const setItemMock = vi.fn();
+      window.localStorage.setItem = setItemMock;
+
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
+
+      act(() => {
+        updateState({ currency: 'AUD' });
+      });
+
+      expect(setItemMock).not.toHaveBeenCalledWith(
+        'itinerary-md-currency',
+        'AUD'
+      );
+    });
+
+    it('ignores localStorage errors', () => {
+      window.localStorage.setItem = vi.fn().mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
+
+      expect(() => {
+        act(() => {
+          updateState({ currency: 'CAD' });
+        });
+      }).not.toThrow();
+    });
+  });
+
+  describe('Sync with URL', () => {
+    it('updates URL on state changes', () => {
+      const replaceStateMock = vi.fn();
+      window.history.replaceState = replaceStateMock;
+
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
+
+      act(() => {
+        updateState({ timezone: 'Europe/London' });
+      });
+
+      expect(replaceStateMock).toHaveBeenCalled();
+      const [, , url] =
+        replaceStateMock.mock.calls[replaceStateMock.mock.calls.length - 1];
+      // URLSearchParams encodes automatically; check the encoded form
+      expect(url).toContain('tz=Europe%2FLondon');
+    });
+
+    it('does not set invalid timezone to URL', () => {
+      const mockIsValidIana = vi.mocked(isValidIanaTimeZone);
+      mockIsValidIana.mockReturnValue(false);
+      const replaceStateMock = vi.fn();
+      window.history.replaceState = replaceStateMock;
+
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
+
+      act(() => {
+        updateState({ timezone: 'Invalid/Zone' });
+      });
+
+      const [, , url] =
+        replaceStateMock.mock.calls[replaceStateMock.mock.calls.length - 1];
+      expect(url).not.toContain('tz=Invalid/Zone');
+    });
+
+    it('reflects URL parameters for tz/cur/view only (prefs excluded)', () => {
+      const replaceStateMock = vi.fn();
+      window.history.replaceState = replaceStateMock;
+
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
+
+      act(() => {
+        updateState({
+          timezone: 'Asia/Seoul',
+          currency: 'KRW',
+          viewMode: 'editor',
+          showPast: false,
+          autoScroll: false,
+        });
+      });
+
+      const [, , url] =
+        replaceStateMock.mock.calls[replaceStateMock.mock.calls.length - 1];
+      // URLSearchParams encodes automatically; check the encoded form
+      expect(url).toContain('tz=Asia%2FSeoul');
+      expect(url).toContain('cur=KRW');
+      expect(url).toContain('view=editor');
+      expect(url).not.toContain('past=');
+      expect(url).not.toContain('scroll=');
+      expect(url).not.toContain('alt=');
+    });
+
+    it('does not update when URL is already the same', () => {
+      window.location.search = '?tz=UTC&cur=USD&view=split';
+      const replaceStateMock = vi.fn();
+      window.history.replaceState = replaceStateMock;
+
+      renderHook(() => useTopbarState());
+
+      // replaceState should not be called after initialization
+      expect(replaceStateMock).not.toHaveBeenCalled();
+    });
+
+    it('ignores errors when updating URL', () => {
+      window.history.replaceState = vi.fn().mockImplementation(() => {
+        throw new Error('History error');
+      });
+
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
+
+      expect(() => {
+        act(() => {
+          updateState({ currency: 'INR' });
+        });
+      }).not.toThrow();
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('works even when window is undefined (conceptually)', () => {
+      // useTopbarState assumes a browser environment,
+      // so this test case is not actually appropriate.
+      // Instead, test under the assumption that window exists.
+      expect(typeof window).toBeDefined();
+
+      const { result } = renderHook(() => useTopbarState());
+      const [state] = result.current;
+
+      expect(state).toBeDefined();
+      expect(state.timezone).toBeDefined();
+      expect(state.currency).toBeDefined();
+    });
+
+    it('no-op patch does not change state', () => {
+      const { result } = renderHook(() => useTopbarState());
+      const [initialState, updateState] = result.current;
+
+      act(() => {
+        updateState({});
+      });
+
+      const [newState] = result.current;
+      expect(newState).toEqual(initialState);
+    });
+
+    it('handles multiple successive updates correctly', () => {
+      const { result } = renderHook(() => useTopbarState());
+      const [, updateState] = result.current;
+
+      act(() => {
+        updateState({ currency: 'EUR' });
+        updateState({ viewMode: 'preview' });
+        updateState({ showPast: false });
+      });
+
+      const [finalState] = result.current;
+      expect(finalState).toMatchObject({
+        currency: 'EUR',
+        viewMode: 'preview',
+        showPast: false,
+      });
+    });
+  });
 });

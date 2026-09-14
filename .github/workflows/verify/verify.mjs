@@ -1,11 +1,12 @@
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
+import fs from 'node:fs/promises';
+import process from 'node:process';
+
 // Minimal pipeline: parse -> alert -> itinerary -> compare with golden JSON
 import itinerary from 'remark-itinerary';
 import itineraryAlert from 'remark-itinerary-alert';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
-import fs from 'node:fs/promises';
-import process from 'node:process';
 
 // Read input markdown
 const md = await fs.readFile('./input.md', 'utf8');
@@ -21,9 +22,15 @@ const transformed = await processor.run(parsed);
 const collected = [];
 visit(transformed, (node) => {
   if (!node || typeof node.type !== 'string') return;
-  if (node.type === 'itmdAlert' || node.type === 'itmdEvent' || node.type === 'itmdHeading') {
+  if (
+    node.type === 'itmdAlert' ||
+    node.type === 'itmdEvent' ||
+    node.type === 'itmdHeading'
+  ) {
     const sanitized = JSON.parse(
-      JSON.stringify(node, (key, value) => (key === 'position' ? undefined : value))
+      JSON.stringify(node, (key, value) =>
+        key === 'position' ? undefined : value
+      )
     );
     collected.push(sanitized);
   }
@@ -68,12 +75,16 @@ function deepEqual(a, b, path = '') {
     const aIsArray = Array.isArray(a);
     const bIsArray = Array.isArray(b);
     if (aIsArray !== bIsArray) {
-      console.log(`type mismatch (array vs object) @ ${here}: ${humanDescribe(a)} vs ${humanDescribe(b)}`);
+      console.log(
+        `type mismatch (array vs object) @ ${here}: ${humanDescribe(a)} vs ${humanDescribe(b)}`
+      );
       return false;
     }
     if (aIsArray) {
       if (a.length !== b.length) {
-        console.log(`array length mismatch @ ${here}: ${a.length} !== ${b.length}`);
+        console.log(
+          `array length mismatch @ ${here}: ${a.length} !== ${b.length}`
+        );
         return false;
       }
       for (let i = 0; i < a.length; i++) {
@@ -86,7 +97,9 @@ function deepEqual(a, b, path = '') {
     const aKeys = Object.keys(a);
     const bKeys = Object.keys(b);
     if (aKeys.length !== bKeys.length) {
-      console.log(`object key count mismatch @ ${here}: ${aKeys.length} !== ${bKeys.length}`);
+      console.log(
+        `object key count mismatch @ ${here}: ${aKeys.length} !== ${bKeys.length}`
+      );
       return false;
     }
     for (const key of aKeys) {
@@ -101,7 +114,9 @@ function deepEqual(a, b, path = '') {
     return true;
   }
 
-  console.log(`not equal @ ${here}: ${humanDescribe(a)} vs ${humanDescribe(b)}`);
+  console.log(
+    `not equal @ ${here}: ${humanDescribe(a)} vs ${humanDescribe(b)}`
+  );
   return false;
 }
 

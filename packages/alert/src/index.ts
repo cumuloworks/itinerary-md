@@ -1,4 +1,4 @@
 export {
-	remarkItineraryAlert,
-	remarkItineraryAlert as default,
-} from "./remarkItineraryAlert.js";
+  remarkItineraryAlert,
+  remarkItineraryAlert as default,
+} from './remarkItineraryAlert.js';

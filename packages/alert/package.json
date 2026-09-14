@@ -1,59 +1,59 @@
 {
-    "name": "remark-itinerary-alert",
-    "version": "0.2.2",
-    "private": false,
-    "license": "MIT",
-    "type": "module",
-    "main": "dist/index.js",
-    "module": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js"
-        }
-    },
-    "sideEffects": false,
-    "engines": {
-        "node": ">=18"
-    },
-    "files": [
-        "dist"
-    ],
-    "publishConfig": {
-        "access": "public"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/cumuloworks/itinerary-md.git",
-        "directory": "packages/alert"
-    },
-    "bugs": {
-        "url": "https://github.com/cumuloworks/itinerary-md/issues"
-    },
-    "homepage": "https://github.com/cumuloworks/itinerary-md#readme",
-    "keywords": [
-        "remark",
-        "plugin",
-        "alert",
-        "blockquote",
-        "github"
-    ],
-    "scripts": {
-        "clean": "rimraf dist",
-        "build": "rimraf dist && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
-        "prepack": "npm run build",
-        "test": "vitest --run --passWithNoTests",
-        "test:watch": "vitest"
-    },
-    "dependencies": {
-        "unist-util-visit": "^5.1.0"
-    },
-    "devDependencies": {
-        "@types/mdast": "^4.0.4",
-        "@types/unist": "^3.0.3",
-        "rimraf": "^6.1.3",
-        "vitest": "^5.0.0",
-        "typescript": "^7.0.2"
+  "name": "remark-itinerary-alert",
+  "version": "0.2.2",
+  "private": false,
+  "keywords": [
+    "alert",
+    "blockquote",
+    "github",
+    "plugin",
+    "remark"
+  ],
+  "homepage": "https://github.com/cumuloworks/itinerary-md#readme",
+  "bugs": {
+    "url": "https://github.com/cumuloworks/itinerary-md/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cumuloworks/itinerary-md.git",
+    "directory": "packages/alert"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "rimraf dist && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "test": "vitest --run --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "@types/unist": "^3.0.3",
+    "rimraf": "^6.1.3",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }

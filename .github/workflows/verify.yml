@@ -2,7 +2,7 @@ name: Verify Published Packages
 
 on:
   workflow_run:
-    workflows: ["Release Packages"]
+    workflows: ['Release Packages']
     types:
       - completed
 
@@ -70,4 +70,3 @@ jobs:
         working-directory: /tmp/itmd-verify/fixtures/verify
         run: |
           node verify.mjs
-

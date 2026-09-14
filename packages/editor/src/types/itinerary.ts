@@ -1,44 +1,44 @@
 export type ViewMode = 'split' | 'editor' | 'preview';
 
 export type TopbarState = {
-    timezone: string;
-    currency: string;
-    viewMode: ViewMode;
-    showPast?: boolean;
-    autoScroll?: boolean;
-    showMdast?: boolean;
-    altNames?: boolean;
+  timezone: string;
+  currency: string;
+  viewMode: ViewMode;
+  showPast?: boolean;
+  autoScroll?: boolean;
+  showMdast?: boolean;
+  altNames?: boolean;
 };
 
 export type QueryParams = {
-    tz?: string;
-    cur?: string;
-    view?: ViewMode;
-    past?: '1' | '0';
-    scroll?: '1' | '0';
-    alt?: '1' | '0';
+  tz?: string;
+  cur?: string;
+  view?: ViewMode;
+  past?: '1' | '0';
+  scroll?: '1' | '0';
+  alt?: '1' | '0';
 };
 
 export type ItinerarySummary = {
-    startDate?: string;
-    endDate?: string;
-    numDays?: number;
+  startDate?: string;
+  endDate?: string;
+  numDays?: number;
 };
 
 export type CostBreakdownFormatted = {
-    transportation: string;
-    activity: string;
-    stay: string;
+  transportation: string;
+  activity: string;
+  stay: string;
 };
 
 export type UseAutosaveOptions = {
-    key: string;
-    delay: number;
-    onSuccess?: () => void;
-    onError?: () => void;
+  key: string;
+  delay: number;
+  onSuccess?: () => void;
+  onError?: () => void;
 };
 
 export type UseInitialContentOptions = {
-    storageKey: string;
-    samplePath: string;
+  storageKey: string;
+  samplePath: string;
 };

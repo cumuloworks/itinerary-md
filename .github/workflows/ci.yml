@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ 'main' ]
+    branches: ['main']
   pull_request:
-    branches: [ '**' ]
+    branches: ['**']
   workflow_dispatch:
 
 concurrency:
@@ -43,5 +43,3 @@ jobs:
 
       - name: Run Tests
         run: npm test
-
-

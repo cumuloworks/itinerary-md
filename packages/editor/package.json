@@ -1,75 +1,75 @@
 {
-    "name": "@itinerary-md/editor",
-    "version": "0.3.2",
-    "private": true,
-    "type": "module",
-    "license": "UNLICENSED",
-    "scripts": {
-        "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && vite build",
-        "types:watch": "tsc -w -p tsconfig.build.json",
-        "build:watch": "vite build --watch",
-        "pack:watch": "concurrently -k -n types,build \"npm:types:watch\" \"npm:build:watch\"",
-        "typecheck": "tsc --noEmit",
-        "test": "vitest --run --passWithNoTests",
-        "test:watch": "vitest",
-        "prepack": "npm run build"
+  "name": "@itinerary-md/editor",
+  "version": "0.3.2",
+  "private": true,
+  "license": "UNLICENSED",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
-    "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "default": "./dist/index.js"
-        },
-        "./index.css": "./dist/index.css"
-    },
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist"
-    ],
-    "peerDependencies": {
-        "react": ">=19",
-        "react-dom": ">=19"
-    },
-    "dependencies": {
-        "@ariakit/react": "^0.4.39",
-        "@monaco-editor/react": "^4.7.0",
-        "buffer": "^6.0.3",
-        "color-hash": "2.0.2",
-        "gray-matter": "^4.0.3",
-        "highlight.js": "^11.12.0",
-        "lucide-react": "^1.46.0",
-        "luxon": "^3.7.2",
-        "mdast-util-to-string": "^4.0.0",
-        "pako": "^3.0.2",
-        "radix-ui": "^1.6.7",
-        "react-hot-toast": "^2.6.0",
-        "react18-json-view": "^0.2.10",
-        "remark-gfm": "^4.0.1",
-        "remark-github-blockquote-alert": "^2.1.0",
-        "remark-itinerary": "^0.3.2",
-        "remark-itinerary-alert": "^0.2.2",
-        "remark-parse": "^11.0.0",
-        "unified": "^11.0.5",
-        "yaml": "^2.9.1"
-    },
-    "devDependencies": {
-        "@testing-library/dom": "^10.4.2",
-        "@testing-library/jest-dom": "^7.0.1",
-        "@testing-library/react": "^16.3.3",
-        "@types/color-hash": "2.0.0",
-        "@types/luxon": "^3.7.5",
-        "@types/react": "^19.3.0",
-        "@types/react-dom": "^19.3.0",
-        "@vitejs/plugin-react": "^6.1.1",
-        "@vitest/coverage-v8": "^5.0.0",
-        "jsdom": "^30.0.1",
-        "oxc-transform-react": "^0.145.0",
-        "tailwindcss": "^4.3.3",
-        "typescript": "^7.0.2",
-        "vite": "^8.3.0",
-        "vitest": "^5.0.0"
-    },
-    "engines": {
-        "node": ">=20.19"
-    }
+    "./index.css": "./dist/index.css"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && vite build",
+    "types:watch": "tsc -w -p tsconfig.build.json",
+    "build:watch": "vite build --watch",
+    "pack:watch": "concurrently -k -n types,build \"npm:types:watch\" \"npm:build:watch\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest --run --passWithNoTests",
+    "test:watch": "vitest",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@ariakit/react": "^0.4.39",
+    "@monaco-editor/react": "^4.7.0",
+    "buffer": "^6.0.3",
+    "color-hash": "2.0.2",
+    "gray-matter": "^4.0.3",
+    "highlight.js": "^11.12.0",
+    "lucide-react": "^1.46.0",
+    "luxon": "^3.7.2",
+    "mdast-util-to-string": "^4.0.0",
+    "pako": "^3.0.2",
+    "radix-ui": "^1.6.7",
+    "react-hot-toast": "^2.6.0",
+    "react18-json-view": "^0.2.10",
+    "remark-gfm": "^4.0.1",
+    "remark-github-blockquote-alert": "^2.1.0",
+    "remark-itinerary": "^0.3.2",
+    "remark-itinerary-alert": "^0.2.2",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/color-hash": "2.0.0",
+    "@types/luxon": "^3.7.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "jsdom": "^30.0.1",
+    "oxc-transform-react": "^0.145.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
 }

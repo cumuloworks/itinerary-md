@@ -10,41 +10,43 @@ import { registerQuickInsertCompletion } from './quickInsert';
 import { registerTimeCompletion } from './time';
 import { registerTimezoneCompletion } from './timezone';
 
-export function registerItineraryCompletions(monaco: any): { dispose: () => void } {
-    const disposables: Array<{ dispose: () => void } | null | undefined> = [];
-    try {
-        // Register timezone first so tests reading the first provider get the '@' one
-        disposables.push(registerTimezoneCompletion(monaco));
-    } catch {}
-    try {
-        disposables.push(registerDateCompletion(monaco));
-    } catch {}
-    try {
-        disposables.push(registerQuickInsertCompletion(monaco));
-    } catch {}
-    try {
-        disposables.push(registerTimeCompletion(monaco));
-    } catch {}
-    try {
-        disposables.push(registerEventTypeCompletion(monaco));
-    } catch {}
-    try {
-        disposables.push(registerDestinationCompletion(monaco));
-    } catch {}
-    try {
-        disposables.push(registerAlertCompletion(monaco));
-    } catch {}
-    try {
-        disposables.push(registerPriceCompletion(monaco));
-    } catch {}
+export function registerItineraryCompletions(monaco: any): {
+  dispose: () => void;
+} {
+  const disposables: Array<{ dispose: () => void } | null | undefined> = [];
+  try {
+    // Register timezone first so tests reading the first provider get the '@' one
+    disposables.push(registerTimezoneCompletion(monaco));
+  } catch {}
+  try {
+    disposables.push(registerDateCompletion(monaco));
+  } catch {}
+  try {
+    disposables.push(registerQuickInsertCompletion(monaco));
+  } catch {}
+  try {
+    disposables.push(registerTimeCompletion(monaco));
+  } catch {}
+  try {
+    disposables.push(registerEventTypeCompletion(monaco));
+  } catch {}
+  try {
+    disposables.push(registerDestinationCompletion(monaco));
+  } catch {}
+  try {
+    disposables.push(registerAlertCompletion(monaco));
+  } catch {}
+  try {
+    disposables.push(registerPriceCompletion(monaco));
+  } catch {}
 
-    return {
-        dispose: () => {
-            for (const d of disposables) {
-                try {
-                    d?.dispose?.();
-                } catch {}
-            }
-        },
-    };
+  return {
+    dispose: () => {
+      for (const d of disposables) {
+        try {
+          d?.dispose?.();
+        } catch {}
+      }
+    },
+  };
 }

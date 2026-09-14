@@ -1,341 +1,394 @@
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mock,
+  vi,
+} from 'vitest';
+
 import { notifyError, safeLocalStorage } from '@/core/errors';
 import { useAutosave } from '@/hooks/useAutosave';
 
 // Mocks
 vi.mock('@/core/errors', () => ({
-    notifyError: vi.fn(),
-    safeLocalStorage: {
-        set: vi.fn(),
-        get: vi.fn(),
-        remove: vi.fn(),
-    },
+  notifyError: vi.fn(),
+  safeLocalStorage: {
+    set: vi.fn(),
+    get: vi.fn(),
+    remove: vi.fn(),
+  },
 }));
 
 describe('useAutosave', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        vi.useFakeTimers();
-        (safeLocalStorage.set as Mock).mockReturnValue(true);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    (safeLocalStorage.set as Mock).mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe('Basic autosave behavior', () => {
+    it('saves the value after the specified delay', () => {
+      const onSuccess = vi.fn();
+      renderHook(() =>
+        useAutosave('test-value', {
+          key: 'test-key',
+          delay: 1000,
+          onSuccess,
+        })
+      );
+
+      expect(safeLocalStorage.set).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(safeLocalStorage.set).toHaveBeenCalledWith(
+        'test-key',
+        'test-value'
+      );
+      expect(onSuccess).toHaveBeenCalled();
     });
 
-    afterEach(() => {
-        vi.useRealTimers();
+    it('saves only when the value changes', () => {
+      const { rerender } = renderHook(
+        ({ value }) => useAutosave(value, { key: 'test-key', delay: 500 }),
+        { initialProps: { value: 'initial' } }
+      );
+
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
+
+      // Re-render with the same value
+      rerender({ value: 'initial' });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(safeLocalStorage.set).toHaveBeenCalledTimes(1); // no change
+
+      // Re-render with a different value
+      rerender({ value: 'changed' });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(safeLocalStorage.set).toHaveBeenCalledTimes(2);
     });
 
-    describe('Basic autosave behavior', () => {
-        it('saves the value after the specified delay', () => {
-            const onSuccess = vi.fn();
-            renderHook(() =>
-                useAutosave('test-value', {
-                    key: 'test-key',
-                    delay: 1000,
-                    onSuccess,
-                })
-            );
+    it('debounces successive changes', () => {
+      const { rerender } = renderHook(
+        ({ value }) => useAutosave(value, { key: 'test-key', delay: 500 }),
+        { initialProps: { value: 'first' } }
+      );
 
-            expect(safeLocalStorage.set).not.toHaveBeenCalled();
+      rerender({ value: 'second' });
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      rerender({ value: 'third' });
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      rerender({ value: 'fourth' });
 
-            act(() => {
-                vi.advanceTimersByTime(1000);
-            });
+      expect(safeLocalStorage.set).not.toHaveBeenCalled();
 
-            expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'test-value');
-            expect(onSuccess).toHaveBeenCalled();
-        });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
 
-        it('saves only when the value changes', () => {
-            const { rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 500 }), { initialProps: { value: 'initial' } });
+      expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
+      expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'fourth');
+    });
+  });
 
-            act(() => {
-                vi.advanceTimersByTime(500);
-            });
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
+  describe('saveNow function', () => {
+    it('executes save immediately', () => {
+      const onSuccess = vi.fn();
+      const { result } = renderHook(() =>
+        useAutosave('test-value', {
+          key: 'test-key',
+          delay: 5000,
+          onSuccess,
+        })
+      );
 
-            // Re-render with the same value
-            rerender({ value: 'initial' });
-            act(() => {
-                vi.advanceTimersByTime(500);
-            });
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1); // no change
+      expect(safeLocalStorage.set).not.toHaveBeenCalled();
 
-            // Re-render with a different value
-            rerender({ value: 'changed' });
-            act(() => {
-                vi.advanceTimersByTime(500);
-            });
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(2);
-        });
+      act(() => {
+        result.current.saveNow();
+      });
 
-        it('debounces successive changes', () => {
-            const { rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 500 }), { initialProps: { value: 'first' } });
-
-            rerender({ value: 'second' });
-            act(() => {
-                vi.advanceTimersByTime(200);
-            });
-            rerender({ value: 'third' });
-            act(() => {
-                vi.advanceTimersByTime(200);
-            });
-            rerender({ value: 'fourth' });
-
-            expect(safeLocalStorage.set).not.toHaveBeenCalled();
-
-            act(() => {
-                vi.advanceTimersByTime(500);
-            });
-
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
-            expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'fourth');
-        });
+      expect(safeLocalStorage.set).toHaveBeenCalledWith(
+        'test-key',
+        'test-value'
+      );
+      expect(onSuccess).toHaveBeenCalled();
     });
 
-    describe('saveNow function', () => {
-        it('executes save immediately', () => {
-            const onSuccess = vi.fn();
-            const { result } = renderHook(() =>
-                useAutosave('test-value', {
-                    key: 'test-key',
-                    delay: 5000,
-                    onSuccess,
-                })
-            );
+    it('clears pending timer', () => {
+      const { result, rerender } = renderHook(
+        ({ value }) => useAutosave(value, { key: 'test-key', delay: 1000 }),
+        { initialProps: { value: 'initial' } }
+      );
 
-            expect(safeLocalStorage.set).not.toHaveBeenCalled();
+      rerender({ value: 'changed' });
 
-            act(() => {
-                result.current.saveNow();
-            });
+      act(() => {
+        result.current.saveNow();
+      });
 
-            expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'test-value');
-            expect(onSuccess).toHaveBeenCalled();
-        });
+      expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'changed');
 
-        it('clears pending timer', () => {
-            const { result, rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 1000 }), { initialProps: { value: 'initial' } });
-
-            rerender({ value: 'changed' });
-
-            act(() => {
-                result.current.saveNow();
-            });
-
-            expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'changed');
-
-            // Should not save again even after the timer advances
-            act(() => {
-                vi.advanceTimersByTime(1000);
-            });
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
-        });
-
-        it('skips saving when the value is unchanged', () => {
-            const { result } = renderHook(() => useAutosave('same-value', { key: 'test-key', delay: 1000 }));
-
-            act(() => {
-                vi.advanceTimersByTime(1000);
-            });
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
-
-            act(() => {
-                result.current.saveNow();
-            });
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1); // no change
-        });
+      // Should not save again even after the timer advances
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
     });
 
-    describe('beforeunload event', () => {
-        it('saves before leaving the page', () => {
-            renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 5000 }));
+    it('skips saving when the value is unchanged', () => {
+      const { result } = renderHook(() =>
+        useAutosave('same-value', { key: 'test-key', delay: 1000 })
+      );
 
-            // Dispatch beforeunload event
-            act(() => {
-                window.dispatchEvent(new Event('beforeunload'));
-            });
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
 
-            // saveNow is called internally and saved to localStorage
-            expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', 'test-value');
-        });
+      act(() => {
+        result.current.saveNow();
+      });
+      expect(safeLocalStorage.set).toHaveBeenCalledTimes(1); // no change
+    });
+  });
 
-        it('removes event listener on unmount', () => {
-            const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+  describe('beforeunload event', () => {
+    it('saves before leaving the page', () => {
+      renderHook(() =>
+        useAutosave('test-value', { key: 'test-key', delay: 5000 })
+      );
 
-            const { unmount } = renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 1000 }));
+      // Dispatch beforeunload event
+      act(() => {
+        window.dispatchEvent(new Event('beforeunload'));
+      });
 
-            unmount();
-
-            expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
-            removeEventListenerSpy.mockRestore();
-        });
+      // saveNow is called internally and saved to localStorage
+      expect(safeLocalStorage.set).toHaveBeenCalledWith(
+        'test-key',
+        'test-value'
+      );
     });
 
-    describe('Error handling', () => {
-        it('calls error callback when save fails', () => {
-            (safeLocalStorage.set as Mock).mockReturnValue(false);
-            const onError = vi.fn();
+    it('removes event listener on unmount', () => {
+      const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
-            renderHook(() =>
-                useAutosave('test-value', {
-                    key: 'test-key',
-                    delay: 100,
-                    onError,
-                })
-            );
+      const { unmount } = renderHook(() =>
+        useAutosave('test-value', { key: 'test-key', delay: 1000 })
+      );
 
-            act(() => {
-                vi.advanceTimersByTime(100);
-            });
+      unmount();
 
-            expect(onError).toHaveBeenCalled();
-        });
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'beforeunload',
+        expect.any(Function)
+      );
+      removeEventListenerSpy.mockRestore();
+    });
+  });
 
-        it('uses default error handler', () => {
-            (safeLocalStorage.set as Mock).mockReturnValue(false);
+  describe('Error handling', () => {
+    it('calls error callback when save fails', () => {
+      (safeLocalStorage.set as Mock).mockReturnValue(false);
+      const onError = vi.fn();
 
-            renderHook(() =>
-                useAutosave('test-value', {
-                    key: 'test-key',
-                    delay: 100,
-                })
-            );
+      renderHook(() =>
+        useAutosave('test-value', {
+          key: 'test-key',
+          delay: 100,
+          onError,
+        })
+      );
 
-            act(() => {
-                vi.advanceTimersByTime(100);
-            });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
 
-            expect(notifyError).toHaveBeenCalledWith('Failed to save');
-        });
-
-        it('handles errors thrown by onSuccess callback', () => {
-            const onSuccess = vi.fn().mockImplementation(() => {
-                throw new Error('Callback error');
-            });
-
-            // If the callback throws, the current implementation actually throws
-            // because it does not handle errors
-            renderHook(() =>
-                useAutosave('test-value', {
-                    key: 'test-key',
-                    delay: 100,
-                    onSuccess,
-                })
-            );
-
-            // Expect an error to be thrown
-            expect(() => {
-                act(() => {
-                    vi.advanceTimersByTime(100);
-                });
-            }).toThrow('Callback error');
-
-            // onSuccess has been called
-            expect(onSuccess).toHaveBeenCalled();
-        });
+      expect(onError).toHaveBeenCalled();
     });
 
-    describe('delay parameter', () => {
-        it('treats negative delay as 0', () => {
-            const onSuccess = vi.fn();
-            renderHook(() =>
-                useAutosave('test-value', {
-                    key: 'test-key',
-                    delay: -100,
-                    onSuccess,
-                })
-            );
+    it('uses default error handler', () => {
+      (safeLocalStorage.set as Mock).mockReturnValue(false);
 
-            act(() => {
-                vi.advanceTimersByTime(0);
-            });
+      renderHook(() =>
+        useAutosave('test-value', {
+          key: 'test-key',
+          delay: 100,
+        })
+      );
 
-            expect(safeLocalStorage.set).toHaveBeenCalled();
-            expect(onSuccess).toHaveBeenCalled();
-        });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
 
-        it('supports dynamic delay changes', () => {
-            const { rerender } = renderHook(({ delay }) => useAutosave('test-value', { key: 'test-key', delay }), { initialProps: { delay: 1000 } });
-
-            rerender({ delay: 500 });
-
-            act(() => {
-                vi.advanceTimersByTime(500);
-            });
-
-            expect(safeLocalStorage.set).toHaveBeenCalled();
-        });
+      expect(notifyError).toHaveBeenCalledWith('Failed to save');
     });
 
-    describe('Cleanup', () => {
-        it('clears timer on unmount', () => {
-            const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+    it('handles errors thrown by onSuccess callback', () => {
+      const onSuccess = vi.fn().mockImplementation(() => {
+        throw new Error('Callback error');
+      });
 
-            const { unmount } = renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 1000 }));
+      // If the callback throws, the current implementation actually throws
+      // because it does not handle errors
+      renderHook(() =>
+        useAutosave('test-value', {
+          key: 'test-key',
+          delay: 100,
+          onSuccess,
+        })
+      );
 
-            unmount();
-
-            expect(clearTimeoutSpy).toHaveBeenCalled();
-            clearTimeoutSpy.mockRestore();
+      // Expect an error to be thrown
+      expect(() => {
+        act(() => {
+          vi.advanceTimersByTime(100);
         });
+      }).toThrow('Callback error');
 
-        it('clears previous timer when value changes', () => {
-            const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+      // onSuccess has been called
+      expect(onSuccess).toHaveBeenCalled();
+    });
+  });
 
-            const { rerender } = renderHook(({ value }) => useAutosave(value, { key: 'test-key', delay: 1000 }), { initialProps: { value: 'first' } });
+  describe('delay parameter', () => {
+    it('treats negative delay as 0', () => {
+      const onSuccess = vi.fn();
+      renderHook(() =>
+        useAutosave('test-value', {
+          key: 'test-key',
+          delay: -100,
+          onSuccess,
+        })
+      );
 
-            rerender({ value: 'second' });
-            rerender({ value: 'third' });
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
 
-            expect(clearTimeoutSpy.mock.calls.length).toBeGreaterThan(0);
-            clearTimeoutSpy.mockRestore();
-        });
+      expect(safeLocalStorage.set).toHaveBeenCalled();
+      expect(onSuccess).toHaveBeenCalled();
     });
 
-    describe('Edge cases', () => {
-        it('saves an empty string', () => {
-            renderHook(() => useAutosave('', { key: 'test-key', delay: 100 }));
+    it('supports dynamic delay changes', () => {
+      const { rerender } = renderHook(
+        ({ delay }) => useAutosave('test-value', { key: 'test-key', delay }),
+        { initialProps: { delay: 1000 } }
+      );
 
-            act(() => {
-                vi.advanceTimersByTime(100);
-            });
+      rerender({ delay: 500 });
 
-            expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', '');
-        });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
 
-        it('saves a very long string', () => {
-            const longString = 'a'.repeat(100000);
-            renderHook(() => useAutosave(longString, { key: 'test-key', delay: 100 }));
-
-            act(() => {
-                vi.advanceTimersByTime(100);
-            });
-
-            expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', longString);
-        });
-
-        it('saves a string containing special characters', () => {
-            const specialString = '{"key": "value"}\n\t\r\\';
-            renderHook(() => useAutosave(specialString, { key: 'test-key', delay: 100 }));
-
-            act(() => {
-                vi.advanceTimersByTime(100);
-            });
-
-            expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', specialString);
-        });
-
-        it('handles high-frequency saveNow calls', () => {
-            const { result } = renderHook(() => useAutosave('test-value', { key: 'test-key', delay: 1000 }));
-
-            act(() => {
-                for (let i = 0; i < 100; i++) {
-                    result.current.saveNow();
-                }
-            });
-
-            // Saved only once (same value)
-            expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
-        });
+      expect(safeLocalStorage.set).toHaveBeenCalled();
     });
+  });
+
+  describe('Cleanup', () => {
+    it('clears timer on unmount', () => {
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+
+      const { unmount } = renderHook(() =>
+        useAutosave('test-value', { key: 'test-key', delay: 1000 })
+      );
+
+      unmount();
+
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+      clearTimeoutSpy.mockRestore();
+    });
+
+    it('clears previous timer when value changes', () => {
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+
+      const { rerender } = renderHook(
+        ({ value }) => useAutosave(value, { key: 'test-key', delay: 1000 }),
+        { initialProps: { value: 'first' } }
+      );
+
+      rerender({ value: 'second' });
+      rerender({ value: 'third' });
+
+      expect(clearTimeoutSpy.mock.calls.length).toBeGreaterThan(0);
+      clearTimeoutSpy.mockRestore();
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('saves an empty string', () => {
+      renderHook(() => useAutosave('', { key: 'test-key', delay: 100 }));
+
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', '');
+    });
+
+    it('saves a very long string', () => {
+      const longString = 'a'.repeat(100000);
+      renderHook(() =>
+        useAutosave(longString, { key: 'test-key', delay: 100 })
+      );
+
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(safeLocalStorage.set).toHaveBeenCalledWith('test-key', longString);
+    });
+
+    it('saves a string containing special characters', () => {
+      const specialString = '{"key": "value"}\n\t\r\\';
+      renderHook(() =>
+        useAutosave(specialString, { key: 'test-key', delay: 100 })
+      );
+
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(safeLocalStorage.set).toHaveBeenCalledWith(
+        'test-key',
+        specialString
+      );
+    });
+
+    it('handles high-frequency saveNow calls', () => {
+      const { result } = renderHook(() =>
+        useAutosave('test-value', { key: 'test-key', delay: 1000 })
+      );
+
+      act(() => {
+        for (let i = 0; i < 100; i++) {
+          result.current.saveNow();
+        }
+      });
+
+      // Saved only once (same value)
+      expect(safeLocalStorage.set).toHaveBeenCalledTimes(1);
+    });
+  });
 });
