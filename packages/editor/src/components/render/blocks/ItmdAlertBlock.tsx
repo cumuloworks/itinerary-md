@@ -11,6 +11,62 @@ import React from 'react';
 import { renderInline } from '@/components/render/renderInline';
 import { mergeClassNames } from '@/components/render/utils';
 
+// Icon and colors mapping aligned with AlertBlock
+type IconVariant = 'tip' | 'warning' | 'caution' | 'danger' | 'important';
+
+// Looked up directly in render: the React Compiler treats a component obtained
+// from a function call as "created during render".
+const ICON_BY_VARIANT: Record<IconVariant, LucideIcon> = {
+  tip: Lightbulb,
+  warning: TriangleAlert,
+  caution: OctagonAlert,
+  danger: OctagonAlert,
+  important: CircleAlert,
+};
+
+const isIconVariant = (v: string): v is IconVariant =>
+  Object.prototype.hasOwnProperty.call(ICON_BY_VARIANT, v);
+
+function getStyleByVariant(kind?: string): {
+  text: string;
+  border: string;
+  bgColor: string;
+} {
+  const vv = String(kind || '').toLowerCase();
+  switch (vv) {
+    case 'tip':
+      return {
+        text: 'text-emerald-600',
+        border: 'border-emerald-200',
+        bgColor: 'bg-emerald-600',
+      };
+    case 'warning':
+      return {
+        text: 'text-amber-600',
+        border: 'border-amber-200',
+        bgColor: 'bg-amber-600',
+      };
+    case 'caution':
+      return {
+        text: 'text-red-600',
+        border: 'border-red-200',
+        bgColor: 'bg-red-600',
+      };
+    case 'important':
+      return {
+        text: 'text-purple-600',
+        border: 'border-purple-200',
+        bgColor: 'bg-purple-600',
+      };
+    default:
+      return {
+        text: 'text-gray-600',
+        border: 'border-gray-200',
+        bgColor: 'bg-gray-600',
+      };
+  }
+}
+
 export const ItmdAlertBlock: React.FC<{
   node: any;
   commonDataProps: any;
@@ -42,57 +98,7 @@ export const ItmdAlertBlock: React.FC<{
 
   const subtitleEl = inlineTitle ? renderInline(inlineTitle) : undefined;
 
-  // Icon and colors mapping aligned with AlertBlock
-  function getIconByVariant(kind?: string): LucideIcon {
-    const vv = String(kind || '').toLowerCase();
-    if (vv === 'tip') return Lightbulb;
-    if (vv === 'warning') return TriangleAlert;
-    if (vv === 'caution' || vv === 'danger') return OctagonAlert;
-    if (vv === 'important') return CircleAlert;
-    return Info; // note/info/default
-  }
-
-  function getStyleByVariant(kind?: string): {
-    text: string;
-    border: string;
-    bgColor: string;
-  } {
-    const vv = String(kind || '').toLowerCase();
-    switch (vv) {
-      case 'tip':
-        return {
-          text: 'text-emerald-600',
-          border: 'border-emerald-200',
-          bgColor: 'bg-emerald-600',
-        };
-      case 'warning':
-        return {
-          text: 'text-amber-600',
-          border: 'border-amber-200',
-          bgColor: 'bg-amber-600',
-        };
-      case 'caution':
-        return {
-          text: 'text-red-600',
-          border: 'border-red-200',
-          bgColor: 'bg-red-600',
-        };
-      case 'important':
-        return {
-          text: 'text-purple-600',
-          border: 'border-purple-200',
-          bgColor: 'bg-purple-600',
-        };
-      default:
-        return {
-          text: 'text-gray-600',
-          border: 'border-gray-200',
-          bgColor: 'bg-gray-600',
-        };
-    }
-  }
-
-  const Icon = getIconByVariant(variant);
+  const Icon = isIconVariant(variant) ? ICON_BY_VARIANT[variant] : Info; // note/info/default
   const colors = getStyleByVariant(variant);
 
   const contentEls =

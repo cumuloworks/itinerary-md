@@ -227,7 +227,6 @@ const TopBarComponent: React.FC<TopBarProps> = ({
                 >
                   <ComboboxList
                     ref={tzListRef}
-                    role="listbox"
                     className="z-50 max-h-[240px] w-[min(90vw,320px)] overflow-auto rounded-md border border-gray-200 bg-white p-1 shadow-md"
                   >
                     {filteredTimezoneItems.length === 0 ? (

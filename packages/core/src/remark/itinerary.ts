@@ -26,6 +26,7 @@ export const remarkItinerary: Plugin<[ItmdRemarkOptions?], Root> = (
           tree as unknown as { type: string },
           'itmdEvent',
           (n: ITMDEventNode) => {
+            // oxlint-disable-next-line no-console -- opt-in debug dump requested via options.debug
             console.log(n);
           }
         );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { registerSW } from 'virtual:pwa-register';
 
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
@@ -9,9 +9,10 @@ export default function PWAUpdater() {
   const [showUpdate, setShowUpdate] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [updateSW, setUpdateSW] = useState<
-    ((reloadPage?: boolean) => Promise<void>) | null
-  >(null);
+  // Only read from the update handler, so a ref avoids a setState inside the effect
+  const updateSWRef = useRef<((reloadPage?: boolean) => Promise<void>) | null>(
+    null
+  );
 
   useEffect(() => {
     // Check if install prompt was dismissed recently
@@ -39,20 +40,16 @@ export default function PWAUpdater() {
 
     // Register service worker
     if ('serviceWorker' in navigator) {
-      const sw = registerSW({
+      updateSWRef.current = registerSW({
         immediate: true,
         onNeedRefresh() {
           // Show update button when new version is available
           setShowUpdate(true);
         },
-        onOfflineReady() {
-          console.log('[PWA] App ready to work offline');
-        },
         onRegisterError(error) {
           console.error('[PWA] SW registration failed:', error);
         },
       });
-      setUpdateSW(() => sw);
     }
 
     return () => {
@@ -70,7 +67,6 @@ export default function PWAUpdater() {
     const { outcome } = await deferredPrompt.userChoice;
 
     if (outcome === 'accepted') {
-      console.log('[PWA] User accepted the install prompt');
       // Clear dismiss timestamp on successful install
       localStorage.removeItem(INSTALL_DISMISS_KEY);
     }
@@ -80,6 +76,7 @@ export default function PWAUpdater() {
   };
 
   const handleUpdate = async () => {
+    const updateSW = updateSWRef.current;
     if (!updateSW) return;
 
     setIsUpdating(true);

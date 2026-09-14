@@ -35,13 +35,15 @@ Published packages:
 
 ## Quick start
 
-Clone and install:
+Requires Node.js 24 or newer (see `.nvmrc`). Clone and install:
 
 ```bash
 git clone <this-repo-url>
 cd itinerary-md
 npm install
 ```
+
+`npm install` also installs the git hooks (lefthook): staged files are linted with oxlint and formatted with oxfmt on every commit, and commit messages are checked with commitlint.
 
 Start everything for local development (plugins + editor bundle + demo app):
 
@@ -103,11 +105,14 @@ Common scripts at repo root:
 # Run dev for core, editor, studio together
 npm run dev
 
-# Lint and format (Biome)
+# Lint (oxlint) and format (oxfmt)
 npm run lint
 npm run lint:fix
 npm run format
 npm run format:check
+
+# Typecheck every workspace
+npm run typecheck
 
 # Build all packages first, then the demo app
 npm run build

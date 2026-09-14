@@ -105,7 +105,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    expect((out.children?.[0] as any).type).toBe('itmdEvent');
+    expect((out.children[0] as any).type).toBe('itmdEvent');
   });
 
   it('splits native^local in title and destination(single)', () => {
@@ -129,7 +129,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as any;
+    const evt = out.children[0] as any;
     expect(evt.type).toBe('itmdEvent');
     // title split
     const titleText = mdastToString({
@@ -181,7 +181,7 @@ describe('assemble', () => {
       }) as any;
     for (const kind of ['dashPair', 'fromTo'] as const) {
       const out = assembleEvents(mk(kind) as any, sv);
-      const evt = out.children?.[0] as any;
+      const evt = out.children[0] as any;
       expect(evt.type).toBe('itmdEvent');
       const fromText = mdastToString({
         type: 'paragraph',
@@ -237,7 +237,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     expect(evt.type).toBe('itmdEvent');
     expect(evt.children?.some((n: any) => n.type === 'list')).toBe(true);
     expect(Array.isArray((evt as any).body)).toBe(true);
@@ -263,11 +263,11 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & {
+    const evt = out.children[0] as Parent & { type: string } & {
       meta?: Record<string, PhrasingContent[]>;
     };
     expect(evt.type).toBe('itmdEvent');
-    expect((out.children?.[1] as any).type).toBe('paragraph');
+    expect((out.children[1] as any).type).toBe('paragraph');
   });
 
   it('extracts meta from consecutive lists inside blockquote into body (preserve links)', () => {
@@ -331,7 +331,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     expect(evt.type).toBe('itmdEvent');
     const pos = evt.position;
     expect(pos).toBeDefined();
@@ -400,7 +400,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as any;
+    const evt = out.children[0] as any;
     const prices = (evt.data?.itmdPrice || []) as Array<{
       key: string;
       raw: string;
@@ -469,7 +469,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & {
+    const evt = out.children[0] as Parent & { type: string } & {
       meta?: Record<string, PhrasingContent[]>;
     };
     expect(evt.type).toBe('itmdEvent');
@@ -516,7 +516,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     const metas = ((evt as any).body as Array<any>).filter(
       (s) => s.kind === 'meta'
     );
@@ -577,7 +577,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     const metas = ((evt as any).body as Array<any>).filter(
       (s) => s.kind === 'meta'
     );
@@ -619,7 +619,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     const metas = ((evt as any).body as Array<any>).filter(
       (s) => s.kind === 'meta'
     );
@@ -669,7 +669,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     const metas = ((evt as any).body as Array<any>).filter(
       (s) => s.kind === 'meta'
     );
@@ -789,7 +789,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     expect(evt.type).toBe('itmdEvent');
     const body = (evt as any).body as Array<any>;
     expect(Array.isArray(body)).toBe(true);
@@ -901,7 +901,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     expect(evt.type).toBe('itmdEvent');
     const body = (evt as any).body as Array<any>;
     // Expectation: meta(meta1) → list(['list item']) → meta(meta2)
@@ -959,7 +959,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     expect(evt.type).toBe('itmdEvent');
     const body = (evt as any).body as Array<any>;
     const listSeg = body.find((s) => s.kind === 'list');
@@ -1044,7 +1044,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & { body?: any };
+    const evt = out.children[0] as Parent & { type: string } & { body?: any };
     expect(evt.type).toBe('itmdEvent');
     const body = (evt as any).body as Array<any>;
     const firstMeta = body.find((s) => s.kind === 'meta');
@@ -1103,7 +1103,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string } & {
+    const evt = out.children[0] as Parent & { type: string } & {
       meta?: Record<string, PhrasingContent[]>;
     };
     expect(evt.type).toBe('itmdEvent');
@@ -1153,10 +1153,10 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as Parent & { type: string };
+    const evt = out.children[0] as Parent & { type: string };
     expect(evt.type).toBe('itmdEvent');
-    expect((out.children?.[1] as any).type).toBe('paragraph');
-    expect((out.children?.[2] as any).type).toBe('list');
+    expect((out.children[1] as any).type).toBe('paragraph');
+    expect((out.children[2] as any).type).toBe('list');
   });
 
   it('extracts from/to correctly even if words are split by newline in header paragraph', () => {
@@ -1179,7 +1179,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as any;
+    const evt = out.children[0] as any;
     expect(evt.type).toBe('itmdEvent');
     expect(evt.destination?.kind).toBe('fromTo');
     const d = evt.destination;
@@ -1203,7 +1203,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    expect((out.children?.[0] as any).type).toBe('blockquote');
+    expect((out.children[0] as any).type).toBe('blockquote');
   });
 
   it('does not convert admonitions like [!NOTE] (keep as blockquote)', () => {
@@ -1222,7 +1222,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    expect((out.children?.[0] as any).type).toBe('blockquote');
+    expect((out.children[0] as any).type).toBe('blockquote');
   });
 
   it("does not convert when only '[' (keep as blockquote)", () => {
@@ -1238,7 +1238,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    expect((out.children?.[0] as any).type).toBe('blockquote');
+    expect((out.children[0] as any).type).toBe('blockquote');
   });
 
   it('converts to itmdEvent when input reaches "[] flight"', () => {
@@ -1257,7 +1257,7 @@ describe('assemble', () => {
       ],
     } as any;
     const out = assembleEvents(tree, sv);
-    const evt = out.children?.[0] as any;
+    const evt = out.children[0] as any;
     expect(evt.type).toBe('itmdEvent');
     expect(evt.eventType).toBe('flight');
   });

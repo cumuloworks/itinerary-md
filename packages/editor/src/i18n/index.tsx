@@ -109,23 +109,29 @@ export function tInstant(
   return interpolate(dict[key] ?? DICTS.en[key] ?? key, vars);
 }
 
+// Resolution order: explicit `language` prop, then the persisted preference,
+// then browser detection.
+function resolveInitialLang(language?: string): SupportedLang {
+  if (language) return normalizeLang(language);
+  try {
+    const stored = readString(STORAGE_KEY);
+    if (stored) return normalizeLang(stored);
+  } catch {}
+  return detectBrowserLanguage();
+}
+
 export function I18nProvider({ language, children }: I18nProviderProps) {
-  const initialLang = useMemo<SupportedLang>(() => {
-    try {
-      const stored = readString(STORAGE_KEY);
-      if (stored) return normalizeLang(stored);
-    } catch {}
-    return normalizeLang(language);
-  }, [language]);
+  const [lang, setLang] = useState<SupportedLang>(() =>
+    resolveInitialLang(language)
+  );
 
-  const [lang, setLang] = useState<SupportedLang>(initialLang);
-
-  // Sync with prop changes when provided
-  useEffect(() => {
-    if (language) {
-      setLang(normalizeLang(language));
-    }
-  }, [language]);
+  // Sync with prop changes when provided, adjusting state during render
+  // (React's "storing information from previous renders" pattern).
+  const [prevLanguage, setPrevLanguage] = useState(language);
+  if (language !== prevLanguage) {
+    setPrevLanguage(language);
+    if (language) setLang(normalizeLang(language));
+  }
 
   // Persist to localStorage via prefs utils
   useEffect(() => {

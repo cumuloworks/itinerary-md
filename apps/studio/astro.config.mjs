@@ -3,9 +3,9 @@ import { fileURLToPath } from 'node:url';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
+// oxlint-disable-next-line import/default -- resolved through the 'node' export condition, which has a default export
 import sentry from '@sentry/astro';
 import tailwindcss from '@tailwindcss/vite';
-// @ts-nocheck
 import { defineConfig } from 'astro/config';
 
 import { pwa } from './integrations/pwa.mjs';

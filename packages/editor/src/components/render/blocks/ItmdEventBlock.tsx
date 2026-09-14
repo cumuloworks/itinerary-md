@@ -193,9 +193,8 @@ export const ItmdEventBlock: React.FC<{
     for (const p of itmdPrice) {
       const key = String(p.key || '').toLowerCase();
       if (!key) continue;
-      const ws = (
-        Array.isArray(p.price?.warnings) ? (p.price?.warnings as string[]) : []
-      ).filter(
+      const warnings = p.price?.warnings;
+      const ws = (Array.isArray(warnings) ? warnings : []).filter(
         (w) =>
           w === 'math-eval-failed' ||
           w === 'math-eval-error' ||

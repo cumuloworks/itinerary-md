@@ -20,14 +20,20 @@ type AlertBlockProps = {
   className?: string;
 };
 
-function getIconByVariant(variant?: string): LucideIcon {
-  const v = String(variant || '').toLowerCase();
-  if (v === 'tip') return Lightbulb;
-  if (v === 'warning') return TriangleAlert;
-  if (v === 'caution' || v === 'danger') return OctagonAlert;
-  if (v === 'important') return CircleAlert;
-  return Info; // note/info/default
-}
+type IconVariant = 'tip' | 'warning' | 'caution' | 'danger' | 'important';
+
+// Looked up directly in render: the React Compiler treats a component obtained
+// from a function call as "created during render".
+const ICON_BY_VARIANT: Record<IconVariant, LucideIcon> = {
+  tip: Lightbulb,
+  warning: TriangleAlert,
+  caution: OctagonAlert,
+  danger: OctagonAlert,
+  important: CircleAlert,
+};
+
+const isIconVariant = (v: string): v is IconVariant =>
+  Object.prototype.hasOwnProperty.call(ICON_BY_VARIANT, v);
 
 function getStyleByVariant(variant?: string): {
   text: string;
@@ -76,7 +82,8 @@ export const AlertBlock: FC<AlertBlockProps> = ({
   children,
   className,
 }) => {
-  const Icon = getIconByVariant(variant);
+  const variantKey = String(variant || '').toLowerCase();
+  const Icon = isIconVariant(variantKey) ? ICON_BY_VARIANT[variantKey] : Info; // note/info/default
   const colors = getStyleByVariant(variant);
   const hasBody = React.Children.count(children) > 0;
   return (

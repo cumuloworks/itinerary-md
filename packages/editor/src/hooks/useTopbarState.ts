@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { notifyError } from '@/core/errors';
 import { tInstant } from '@/i18n';
@@ -21,6 +21,63 @@ const DEFAULTS = {
   altNames: false,
 } as const;
 
+type UrlParams = {
+  patch: Partial<TopbarState>;
+  /** The `tz` query value when it is not a valid IANA timezone */
+  invalidTimezone?: string;
+};
+
+// Pure read of tz/cur/view from the URL query (no side effects), so it can run
+// inside the lazy state initializer as well as in effects.
+function readUrlParams(): UrlParams {
+  const patch: Partial<TopbarState> = {};
+  let invalidTimezone: string | undefined;
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    const tz = searchParams.get('tz');
+    if (tz) {
+      if (isValidIanaTimeZone(tz)) {
+        patch.timezone = tz;
+      } else {
+        invalidTimezone = tz;
+      }
+    }
+
+    const cur = searchParams.get('cur');
+    if (cur) patch.currency = cur;
+
+    const view = searchParams.get('view');
+    if (view && VIEW_VALUES.has(view as ViewMode)) {
+      patch.viewMode = view as ViewMode;
+    }
+
+    // Do not read past/scroll/alt from URL
+  } catch {}
+  return { patch, invalidTimezone };
+}
+
+function createInitialState(): TopbarState {
+  const base: TopbarState = {
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    currency: 'USD',
+    viewMode: 'split',
+    showPast: true,
+    autoScroll: true,
+    showMdast: false,
+    altNames: false,
+  };
+  if (typeof window === 'undefined') return base;
+  return {
+    ...base,
+    // Load persisted values for non-URL flags from localStorage
+    showPast: readBoolean(prefKeys.showPast, DEFAULTS.showPast),
+    autoScroll: readBoolean(prefKeys.autoScroll, DEFAULTS.autoScroll),
+    altNames: readBoolean(prefKeys.altNames, DEFAULTS.altNames),
+    ...readUrlParams().patch,
+  };
+}
+
 /**
  * Hook to manage Topbar state (initialization and sync are separated).
  * @returns [state, setState] - State and update function.
@@ -29,64 +86,18 @@ export function useTopbarState(): [
   TopbarState,
   (patch: Partial<TopbarState>) => void,
 ] {
-  const isInitializedRef = useRef(false);
+  // localStorage and URL are read once in the lazy initializer, so the first
+  // render already holds the initial state instead of patching it from effects.
+  const [state, setState] = useState<TopbarState>(createInitialState);
 
-  const [state, setState] = useState<TopbarState>(() => ({
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    currency: 'USD',
-    viewMode: 'split',
-    showPast: true,
-    autoScroll: true,
-    showMdast: false,
-    altNames: false,
-  }));
-
+  // Report an invalid `tz` query param. This must stay ahead of the URL sync
+  // effect below, which overwrites `tz` in the URL on mount.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // Load persisted values for non-URL flags from localStorage
-    const storedPast = readBoolean(prefKeys.showPast, DEFAULTS.showPast);
-    const storedScroll = readBoolean(prefKeys.autoScroll, DEFAULTS.autoScroll);
-    const storedAlt = readBoolean(prefKeys.altNames, DEFAULTS.altNames);
-    setState((prev) => ({
-      ...prev,
-      showPast: storedPast,
-      autoScroll: storedScroll,
-      altNames: storedAlt,
-    }));
-  }, []);
-
-  useEffect(() => {
-    if (isInitializedRef.current) return;
-
-    try {
-      const searchParams = new URLSearchParams(window.location.search);
-      const patch: Partial<TopbarState> = {};
-
-      const tz = searchParams.get('tz');
-      if (tz) {
-        if (isValidIanaTimeZone(tz)) {
-          patch.timezone = tz;
-        } else {
-          notifyError(tInstant('toast.url.tz.invalid', { tz }));
-        }
-      }
-
-      const cur = searchParams.get('cur');
-      if (cur) patch.currency = cur;
-
-      const view = searchParams.get('view');
-      if (view && VIEW_VALUES.has(view as ViewMode)) {
-        patch.viewMode = view as ViewMode;
-      }
-
-      // Do not read past/scroll/alt from URL
-
-      if (Object.keys(patch).length > 0) {
-        setState((prevState) => ({ ...prevState, ...patch }));
-      }
-    } catch {}
-
-    isInitializedRef.current = true;
+    const { invalidTimezone } = readUrlParams();
+    if (invalidTimezone) {
+      notifyError(tInstant('toast.url.tz.invalid', { tz: invalidTimezone }));
+    }
   }, []);
 
   // Persist other booleans to localStorage
@@ -108,8 +119,6 @@ export function useTopbarState(): [
   }, []);
 
   useEffect(() => {
-    // Skip URL sync until initial state has been read from URL/localStorage
-    if (!isInitializedRef.current) return;
     try {
       const curr = new URLSearchParams(window.location.search);
       const next = new URLSearchParams(curr);

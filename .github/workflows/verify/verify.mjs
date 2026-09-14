@@ -88,7 +88,7 @@ function deepEqual(a, b, path = '') {
         return false;
       }
       for (let i = 0; i < a.length; i++) {
-        const childPath = `${here === '<root>' ? '' : here}[${i}]` || `[${i}]`;
+        const childPath = `${here === '<root>' ? '' : here}[${i}]`;
         console.log(`descend array @ ${childPath}`);
         if (!deepEqual(a[i], b[i], childPath)) return false;
       }

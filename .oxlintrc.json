@@ -34,5 +34,13 @@
     "out",
     "coverage",
     "**/*.astro"
+  ],
+  "overrides": [
+    {
+      "files": [".github/**"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
   ]
 }

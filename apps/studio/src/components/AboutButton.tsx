@@ -170,11 +170,11 @@ const AboutButton: React.FC<AboutButtonProps> = ({ shareUrl }) => {
         <Info size={16} />
       </button>
       {open && (
+        // The overlay only catches backdrop clicks and Escape (jsx-a11y forbids
+        // handlers on a dialog-role element); the dialog semantics live on the
+        // focus-lock container so the a11y tree stays dialog > document > content.
         <div
-          aria-modal="true"
-          role="dialog"
-          aria-labelledby={titleId}
-          aria-describedby={descId}
+          role="presentation"
           className="fixed inset-0 z-50 flex items-center justify-center"
           onKeyDown={onDialogKeyDown}
           onClick={(e) => {
@@ -188,14 +188,16 @@ const AboutButton: React.FC<AboutButtonProps> = ({ shareUrl }) => {
           <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
           <FocusLock
             returnFocus={false}
-            shards={
-              dialogContainerRef.current
-                ? [dialogContainerRef.current]
-                : undefined
-            }
+            shards={[dialogContainerRef]}
             disabled={!open}
             as="div"
             className="relative"
+            lockProps={{
+              role: 'dialog',
+              'aria-modal': 'true',
+              'aria-labelledby': titleId,
+              'aria-describedby': descId,
+            }}
           >
             <div
               role="document"
