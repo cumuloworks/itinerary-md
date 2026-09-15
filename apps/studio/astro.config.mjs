@@ -2,7 +2,6 @@ import { fileURLToPath } from 'node:url';
 
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
-import vercel from '@astrojs/vercel';
 // oxlint-disable-next-line import/default -- resolved through the 'node' export condition, which has a default export
 import sentry from '@sentry/astro';
 import tailwindcss from '@tailwindcss/vite';
@@ -12,8 +11,8 @@ import { pwa } from './integrations/pwa.mjs';
 
 // https://astro.build/config
 export default defineConfig({
-  output: 'static', // Static site generation for offline support
-  adapter: vercel(),
+  // Static site generation for offline support; served as Workers static assets
+  output: 'static',
   integrations: [
     sentry({
       project: 'itinerary-md-studio',
