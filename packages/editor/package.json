@@ -1,6 +1,6 @@
 {
   "name": "@itinerary-md/editor",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "license": "UNLICENSED",
   "files": [
@@ -42,8 +42,8 @@
     "react18-json-view": "^0.2.10",
     "remark-gfm": "^4.0.1",
     "remark-github-blockquote-alert": "^2.1.0",
-    "remark-itinerary": "^0.3.2",
-    "remark-itinerary-alert": "^0.2.2",
+    "remark-itinerary": "^0.3.3",
+    "remark-itinerary-alert": "^0.2.3",
     "remark-parse": "^11.0.0",
     "unified": "^11.0.5",
     "yaml": "^2.9.1"
