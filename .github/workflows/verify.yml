@@ -39,13 +39,14 @@ jobs:
         run: |
           set -euxo pipefail
           for PKG in "remark-itinerary@${{ steps.read_versions.outputs.core_version }}" "remark-itinerary-alert@${{ steps.read_versions.outputs.alert_version }}"; do
-            for i in {1..10}; do
+            # npm can take a couple of minutes to expose a fresh publish
+            for i in {1..40}; do
               if npm view "$PKG" version >/dev/null 2>&1; then
                 echo "Found $PKG on npm"
                 break
               fi
-              echo "Waiting for $PKG to be visible..."; sleep 3
-              if [ "$i" = "10" ]; then echo "Timeout waiting for $PKG"; exit 1; fi
+              echo "Waiting for $PKG to be visible..."; sleep 5
+              if [ "$i" = "40" ]; then echo "Timeout waiting for $PKG"; exit 1; fi
             done
           done
 
