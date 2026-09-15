@@ -17,7 +17,7 @@ For overall structure and high-level notes, see DeepWiki (AI-generated; may be i
 
 ## Apps
 
-- `apps/studio` — Demo editor/preview app built with Astro and React
+- `apps/studio` — Demo editor/preview app built with Astro and React, hosted on Cloudflare Workers (static assets) at [tripmd.dev](https://tripmd.dev)
 
 ## Monorepo at a glance
 
@@ -130,6 +130,20 @@ Workspace tips:
 - Run a script in a specific workspace: `npm -w packages/core run build`
 - Run a script across all workspaces (if present): `npm -ws run test --if-present`
 - Add a dependency to a workspace: `npm -w packages/core i <pkg>`
+
+## Deploying the demo app
+
+`apps/studio` is a static Astro site served by Cloudflare Workers static assets; `apps/studio/wrangler.jsonc` holds the Worker name, the Cumuloworks account and the `tripmd.dev` custom domain. Production builds read these environment variables:
+
+- `PUBLIC_SENTRY_DSN`, `PUBLIC_ENV`, `PUBLIC_RELEASE` — client-side Sentry configuration
+- `SENTRY_AUTH_TOKEN` — optional, enables source map upload
+
+Deploy from a machine that is logged in with `wrangler login`:
+
+```bash
+npm run build:deps
+npm -w apps/studio run deploy   # astro build && wrangler deploy
+```
 
 ## Monorepo structure
 

@@ -2,7 +2,6 @@ import { fileURLToPath } from 'node:url';
 
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
-import vercel from '@astrojs/vercel';
 // oxlint-disable-next-line import/default -- resolved through the 'node' export condition, which has a default export
 import sentry from '@sentry/astro';
 import tailwindcss from '@tailwindcss/vite';
@@ -10,10 +9,13 @@ import { defineConfig } from 'astro/config';
 
 import { pwa } from './integrations/pwa.mjs';
 
+// Workers Builds exposes the commit; use it as the Sentry release when none is set.
+process.env.PUBLIC_RELEASE ??= process.env.WORKERS_CI_COMMIT_SHA?.slice(0, 7);
+
 // https://astro.build/config
 export default defineConfig({
-  output: 'static', // Static site generation for offline support
-  adapter: vercel(),
+  // Static site generation for offline support; served as Workers static assets
+  output: 'static',
   integrations: [
     sentry({
       project: 'itinerary-md-studio',

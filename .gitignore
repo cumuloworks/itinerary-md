@@ -3,7 +3,7 @@ dist
 coverage
 .astro
 .vitest
-.vercel
+.wrangler
 bash.exe.stackdump
 *.tgz
 .DS_Store
