@@ -9,6 +9,9 @@ import { defineConfig } from 'astro/config';
 
 import { pwa } from './integrations/pwa.mjs';
 
+// Workers Builds exposes the commit; use it as the Sentry release when none is set.
+process.env.PUBLIC_RELEASE ??= process.env.WORKERS_CI_COMMIT_SHA?.slice(0, 7);
+
 // https://astro.build/config
 export default defineConfig({
   // Static site generation for offline support; served as Workers static assets

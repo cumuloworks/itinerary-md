@@ -3,8 +3,8 @@
   "name": "tripmd-studio",
   "account_id": "74b4cfd822d1cbd10244453900fee557",
   "compatibility_date": "2026-09-15",
-  // Keep the workers.dev hostname and per-version preview URLs next to the custom domain.
-  "workers_dev": true,
+  // Only the custom domain serves production; per-version preview URLs stay on for PR builds.
+  "workers_dev": false,
   "preview_urls": true,
   // Static site: no Worker script, the built site is served as static assets.
   "assets": {
