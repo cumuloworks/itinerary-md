@@ -1,4 +1,13 @@
-import { type FC, memo, useCallback, useId, useMemo, useRef, useState } from 'react';
+import {
+  type FC,
+  memo,
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+
 import { ClearAllDialog } from '@/components/dialog/ClearAllDialog';
 import { ImportDialog } from '@/components/dialog/ImportDialog';
 import { LoadSampleDialog } from '@/components/dialog/LoadSampleDialog';
@@ -24,16 +33,16 @@ import { getTimezoneOptions } from '@/utils/timezone';
 import { sanitizeFileName } from '@/utils/url';
 
 export interface EditorProps {
-    storageKey?: string;
-    samplePath?: string;
-    rate?: { from: string; to: string; value: number };
-    /**
-     * UI language. Example: "en", "ja", or locale like "ja-JP".
-     * If omitted, browser language is used.
-     */
-    language?: string;
-    /** Optional telemetry adapter for error reporting (not used directly here) */
-    telemetry?: Telemetry;
+  storageKey?: string;
+  samplePath?: string;
+  rate?: { from: string; to: string; value: number };
+  /**
+   * UI language. Example: "en", "ja", or locale like "ja-JP".
+   * If omitted, browser language is used.
+   */
+  language?: string;
+  /** Optional telemetry adapter for error reporting (not used directly here) */
+  telemetry?: Telemetry;
 }
 
 const STORAGE_KEY_DEFAULT = 'itinerary-md-content';
@@ -42,193 +51,242 @@ const PREVIEW_DEBOUNCE_DELAY = 300;
 const SAMPLE_PATH_DEFAULT = '/sample_en.md'; // Default to English sample
 
 function normalizeLang(lang: string): 'en' | 'ja' {
-    const l = (lang || '').toLowerCase();
-    if (l.startsWith('ja')) return 'ja';
-    return 'en';
+  const l = (lang || '').toLowerCase();
+  if (l.startsWith('ja')) return 'ja';
+  return 'en';
 }
 
 function getLanguageAwareSamplePath(basePath: string, lang: string): string {
-    const norm = normalizeLang(lang);
-    // Normalize common cases: '/sample.md', '/sample_en.md', '/sample_ja.md'
-    const lower = basePath.toLowerCase();
-    const isSample = lower.endsWith('/sample.md') || lower.endsWith('/sample_en.md') || lower.endsWith('/sample_ja.md');
-    if (!isSample) return basePath;
-    // Preserve the original directory and replace only the filename
-    const lastSlash = basePath.lastIndexOf('/');
-    const hasLeadingSlash = basePath.startsWith('/');
-    const dir = lastSlash >= 0 ? basePath.slice(0, lastSlash + 1) : hasLeadingSlash ? '/' : '';
-    return `${dir}sample_${norm}.md`;
+  const norm = normalizeLang(lang);
+  // Normalize common cases: '/sample.md', '/sample_en.md', '/sample_ja.md'
+  const lower = basePath.toLowerCase();
+  const isSample =
+    lower.endsWith('/sample.md') ||
+    lower.endsWith('/sample_en.md') ||
+    lower.endsWith('/sample_ja.md');
+  if (!isSample) return basePath;
+  // Preserve the original directory and replace only the filename
+  const lastSlash = basePath.lastIndexOf('/');
+  const hasLeadingSlash = basePath.startsWith('/');
+  const dir =
+    lastSlash >= 0
+      ? basePath.slice(0, lastSlash + 1)
+      : hasLeadingSlash
+        ? '/'
+        : '';
+  return `${dir}sample_${norm}.md`;
 }
 
-const EditorComponent: FC<EditorProps> = ({ storageKey = STORAGE_KEY_DEFAULT, samplePath = SAMPLE_PATH_DEFAULT, rate }) => {
-    const { lang, t } = useI18n();
-    const effectiveSamplePath = useMemo(() => getLanguageAwareSamplePath(samplePath, lang), [samplePath, lang]);
-    const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
-    const tzSelectId = useId();
+const EditorComponent: FC<EditorProps> = ({
+  storageKey = STORAGE_KEY_DEFAULT,
+  samplePath = SAMPLE_PATH_DEFAULT,
+  rate,
+}) => {
+  const { lang, t } = useI18n();
+  const effectiveSamplePath = useMemo(
+    () => getLanguageAwareSamplePath(samplePath, lang),
+    [samplePath, lang]
+  );
+  const [editedLine, setEditedLine] = useState<number | undefined>(undefined);
+  const tzSelectId = useId();
 
-    const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
-    const currencyOptions = COMMON_CURRENCIES;
+  const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
+  const currencyOptions = COMMON_CURRENCIES;
 
-    const { content, setContent, pendingLoadSample, loadSample, cancelLoadSample, confirmLoadSample } = useInitialContent({
-        storageKey,
-        samplePath: effectiveSamplePath,
-    });
+  const {
+    content,
+    setContent,
+    pendingLoadSample,
+    loadSample,
+    cancelLoadSample,
+    confirmLoadSample,
+  } = useInitialContent({
+    storageKey,
+    samplePath: effectiveSamplePath,
+  });
 
-    const { saveNow } = useAutosave(content, {
-        key: storageKey,
-        delay: AUTOSAVE_DELAY,
-    });
+  const { saveNow } = useAutosave(content, {
+    key: storageKey,
+    delay: AUTOSAVE_DELAY,
+  });
 
-    const [topbar, updateTopbar] = useTopbarState();
+  const [topbar, updateTopbar] = useTopbarState();
 
-    const { previewContent, frontmatterTitle, frontmatterDescription, frontmatterTags } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
-        timezone: topbar.timezone,
-    });
+  const {
+    previewContent,
+    frontmatterTitle,
+    frontmatterDescription,
+    frontmatterTags,
+  } = useItinerary(content, PREVIEW_DEBOUNCE_DELAY, {
+    timezone: topbar.timezone,
+  });
 
-    const latestContent = useLatest(content);
-    const [pendingClearAll, setPendingClearAll] = useState(false);
-    const previewContainerRef = useRef<HTMLDivElement | null>(null);
+  const latestContent = useLatest(content);
+  const [pendingClearAll, setPendingClearAll] = useState(false);
+  const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
-    const handleContentChange = useCallback(
-        (newContent: string) => {
-            setContent(newContent);
-        },
-        [setContent]
-    );
+  const handleContentChange = useCallback(
+    (newContent: string) => {
+      setContent(newContent);
+    },
+    [setContent]
+  );
 
-    const handleShareUrl = useCallback(async () => {
-        try {
-            const url = buildShareUrlFromContent(latestContent.current);
-            await writeTextToClipboard(url);
-            notifySuccess(t('toast.url.copied'));
-        } catch (error) {
-            console.error('Failed to generate URL:', error);
-            notifyError(t('toast.url.failed'));
-        }
-    }, [latestContent, t]);
+  const handleShareUrl = useCallback(async () => {
+    try {
+      const url = buildShareUrlFromContent(latestContent.current);
+      await writeTextToClipboard(url);
+      notifySuccess(t('toast.url.copied'));
+    } catch (error) {
+      console.error('Failed to generate URL:', error);
+      notifyError(t('toast.url.failed'));
+    }
+  }, [latestContent, t]);
 
-    const handleCopyMarkdown = useCallback(async () => {
-        try {
-            await writeTextToClipboard(latestContent.current);
-            notifySuccess(t('toast.copy.ok'));
-        } catch (error) {
-            console.error('Copy failed:', error);
-            notifyError(t('toast.copy.failed'));
-        }
-    }, [latestContent, t]);
-    const handlePrint = useCallback(() => {
-        try {
-            openPrintWindow({
-                title: (frontmatterTitle || 'Itinerary').toString(),
-                container: previewContainerRef.current,
-                fallbackMarkdown: latestContent.current,
-            });
-            notifySuccess(t('toast.print.opened'));
-        } catch (error) {
-            console.error('Print failed:', error);
-            notifyError(t('toast.print.failed'));
-        }
-    }, [frontmatterTitle, latestContent, t]);
+  const handleCopyMarkdown = useCallback(async () => {
+    try {
+      await writeTextToClipboard(latestContent.current);
+      notifySuccess(t('toast.copy.ok'));
+    } catch (error) {
+      console.error('Copy failed:', error);
+      notifyError(t('toast.copy.failed'));
+    }
+  }, [latestContent, t]);
+  const handlePrint = useCallback(() => {
+    try {
+      openPrintWindow({
+        title: (frontmatterTitle || 'Itinerary').toString(),
+        container: previewContainerRef.current,
+        fallbackMarkdown: latestContent.current,
+      });
+      notifySuccess(t('toast.print.opened'));
+    } catch (error) {
+      console.error('Print failed:', error);
+      notifyError(t('toast.print.failed'));
+    }
+  }, [frontmatterTitle, latestContent, t]);
 
-    const handleDownloadMarkdown = useCallback(() => {
-        try {
-            const nameFromTitle = (frontmatterTitle || 'itinerary').toString();
-            const safeBase = sanitizeFileName(nameFromTitle).trim() || 'itinerary';
-            const fileName = `${safeBase}.md`;
-            triggerDownload({
-                data: latestContent.current,
-                fileName,
-                mimeType: 'text/markdown;charset=utf-8',
-            });
-            notifySuccess(t('toast.download.started'));
-        } catch (error) {
-            console.error('Download failed:', error);
-            notifyError(t('toast.download.failed'));
-        }
-    }, [frontmatterTitle, latestContent, t]);
+  const handleDownloadMarkdown = useCallback(() => {
+    try {
+      const nameFromTitle = (frontmatterTitle || 'itinerary').toString();
+      const safeBase = sanitizeFileName(nameFromTitle).trim() || 'itinerary';
+      const fileName = `${safeBase}.md`;
+      triggerDownload({
+        data: latestContent.current,
+        fileName,
+        mimeType: 'text/markdown;charset=utf-8',
+      });
+      notifySuccess(t('toast.download.started'));
+    } catch (error) {
+      console.error('Download failed:', error);
+      notifyError(t('toast.download.failed'));
+    }
+  }, [frontmatterTitle, latestContent, t]);
 
-    const handleOpenClearAll = useCallback(() => {
-        setPendingClearAll(true);
-    }, []);
+  const handleOpenClearAll = useCallback(() => {
+    setPendingClearAll(true);
+  }, []);
 
-    const handleCancelClearAll = useCallback(() => {
-        setPendingClearAll(false);
-    }, []);
+  const handleCancelClearAll = useCallback(() => {
+    setPendingClearAll(false);
+  }, []);
 
-    const handleConfirmClearAll = useCallback(() => {
-        setContent('');
-        setPendingClearAll(false);
-        notifySuccess(t('toast.clear.ok'));
-    }, [setContent, t]);
+  const handleConfirmClearAll = useCallback(() => {
+    setContent('');
+    setPendingClearAll(false);
+    notifySuccess(t('toast.clear.ok'));
+  }, [setContent, t]);
 
-    const hashImport = useHashImport(
-        (hashContent: string) => setContent(hashContent),
-        () => saveNow()
-    );
+  const hashImport = useHashImport(
+    (hashContent: string) => setContent(hashContent),
+    () => saveNow()
+  );
 
-    const containerClass = `flex-1 min-h-0 border border-gray-300 bg-white rounded-none md:rounded-lg overflow-hidden divide-gray-300 ${topbar.viewMode === 'split' ? 'flex flex-col divide-y md:flex-row md:divide-x' : 'flex'}`;
+  const containerClass = `flex-1 min-h-0 border border-gray-300 bg-white rounded-none md:rounded-lg overflow-hidden divide-gray-300 ${topbar.viewMode === 'split' ? 'flex flex-col divide-y md:flex-row md:divide-x' : 'flex'}`;
 
-    return (
-        <div className="h-full flex flex-col min-h-0 gap-4">
-            <ImportDialog open={hashImport.isDialogOpen} onCancel={hashImport.cancelImport} onLoad={hashImport.confirmImport} />
-            <ClearAllDialog open={pendingClearAll} onCancel={handleCancelClearAll} onClear={handleConfirmClearAll} />
-            <LoadSampleDialog open={pendingLoadSample} onCancel={cancelLoadSample} onLoad={confirmLoadSample} />
-            <TopBar
-                tzSelectId={tzSelectId}
-                timezoneOptions={timezoneOptions}
-                currencyOptions={currencyOptions}
-                topbar={topbar}
-                onTopbarChange={updateTopbar}
-                onCopyMarkdown={handleCopyMarkdown}
-                onShareUrl={handleShareUrl}
-                onDownloadMarkdown={handleDownloadMarkdown}
-                onPrint={handlePrint}
-                onLoadSample={loadSample}
-                onClearAll={handleOpenClearAll}
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <ImportDialog
+        open={hashImport.isDialogOpen}
+        onCancel={hashImport.cancelImport}
+        onLoad={hashImport.confirmImport}
+      />
+      <ClearAllDialog
+        open={pendingClearAll}
+        onCancel={handleCancelClearAll}
+        onClear={handleConfirmClearAll}
+      />
+      <LoadSampleDialog
+        open={pendingLoadSample}
+        onCancel={cancelLoadSample}
+        onLoad={confirmLoadSample}
+      />
+      <TopBar
+        tzSelectId={tzSelectId}
+        timezoneOptions={timezoneOptions}
+        currencyOptions={currencyOptions}
+        topbar={topbar}
+        onTopbarChange={updateTopbar}
+        onCopyMarkdown={handleCopyMarkdown}
+        onShareUrl={handleShareUrl}
+        onDownloadMarkdown={handleDownloadMarkdown}
+        onPrint={handlePrint}
+        onLoadSample={loadSample}
+        onClearAll={handleOpenClearAll}
+      />
+      <div className={containerClass}>
+        {(topbar.viewMode === 'split' || topbar.viewMode === 'editor') && (
+          <div
+            className={`${topbar.viewMode === 'split' ? 'basis-1/3 md:basis-1/2' : 'flex-1'} min-h-0 min-w-0`}
+          >
+            <EditorPane
+              value={content}
+              onChange={handleContentChange}
+              onSave={saveNow}
+              onCursorLineChange={(ln) => {
+                setEditedLine(ln);
+              }}
             />
-            <div className={containerClass}>
-                {(topbar.viewMode === 'split' || topbar.viewMode === 'editor') && (
-                    <div className={`${topbar.viewMode === 'split' ? 'md:basis-1/2 basis-1/3' : 'flex-1'} min-w-0 min-h-0`}>
-                        <EditorPane
-                            value={content}
-                            onChange={handleContentChange}
-                            onSave={saveNow}
-                            onCursorLineChange={(ln) => {
-                                setEditedLine(ln);
-                            }}
-                        />
-                    </div>
-                )}
-                {(topbar.viewMode === 'split' || topbar.viewMode === 'preview') && (
-                    <div className={`${topbar.viewMode === 'split' ? 'md:basis-1/2 basis-2/3' : 'flex-1'} min-w-0 min-h-0`}>
-                        <MarkdownPreviewErrorBoundary>
-                            <PreviewPane
-                                showMdast={topbar.showMdast ?? false}
-                                toggleMdast={() => updateTopbar({ showMdast: !topbar.showMdast })}
-                                toggleAutoScroll={() => updateTopbar({ autoScroll: !topbar.autoScroll })}
-                                previewContent={previewContent}
-                                frontmatterTitle={frontmatterTitle}
-                                frontmatterDescription={frontmatterDescription}
-                                frontmatterTags={frontmatterTags}
-                                timezone={topbar.timezone}
-                                currency={topbar.currency}
-                                rate={rate}
-                                activeLine={topbar.viewMode === 'split' ? editedLine : undefined}
-                                autoScroll={topbar.viewMode === 'split' && topbar.autoScroll}
-                                showPast={topbar.showPast}
-                                onShowPast={() => updateTopbar({ showPast: true })}
-                                className="h-full"
-                                preferAltNames={topbar.altNames}
-                                externalContainerRef={previewContainerRef}
-                                showAutoScrollToggle={topbar.viewMode === 'split'}
-                                onTimezoneChange={(tz) => updateTopbar({ timezone: tz })}
-                            />
-                        </MarkdownPreviewErrorBoundary>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+          </div>
+        )}
+        {(topbar.viewMode === 'split' || topbar.viewMode === 'preview') && (
+          <div
+            className={`${topbar.viewMode === 'split' ? 'basis-2/3 md:basis-1/2' : 'flex-1'} min-h-0 min-w-0`}
+          >
+            <MarkdownPreviewErrorBoundary>
+              <PreviewPane
+                showMdast={topbar.showMdast ?? false}
+                toggleMdast={() =>
+                  updateTopbar({ showMdast: !topbar.showMdast })
+                }
+                toggleAutoScroll={() =>
+                  updateTopbar({ autoScroll: !topbar.autoScroll })
+                }
+                previewContent={previewContent}
+                frontmatterTitle={frontmatterTitle}
+                frontmatterDescription={frontmatterDescription}
+                frontmatterTags={frontmatterTags}
+                timezone={topbar.timezone}
+                currency={topbar.currency}
+                rate={rate}
+                activeLine={
+                  topbar.viewMode === 'split' ? editedLine : undefined
+                }
+                autoScroll={topbar.viewMode === 'split' && topbar.autoScroll}
+                showPast={topbar.showPast}
+                onShowPast={() => updateTopbar({ showPast: true })}
+                className="h-full"
+                preferAltNames={topbar.altNames}
+                externalContainerRef={previewContainerRef}
+                showAutoScrollToggle={topbar.viewMode === 'split'}
+                onTimezoneChange={(tz) => updateTopbar({ timezone: tz })}
+              />
+            </MarkdownPreviewErrorBoundary>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export const Editor = memo(EditorComponent);

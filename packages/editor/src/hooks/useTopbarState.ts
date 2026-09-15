@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
 import { notifyError } from '@/core/errors';
 import { tInstant } from '@/i18n';
 import type { TopbarState, ViewMode } from '@/types/itinerary';
@@ -7,123 +8,139 @@ import { isValidIanaTimeZone } from '@/utils/timezone';
 
 // currency is managed only via URL query; no localStorage key
 
-const VIEW_VALUES: readonly ViewMode[] = ['split', 'editor', 'preview'];
+const VIEW_VALUES: ReadonlySet<ViewMode> = new Set([
+  'split',
+  'editor',
+  'preview',
+]);
 
 // Default values for flags that are persisted in local storage
 const DEFAULTS = {
+  showPast: true,
+  autoScroll: true,
+  altNames: false,
+} as const;
+
+type UrlParams = {
+  patch: Partial<TopbarState>;
+  /** The `tz` query value when it is not a valid IANA timezone */
+  invalidTimezone?: string;
+};
+
+// Pure read of tz/cur/view from the URL query (no side effects), so it can run
+// inside the lazy state initializer as well as in effects.
+function readUrlParams(): UrlParams {
+  const patch: Partial<TopbarState> = {};
+  let invalidTimezone: string | undefined;
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    const tz = searchParams.get('tz');
+    if (tz) {
+      if (isValidIanaTimeZone(tz)) {
+        patch.timezone = tz;
+      } else {
+        invalidTimezone = tz;
+      }
+    }
+
+    const cur = searchParams.get('cur');
+    if (cur) patch.currency = cur;
+
+    const view = searchParams.get('view');
+    if (view && VIEW_VALUES.has(view as ViewMode)) {
+      patch.viewMode = view as ViewMode;
+    }
+
+    // Do not read past/scroll/alt from URL
+  } catch {}
+  return { patch, invalidTimezone };
+}
+
+function createInitialState(): TopbarState {
+  const base: TopbarState = {
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    currency: 'USD',
+    viewMode: 'split',
     showPast: true,
     autoScroll: true,
+    showMdast: false,
     altNames: false,
-} as const;
+  };
+  if (typeof window === 'undefined') return base;
+  return {
+    ...base,
+    // Load persisted values for non-URL flags from localStorage
+    showPast: readBoolean(prefKeys.showPast, DEFAULTS.showPast),
+    autoScroll: readBoolean(prefKeys.autoScroll, DEFAULTS.autoScroll),
+    altNames: readBoolean(prefKeys.altNames, DEFAULTS.altNames),
+    ...readUrlParams().patch,
+  };
+}
 
 /**
  * Hook to manage Topbar state (initialization and sync are separated).
  * @returns [state, setState] - State and update function.
  */
-export function useTopbarState(): [TopbarState, (patch: Partial<TopbarState>) => void] {
-    const isInitializedRef = useRef(false);
+export function useTopbarState(): [
+  TopbarState,
+  (patch: Partial<TopbarState>) => void,
+] {
+  // localStorage and URL are read once in the lazy initializer, so the first
+  // render already holds the initial state instead of patching it from effects.
+  const [state, setState] = useState<TopbarState>(createInitialState);
 
-    const [state, setState] = useState<TopbarState>(() => ({
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        currency: 'USD',
-        viewMode: 'split',
-        showPast: true,
-        autoScroll: true,
-        showMdast: false,
-        altNames: false,
-    }));
+  // Report an invalid `tz` query param. This must stay ahead of the URL sync
+  // effect below, which overwrites `tz` in the URL on mount.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const { invalidTimezone } = readUrlParams();
+    if (invalidTimezone) {
+      notifyError(tInstant('toast.url.tz.invalid', { tz: invalidTimezone }));
+    }
+  }, []);
 
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        // Load persisted values for non-URL flags from localStorage
-        const storedPast = readBoolean(prefKeys.showPast, DEFAULTS.showPast);
-        const storedScroll = readBoolean(prefKeys.autoScroll, DEFAULTS.autoScroll);
-        const storedAlt = readBoolean(prefKeys.altNames, DEFAULTS.altNames);
-        setState((prev) => ({
-            ...prev,
-            showPast: storedPast,
-            autoScroll: storedScroll,
-            altNames: storedAlt,
-        }));
-    }, []);
+  // Persist other booleans to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    writeBoolean(prefKeys.showPast, !!state.showPast);
+  }, [state.showPast]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    writeBoolean(prefKeys.autoScroll, !!state.autoScroll);
+  }, [state.autoScroll]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    writeBoolean(prefKeys.altNames, !!state.altNames);
+  }, [state.altNames]);
 
-    useEffect(() => {
-        if (isInitializedRef.current) return;
+  const updateState = useCallback((patch: Partial<TopbarState>) => {
+    setState((prevState) => ({ ...prevState, ...patch }));
+  }, []);
 
-        try {
-            const searchParams = new URLSearchParams(window.location.search);
-            const patch: Partial<TopbarState> = {};
+  useEffect(() => {
+    try {
+      const curr = new URLSearchParams(window.location.search);
+      const next = new URLSearchParams(curr);
 
-            const tz = searchParams.get('tz');
-            if (tz) {
-                if (isValidIanaTimeZone(tz)) {
-                    patch.timezone = tz;
-                } else {
-                    notifyError(tInstant('toast.url.tz.invalid', { tz }));
-                }
-            }
+      // timezone
+      if (isValidIanaTimeZone(state.timezone)) {
+        next.set('tz', state.timezone);
+      }
 
-            const cur = searchParams.get('cur');
-            if (cur) patch.currency = cur;
+      // Always reflect these in URL
+      next.set('cur', state.currency);
+      next.set('view', state.viewMode);
+      // Do not reflect prefs booleans in URL
 
-            const view = searchParams.get('view');
-            if (view && VIEW_VALUES.includes(view as ViewMode)) {
-                patch.viewMode = view as ViewMode;
-            }
+      // If no change, skip updating history
+      if (curr.toString() === next.toString()) return;
 
-            // Do not read past/scroll/alt from URL
+      const newSearch = `?${next.toString()}`;
+      const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
+      history.replaceState(null, '', newUrl);
+    } catch {}
+  }, [state.timezone, state.currency, state.viewMode]);
 
-            if (Object.keys(patch).length > 0) {
-                setState((prevState) => ({ ...prevState, ...patch }));
-            }
-        } catch {}
-
-        isInitializedRef.current = true;
-    }, []);
-
-    // Persist other booleans to localStorage
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        writeBoolean(prefKeys.showPast, !!state.showPast);
-    }, [state.showPast]);
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        writeBoolean(prefKeys.autoScroll, !!state.autoScroll);
-    }, [state.autoScroll]);
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        writeBoolean(prefKeys.altNames, !!state.altNames);
-    }, [state.altNames]);
-
-    const updateState = useCallback((patch: Partial<TopbarState>) => {
-        setState((prevState) => ({ ...prevState, ...patch }));
-    }, []);
-
-    useEffect(() => {
-        // Skip URL sync until initial state has been read from URL/localStorage
-        if (!isInitializedRef.current) return;
-        try {
-            const curr = new URLSearchParams(window.location.search);
-            const next = new URLSearchParams(curr);
-
-            // timezone
-            if (isValidIanaTimeZone(state.timezone)) {
-                next.set('tz', state.timezone);
-            }
-
-            // Always reflect these in URL
-            next.set('cur', state.currency);
-            next.set('view', state.viewMode);
-            // Do not reflect prefs booleans in URL
-
-            // If no change, skip updating history
-            if (curr.toString() === next.toString()) return;
-
-            const newSearch = `?${next.toString()}`;
-            const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
-            history.replaceState(null, '', newUrl);
-        } catch {}
-    }, [state.timezone, state.currency, state.viewMode]);
-
-    return [state, updateState];
+  return [state, updateState];
 }

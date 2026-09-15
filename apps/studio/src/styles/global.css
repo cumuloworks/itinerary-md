@@ -1,68 +1,68 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap");
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+@import 'tailwindcss';
 
 @theme {
-    --font-sans: "DM Sans", "Noto Sans JP", system-ui, sans-serif;
-    --font-mono: "DM Mono", ui-monospace, monospace;
+  --font-sans: 'DM Sans', 'Noto Sans JP', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
 }
 
 :root {
-    line-height: 1.5;
-    font-weight: 400;
-    color: #213547;
-    background-color: #ffffff;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #213547;
+  background-color: #ffffff;
 
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
 }
 
 @layer components {
-    .scrollbar-none {
-        -ms-overflow-style: none;
-        /* IE/Edge (legacy) */
-        scrollbar-width: none;
-        /* Firefox */
-    }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    /* IE/Edge (legacy) */
+    scrollbar-width: none;
+    /* Firefox */
+  }
 
-    .scrollbar-none::-webkit-scrollbar {
-        display: none;
-        /* Chrome/Safari */
-    }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+  }
 }
 
 @layer utilities {
-    @keyframes slide-up {
-        from {
-            transform: translateY(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
     }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 
-    .animate-slide-up {
-        animation: slide-up 0.3s ease-out;
-    }
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
 
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-        to {
-            transform: rotate(360deg);
-        }
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
     }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 
-    .animate-spin {
-        animation: spin 1s linear infinite;
-    }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
 }
 
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
