@@ -80,10 +80,10 @@ npm i remark-itinerary remark-itinerary-alert
 Basic usage:
 
 ```ts
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkItineraryAlert from 'remark-itinerary-alert';
 import remarkItinerary from 'remark-itinerary';
+import remarkItineraryAlert from 'remark-itinerary-alert';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
 
 const processor = unified()
   .use(remarkParse)
