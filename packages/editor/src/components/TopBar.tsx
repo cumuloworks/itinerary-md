@@ -33,6 +33,57 @@ import * as React from 'react';
 import { useI18n } from '@/i18n';
 import type { TopbarState, ViewMode } from '@/types/itinerary';
 
+const buildTimezoneItems = (timezoneOptions: string[]) => {
+  const now = new Date();
+  const toOffsetInfo = (tz: string) => {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'shortOffset',
+      }).formatToParts(now);
+      const tzNamePart = parts.find((p) => p.type === 'timeZoneName');
+      const raw = tzNamePart?.value || '';
+      // Expect formats like "GMT+9", "GMT+09:00"
+      let offsetMinutes = 0;
+      const match = raw.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/i);
+      if (match) {
+        const sign = match[1] === '-' ? -1 : 1;
+        const hours = parseInt(match[2], 10);
+        const mins = match[3] ? parseInt(match[3], 10) : 0;
+        offsetMinutes = sign * (hours * 60 + mins);
+      }
+      const hoursAbs = Math.floor(Math.abs(offsetMinutes) / 60)
+        .toString()
+        .padStart(2, '0');
+      const minsAbs = (Math.abs(offsetMinutes) % 60)
+        .toString()
+        .padStart(2, '0');
+      const signStr = offsetMinutes >= 0 ? '+' : '-';
+      const offsetLabel = `GMT${signStr}${hoursAbs}:${minsAbs}`;
+      return {
+        tz,
+        offsetMinutes,
+        offsetLabel,
+        label: `${tz} (${offsetLabel})`,
+      };
+    } catch {
+      return {
+        tz,
+        offsetMinutes: 0,
+        offsetLabel: 'GMT+00:00',
+        label: `${tz} (GMT+00:00)`,
+      };
+    }
+  };
+  return timezoneOptions
+    .map(toOffsetInfo)
+    .sort(
+      (a, b) => a.offsetMinutes - b.offsetMinutes || a.tz.localeCompare(b.tz)
+    );
+};
+
 interface TopBarProps {
   tzSelectId: string;
   timezoneOptions: string[];
@@ -69,56 +120,10 @@ const TopBarComponent: React.FC<TopBarProps> = ({
   const [tzOpen, setTzOpen] = React.useState(false);
   const tzInputRef = React.useRef<HTMLInputElement>(null);
   const tzListRef = React.useRef<HTMLDivElement>(null);
-  const timezoneItems = React.useMemo(() => {
-    const now = new Date();
-    const toOffsetInfo = (tz: string) => {
-      try {
-        const parts = new Intl.DateTimeFormat('en-US', {
-          timeZone: tz,
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZoneName: 'shortOffset',
-        }).formatToParts(now);
-        const tzNamePart = parts.find((p) => p.type === 'timeZoneName');
-        const raw = tzNamePart?.value || '';
-        // Expect formats like "GMT+9", "GMT+09:00"
-        let offsetMinutes = 0;
-        const match = raw.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/i);
-        if (match) {
-          const sign = match[1] === '-' ? -1 : 1;
-          const hours = parseInt(match[2], 10);
-          const mins = match[3] ? parseInt(match[3], 10) : 0;
-          offsetMinutes = sign * (hours * 60 + mins);
-        }
-        const hoursAbs = Math.floor(Math.abs(offsetMinutes) / 60)
-          .toString()
-          .padStart(2, '0');
-        const minsAbs = (Math.abs(offsetMinutes) % 60)
-          .toString()
-          .padStart(2, '0');
-        const signStr = offsetMinutes >= 0 ? '+' : '-';
-        const offsetLabel = `GMT${signStr}${hoursAbs}:${minsAbs}`;
-        return {
-          tz,
-          offsetMinutes,
-          offsetLabel,
-          label: `${tz} (${offsetLabel})`,
-        };
-      } catch {
-        return {
-          tz,
-          offsetMinutes: 0,
-          offsetLabel: 'GMT+00:00',
-          label: `${tz} (GMT+00:00)`,
-        };
-      }
-    };
-    return timezoneOptions
-      .map(toOffsetInfo)
-      .sort(
-        (a, b) => a.offsetMinutes - b.offsetMinutes || a.tz.localeCompare(b.tz)
-      );
-  }, [timezoneOptions]);
+  const timezoneItems = React.useMemo(
+    () => buildTimezoneItems(timezoneOptions),
+    [timezoneOptions]
+  );
   const filteredTimezoneItems = React.useMemo(() => {
     if (!tzQuery) return timezoneItems;
     const q = tzQuery.toLowerCase();
