@@ -1,5 +1,7 @@
 import * as Sentry from '@sentry/astro';
 
+import { dataCollection } from './sentry.data-collection.js';
+
 // Disable Sentry in development environment
 const isDev = import.meta.env.DEV;
 
@@ -13,7 +15,7 @@ Sentry.init({
       blockAllMedia: true,
     }),
   ],
-  enableLogs: isDev,
+  dataCollection,
   environment: isDev
     ? 'development'
     : import.meta.env.PUBLIC_ENV || 'production',

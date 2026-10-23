@@ -2,6 +2,8 @@ import { Check, Info, Share2, X } from 'lucide-react';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import FocusLock from 'react-focus-lock';
 
+const currentYear = new Date().getFullYear();
+
 type AboutButtonProps = {
   /** URL to share/copy. If not provided, uses PUBLIC_SHARE_URL, then window.location.origin */
   shareUrl?: string;
@@ -20,7 +22,6 @@ const AboutButton: React.FC<AboutButtonProps> = ({ shareUrl }) => {
   const licenseId = useId();
   const thanksTitleId = useId();
   const thanksDescId = useId();
-  const currentYear = new Date().getFullYear();
 
   const close = useCallback(() => {
     setOpen(false);

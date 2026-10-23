@@ -11,9 +11,9 @@ npm i remark-itinerary
 Basic usage:
 
 ```ts
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
 import remarkItinerary from 'remark-itinerary';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
 
 const processor = unified().use(remarkParse).use(remarkItinerary);
 ```
